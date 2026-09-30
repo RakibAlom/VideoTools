@@ -86,6 +86,79 @@
       }
     }
 
+    /* 1:1 Square Base Dimensions */
+    .stage-1-1 {
+      aspect-ratio: 1 / 1;
+      height: 80vh;
+      max-height: 720px;
+      max-width: 95vw;
+      width: auto;
+    }
+    @media (max-width: 768px) {
+      .stage-1-1 {
+        height: min(92vw, calc(100vh - 4.5rem));
+        max-height: min(92vw, calc(100vh - 4.5rem));
+        width: 100%;
+        max-width: min(92vw, calc(100vh - 4.5rem));
+      }
+    }
+    .stage-1-1 #scene-card-container {
+      width: 92% !important;
+      max-width: 580px !important;
+      min-height: 78% !important;
+      max-height: 94% !important;
+      padding: 1.5rem !important;
+    }
+    .stage-1-1 #stage-center-container {
+      padding: 0.5rem 1rem !important;
+      gap: 0.5rem !important;
+    }
+    .stage-1-1 #stage-flag-img {
+      height: 7.5rem !important;
+      max-height: 140px !important;
+    }
+    .stage-1-1 .option-card {
+      padding: 0.45rem 0.75rem !important;
+    }
+    .stage-1-1 .stage-footer-box {
+      padding-bottom: 0.5rem !important;
+    }
+
+    /* 4:5 Portrait Feed Base Dimensions */
+    .stage-4-5 {
+      aspect-ratio: 4 / 5;
+      height: 84vh;
+      max-height: 820px;
+      max-width: 95vw;
+      width: auto;
+    }
+    @media (max-width: 768px) {
+      .stage-4-5 {
+        height: calc(100vh - 4.5rem);
+        max-height: calc(100vh - 4.5rem);
+        width: 100%;
+        max-width: calc((100vh - 4.5rem) * 4 / 5);
+      }
+    }
+    .stage-4-5 #scene-card-container {
+      width: 92% !important;
+      max-width: 580px !important;
+      min-height: 74% !important;
+      max-height: 92% !important;
+      padding: 1.75rem 1.5rem !important;
+    }
+    .stage-4-5 #stage-center-container {
+      padding: 0.75rem 1.25rem !important;
+      gap: 0.75rem !important;
+    }
+    .stage-4-5 #stage-flag-img {
+      height: 9.5rem !important;
+      max-height: 180px !important;
+    }
+    .stage-4-5 .option-card {
+      padding: 0.6rem 0.85rem !important;
+    }
+
     /* Flag Container & Image Base: NO border, NO padding, border-radius allowed */
     #stage-asset-wrapper {
       padding: 0 !important;
@@ -1086,16 +1159,18 @@
         </button>
       </div>
 
-      <!-- Recording Indicator -->
-      <div id="recording-live-indicator" class="hidden items-center gap-1.5 bg-rose-500/15 border border-rose-500/30 px-2 sm:px-3 py-1 rounded-full animate-pulse">
-        <span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></span>
-        <span class="text-[11px] sm:text-xs font-mono font-bold text-rose-400">REC <span id="recording-timer">00:00</span></span>
+      <!-- Export Live Indicator -->
+      <div id="export-live-indicator" class="hidden items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 px-2 sm:px-3 py-1 rounded-full animate-pulse">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+        <span class="text-[11px] sm:text-xs font-mono font-bold text-emerald-400">EXPORTING <span id="export-status-timer">0%</span></span>
       </div>
 
-      <!-- Quick Ratio Badge -->
-      <div class="hidden md:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+      <!-- Quick Ratio Badges (9:16, 16:9, 1:1, 4:5) -->
+      <div class="hidden md:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs gap-1">
         <button id="quick-ratio-916" onclick="setAspectRatio('9:16')" class="px-2.5 py-1 rounded font-semibold text-xs transition bg-indigo-600 text-white shadow">9:16 Shorts</button>
         <button id="quick-ratio-169" onclick="setAspectRatio('16:9')" class="px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white">16:9 Cinema</button>
+        <button id="quick-ratio-11" onclick="setAspectRatio('1:1')" class="px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white">1:1 Square</button>
+        <button id="quick-ratio-45" onclick="setAspectRatio('4:5')" class="px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white">4:5 Feed</button>
       </div>
 
       <!-- Quick Reset & Clear Cache Button in Header -->
@@ -1379,57 +1454,19 @@
       <!-- Control Deck Scrollable Body -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
 
-        <!-- 1. VIDEO STUDIO & AUTOMATED RECORDING ENGINE -->
+        <!-- 1. VIDEO PRODUCTION & EXPORT STUDIO -->
         <section class="rounded-2xl border border-indigo-500/40 bg-gradient-to-b from-indigo-950/40 to-slate-900/90 p-4 shadow-xl space-y-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 font-display">Automated Video Production</h4>
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-300 font-display">Video Production & Export Studio</h4>
             </div>
             <div id="server-health-badge" class="text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">● Studio Active</div>
           </div>
 
           <p class="text-xs text-slate-300 leading-relaxed">
-            Record clean, broadcast videos with zero admin buttons. Voice narration and sound effects are baked into the video.
+            Render broadcast-quality videos with synchronized voiceover, sound effects, countdown animations, and answer reveals. Universal MP4 format for Windows, Shorts, Reels & TikTok.
           </p>
-
-          <!-- Recording Performance & Voiceover Requirement Notice -->
-          <div class="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-2 text-xs">
-            <div class="flex items-center gap-1.5 text-amber-300 font-bold text-xs uppercase tracking-wider">
-              <span>⚠️</span>
-              <span>Performance & Voiceover Notice</span>
-            </div>
-            <ul class="text-[11px] text-slate-300 space-y-1 list-disc list-inside leading-relaxed">
-              <li><strong class="text-amber-200">Hardware Performance:</strong> Real-time 1080p canvas video encoding is computationally intensive. If your PC is normal or low-spec, video recording may not work smoothly. For the smoothest video, use a performance PC/mobile, or select <strong>30 FPS + Smooth Bitrate</strong>.</li>
-              <li><strong class="text-amber-200">Voiceover in Video:</strong> Keep <strong>TTS Voice Narration</strong> enabled and use a <strong>🎙️ Studio Voice</strong>. Otherwise, voice will not be added automatically into the video recording.</li>
-            </ul>
-          </div>
-
-          <!-- Server Offline Alert Banner (shown only if server offline) -->
-          <div id="server-offline-alert" class="hidden rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-xs space-y-1.5">
-            <div class="flex items-center justify-between text-rose-300 font-bold">
-              <span>⚠️ Studio Voice Server Offline</span>
-              <button type="button" onclick="checkServerHealth()" class="text-[10px] underline hover:text-white">Retry ↺</button>
-            </div>
-            <p class="text-[11px] text-slate-300 leading-relaxed">
-              Run <code class="bg-slate-900 px-1 py-0.5 rounded text-amber-300 font-mono font-bold">Start-Studio.bat</code> in the project folder to start the local speech engine and guarantee voiceover audio in your video exports.
-            </p>
-          </div>
-
-          <!-- Recording Controls -->
-          <div class="flex flex-col gap-2">
-            <button id="btn-start-record" onclick="startBatchRecording()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 via-red-500 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-sm shadow-lg shadow-rose-600/30 transition transform active:scale-98 flex items-center justify-center gap-2">
-              <span class="w-3 h-3 rounded-full bg-white animate-pulse"></span>
-              <span>Record & Generate Video</span>
-            </button>
-
-            <button id="btn-stop-record" onclick="stopBatchRecording()" class="hidden w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-500/40 text-rose-300 font-bold text-sm shadow transition flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <rect x="6" y="6" width="12" height="12" rx="2" />
-              </svg>
-              <span>Stop & Export Video Now</span>
-            </button>
-          </div>
 
           <!-- Voice in Video Settings -->
           <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
@@ -1447,24 +1484,50 @@
             </div>
           </div>
 
-          <!-- Video Presets, Quality & Range -->
-          <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-xs">
+          <!-- Video Format & Resolution Selectors -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Encoding Quality</label>
-              <select id="record-quality-preset" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                <option value="smooth" selected>Smooth 1080p (Normal PCs)</option>
-                <option value="studio">Studio Crisp (High-End PC)</option>
-                <option value="ultra">Ultra 60FPS (Performance PC)</option>
+              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Video Format</label>
+              <select id="select-export-format" onchange="AppState.exportFormat = this.value; updateExportBtnText(); saveStudioSettings();" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold">
+                <option value="mp4" selected>MP4 Video (H.264 - Universal)</option>
+                <option value="webm">WebM Video (VP8/Opus)</option>
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Canvas FPS</label>
-              <select id="record-fps" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                <option value="30" selected>30 FPS (Smooth & Recommended)</option>
-                <option value="60">60 FPS (Ultra Smooth)</option>
+              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Export Resolution</label>
+              <select id="select-export-resolution" onchange="AppState.resolutionPreset = this.value; if (typeof updateExportResolution === 'function') updateExportResolution(); saveStudioSettings();" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold">
+                <option value="720p">720p HD (Fast export)</option>
+                <option value="1080p" selected>1080p Full HD (Recommended)</option>
+                <option value="2k">2K QHD (1440p High Quality)</option>
+                <option value="4k">4K Ultra HD (2160p Master)</option>
               </select>
             </div>
           </div>
+
+          <!-- Frame Rate & Bitrate Selectors -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Frame Rate (FPS)</label>
+              <select id="select-export-fps" onchange="AppState.fps = parseInt(this.value); saveStudioSettings();" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <option value="30" selected>30 FPS (Standard Smooth)</option>
+                <option value="60">60 FPS (Ultra Smooth 60fps)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Video Bitrate</label>
+              <select id="select-export-bitrate" onchange="AppState.bitrateMbps = parseInt(this.value); saveStudioSettings();" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <option value="8">8 Mbps (Smooth Web)</option>
+                <option value="16" selected>16 Mbps (Studio Crisp)</option>
+                <option value="28">28 Mbps (Lossless Pro)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Big Export Action Button -->
+          <button id="btn-start-export" onclick="startVideoExport()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/30 transition transform active:scale-98 flex items-center justify-center gap-2">
+            <span>🎬</span>
+            <span id="btn-export-text">Render & Download Video (.mp4)</span>
+          </button>
         </section>
 
         <!-- 2. AUTOMATED SCENE BUILDER (Intro Hook, Multiple Mid-Rolls, Outro) -->
@@ -1689,17 +1752,27 @@
             </button>
           </div>
 
-          <!-- Aspect Ratio Switcher -->
+          <!-- Aspect Ratio Switcher: 9:16, 16:9, 1:1, 4:5 -->
           <div class="grid grid-cols-2 gap-2">
-            <button id="deck-ratio-916" onclick="setAspectRatio('9:16')" class="p-3 rounded-xl border border-indigo-500/50 bg-indigo-950/30 text-indigo-300 font-semibold text-xs flex flex-col items-center gap-1.5 transition">
+            <button id="deck-ratio-916" onclick="setAspectRatio('9:16')" class="p-2.5 rounded-xl border border-indigo-500/50 bg-indigo-950/30 text-indigo-300 font-semibold text-xs flex flex-col items-center gap-1 transition shadow-md">
               <span class="text-base">📱</span>
               <span>9:16 Vertical</span>
-              <span class="text-[10px] text-slate-400 font-mono">1080 × 1920</span>
+              <span class="text-[9px] text-slate-400 font-mono">1080 × 1920</span>
             </button>
-            <button id="deck-ratio-169" onclick="setAspectRatio('16:9')" class="p-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1.5 transition">
+            <button id="deck-ratio-169" onclick="setAspectRatio('16:9')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1 transition">
               <span class="text-base">🖥️</span>
               <span>16:9 Cinema</span>
-              <span class="text-[10px] text-slate-400 font-mono">1920 × 1080</span>
+              <span class="text-[9px] text-slate-400 font-mono">1920 × 1080</span>
+            </button>
+            <button id="deck-ratio-11" onclick="setAspectRatio('1:1')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1 transition">
+              <span class="text-base">⏹️</span>
+              <span>1:1 Square</span>
+              <span class="text-[9px] text-slate-400 font-mono">1080 × 1080</span>
+            </button>
+            <button id="deck-ratio-45" onclick="setAspectRatio('4:5')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1 transition">
+              <span class="text-base">📸</span>
+              <span>4:5 Feed</span>
+              <span class="text-[9px] text-slate-400 font-mono">1080 × 1350</span>
             </button>
           </div>
 
@@ -2104,53 +2177,64 @@
 
   </div>
 
-  <!-- VIDEO EXPORT MODAL -->
-  <div id="video-export-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+  <!-- EXPORT RENDERING & DOWNLOAD MODAL -->
+  <div class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden items-center justify-center p-4 transition-all duration-300" id="exportModal">
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-800">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-            ✓
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg shadow-sm">
+            🎬
           </div>
           <div>
-            <h3 class="font-display font-bold text-base text-white">Video Generation Complete!</h3>
-            <p class="text-xs text-slate-400">Clean video rendered with baked-in audio & scenes.</p>
+            <h3 class="font-display font-bold text-base text-white" id="exportModalTitle">Rendering & Exporting Video...</h3>
+            <p class="text-xs text-slate-400" id="exportModalDesc">Synthesizing audio, compositing frames & packaging universal MP4...</p>
           </div>
         </div>
-        <button onclick="closeVideoModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+        <button id="btnCloseExportModal" onclick="cancelVideoExport()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <div class="relative rounded-xl overflow-hidden bg-black aspect-video max-h-72 flex items-center justify-center border border-slate-800">
-        <video id="exported-video-preview" controls class="w-full h-full object-contain"></video>
+      <!-- Live Render Canvas Container: Keeps GPU compositing active -->
+      <div id="exportLiveCanvasContainer" class="flex flex-col items-center justify-center my-2">
+        <canvas id="exportLiveCanvas" width="1080" height="1920" style="max-height: 240px; width: auto; aspect-ratio: 9/16; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: #000; box-shadow: 0 8px 24px rgba(0,0,0,0.6);"></canvas>
       </div>
 
-      <div class="grid grid-cols-3 gap-2 text-center text-xs">
-        <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-          <span class="text-slate-400 block text-[10px]">FORMAT</span>
-          <span class="font-mono font-bold text-indigo-300">WebM Video</span>
-        </div>
-        <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-          <span class="text-slate-400 block text-[10px]">RESOLUTION</span>
-          <span id="export-res-label" class="font-mono font-bold text-emerald-300">1080 × 1920</span>
-        </div>
-        <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
-          <span class="text-slate-400 block text-[10px]">FILE SIZE</span>
-          <span id="export-size-label" class="font-mono font-bold text-cyan-300">-- MB</span>
-        </div>
+      <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
+      <div id="exportPlaybackContainer" class="hidden flex-col items-center justify-center my-2 w-full">
+        <video id="exportVideoPlayer" controls autoplay loop playsinline style="max-height: 260px; width: 100%; border-radius: 12px; border: 1px solid #10b981; background: #000; box-shadow: 0 8px 24px rgba(16,185,129,0.25);"></video>
+        <p class="text-xs text-emerald-400 font-semibold mt-2 text-center flex items-center gap-1.5 justify-center">
+          <span>✓</span>
+          <span>Export Complete! Video is playing above. Test playback or re-download below.</span>
+        </p>
       </div>
 
-      <div class="pt-2 flex items-center gap-3">
-        <a id="btn-download-video" href="#" download="quiz_video.webm" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm text-center shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
-          <span>Download Video (.webm)</span>
+      <!-- Progress Bar & Stats -->
+      <div id="exportProgressBarContainer" class="w-full bg-slate-950 rounded-full h-3 p-0.5 overflow-hidden border border-slate-800 shadow-inner">
+        <div id="exportProgressBar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 transition-all duration-150" style="width: 0%;"></div>
+      </div>
+
+      <div id="exportProgressStats" class="flex justify-between items-center text-xs font-mono text-slate-300">
+        <span id="exportProgressPct" class="font-bold text-emerald-400">0%</span>
+        <span id="exportProgressFrames" class="text-slate-400">Question 1 / 10 • 0.0s / 50.0s</span>
+        <span id="exportEta" class="text-indigo-300">ETA: calculating...</span>
+      </div>
+
+      <!-- Action buttons when finished -->
+      <div id="exportModalActions" class="hidden gap-3 pt-2">
+        <a id="btnDownloadExportedVideo" href="#" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm text-center shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2" download="world-flag-quiz.mp4">
+          <span>⬇️ Download Video (.mp4)</span>
         </a>
-        <button onclick="closeVideoModal()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition">
+        <button onclick="closeExportModal()" class="py-3 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition">
           Close
         </button>
       </div>
+
+      <button id="btnCancelExport" onclick="cancelVideoExport()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-rose-950/40 hover:text-rose-300 border border-slate-700 hover:border-rose-500/50 text-slate-400 font-semibold text-xs transition">
+        Cancel Export
+      </button>
     </div>
   </div>
 
@@ -2218,6 +2302,9 @@
 
   <!-- OFFSCREEN DEDICATED HIGH-RES RECORDING CANVAS (1080x1920 or 1920x1080) -->
   <canvas id="offscreen-recording-canvas" class="hidden" width="1080" height="1920"></canvas>
+
+  <!-- Fix WebM Duration metadata library -->
+  <script src="lib/fix-webm-duration.js"></script>
 
   <!-- ============================================================ -->
   <!-- JAVASCRIPT CORE ENGINE                                       -->
@@ -2607,14 +2694,14 @@
         // When recording a video, we ALWAYS use Direct Studio Voices (Google Voice or David/Zira)
         // so voice audio is decoded into an AudioBuffer and routed directly to MediaRecorder!
         let activeVoice = this.selectedVoice;
-        if (AppState.isRecording) {
+        if (AppState.isRecording || AppState.isExporting) {
           if (!activeVoice || activeVoice.startsWith('native:') || activeVoice === 'native') {
-            activeVoice = 'google-voice'; // Auto-force direct studio voice for recording!
+            activeVoice = 'google-voice'; // Auto-force direct studio voice for video export!
           }
         }
 
         // 1. Direct Audio Voices via Server (/api/tts): Google Voice, Microsoft David, Microsoft Zira
-        if (activeVoice === 'google-voice' || activeVoice === 'microsoft-david' || activeVoice === 'microsoft-zira' || AppState.isRecording) {
+        if (activeVoice === 'google-voice' || activeVoice === 'microsoft-david' || activeVoice === 'microsoft-zira' || AppState.isRecording || AppState.isExporting) {
           let voiceParam = 'google';
           if (activeVoice === 'microsoft-david') voiceParam = 'david';
           if (activeVoice === 'microsoft-zira') voiceParam = 'zira';
@@ -2933,6 +3020,50 @@
     var canvasRecorderEngine = null;
     var confettiEngine = null;
 
+    function getDimensionsForExport(aspectRatio, resolutionPreset) {
+      const ar = aspectRatio || AppState.aspectRatio || '9:16';
+      const res = resolutionPreset || AppState.resolutionPreset || '1080p';
+      let w = 1080, h = 1920;
+
+      if (ar === '9:16') {
+        if (res === '720p')  { w = 720;  h = 1280; }
+        else if (res === '1080p') { w = 1080; h = 1920; }
+        else if (res === '2k')    { w = 1440; h = 2560; }
+        else if (res === '4k')    { w = 2160; h = 3840; }
+      } else if (ar === '16:9') {
+        if (res === '720p')  { w = 1280; h = 720;  }
+        else if (res === '1080p') { w = 1920; h = 1080; }
+        else if (res === '2k')    { w = 2560; h = 1440; }
+        else if (res === '4k')    { w = 3840; h = 2160; }
+      } else if (ar === '1:1') {
+        if (res === '720p')  { w = 720;  h = 720;  }
+        else if (res === '1080p') { w = 1080; h = 1080; }
+        else if (res === '2k')    { w = 1440; h = 1440; }
+        else if (res === '4k')    { w = 2160; h = 2160; }
+      } else if (ar === '4:5') {
+        if (res === '720p')  { w = 720;  h = 900;  }
+        else if (res === '1080p') { w = 1080; h = 1350; }
+        else if (res === '2k')    { w = 1440; h = 1800; }
+        else if (res === '4k')    { w = 2160; h = 2700; }
+      }
+      return { w, h };
+    }
+
+    function updateExportBtnText() {
+      const btnText = document.getElementById('btn-export-text');
+      if (btnText) {
+        const fmt = (AppState.exportFormat || 'mp4').toUpperCase();
+        btnText.textContent = `Render & Download Video (.${fmt.toLowerCase()})`;
+      }
+    }
+
+    function updateExportResolution() {
+      const dims = getDimensionsForExport(AppState.aspectRatio, AppState.resolutionPreset);
+      if (canvasRecorderEngine && typeof canvasRecorderEngine.setDimensions === 'function') {
+        canvasRecorderEngine.setDimensions(dims.w, dims.h);
+      }
+    }
+
     const AppState = {
       category: 'flags',
       theme: 'studio',
@@ -2958,7 +3089,12 @@
       },
       state: 'IDLE', // 'IDLE', 'RUNNING', 'PAUSED', 'REVEAL_STATE', 'TRANSITION', 'SCENE_INTRO', 'SCENE_MILESTONE', 'SCENE_OUTRO'
       mode: 'auto', // 'manual' or 'auto'
-      aspectRatio: '9:16',
+      aspectRatio: '9:16', // '9:16', '16:9', '1:1', '4:5'
+      exportFormat: 'mp4', // 'mp4' (universal default) or 'webm'
+      resolutionPreset: '1080p', // '720p', '1080p', '2k', '4k'
+      fps: 30, // 30 or 60
+      bitrateMbps: 16, // 8, 16, 28
+      isExporting: false,
       timerDuration: 5,
       timeRemaining: 5,
       timerInterval: null,
@@ -3734,6 +3870,13 @@
             voice: document.getElementById('scene-outro-voice')?.value || "That's the challenge! How many countries did you guess correctly? Comment your score below and subscribe for more!"
           },
           midrollScenes: AppState.midrollScenes,
+          exportConfig: {
+            format: AppState.exportFormat || 'mp4',
+            resolution: AppState.resolutionPreset || '1080p',
+            fps: AppState.fps || 30,
+            bitrateMbps: AppState.bitrateMbps || 16,
+            liveVoice: document.getElementById('toggle-record-voice')?.checked || false
+          },
           recording: {
             quality: document.getElementById('record-quality-preset')?.value || 'smooth',
             fps: document.getElementById('record-fps')?.value || '30',
@@ -3770,6 +3913,36 @@
 
         const s = JSON.parse(raw);
         if (!s) return false;
+
+        // 0. Export Configuration
+        if (s.exportConfig) {
+          if (s.exportConfig.format) {
+            AppState.exportFormat = s.exportConfig.format;
+            const selFmt = document.getElementById('select-export-format');
+            if (selFmt) selFmt.value = s.exportConfig.format;
+          }
+          if (s.exportConfig.resolution) {
+            AppState.resolutionPreset = s.exportConfig.resolution;
+            const selRes = document.getElementById('select-export-resolution');
+            if (selRes) selRes.value = s.exportConfig.resolution;
+          }
+          if (s.exportConfig.fps) {
+            AppState.fps = parseInt(s.exportConfig.fps) || 30;
+            const selFps = document.getElementById('select-export-fps');
+            if (selFps) selFps.value = String(AppState.fps);
+          }
+          if (s.exportConfig.bitrateMbps) {
+            AppState.bitrateMbps = parseInt(s.exportConfig.bitrateMbps) || 16;
+            const selBitrate = document.getElementById('select-export-bitrate');
+            if (selBitrate) selBitrate.value = String(AppState.bitrateMbps);
+          }
+          if (typeof s.exportConfig.liveVoice === 'boolean') {
+            const recVoice = document.getElementById('toggle-record-voice');
+            if (recVoice) recVoice.checked = s.exportConfig.liveVoice;
+          }
+          updateExportBtnText();
+          updateExportResolution();
+        }
 
         // 1. Total Questions Limit
         if (s.totalQuestionsLimit) {
@@ -4330,8 +4503,8 @@
     function setupQuestion(index, autoStartCountdown = true) {
       const totalLimit = getTotalSelectedQuestions();
       if (index < 0 || index >= totalLimit) {
-        if (AppState.isRecording) {
-          finishBatchRecordingSequence();
+        if (AppState.isExporting || AppState.isRecording) {
+          finishVideoExportSequence();
         } else if (AppState.mode === 'auto') {
           if (AppState.randomOrder) {
             reshuffleQuestions(true);
@@ -4597,8 +4770,8 @@
         ? `The correct answer is ${q.correctAnswer}! ${q.funFact}`
         : `The correct answer is ${q.correctAnswer}!`;
 
-      // Auto / Recording progression: wait for speech to finish + ample reading time
-      if (AppState.mode === 'auto' || AppState.isRecording) {
+      // Auto / Export progression: wait for speech to finish + ample reading time
+      if (AppState.mode === 'auto' || AppState.isRecording || AppState.isExporting) {
         let speechDone = false;
         let timerDone = false;
 
@@ -4631,20 +4804,20 @@
       const nextIndex = AppState.currentIndex + 1;
       const targetLimit = getTotalSelectedQuestions();
 
-      // Check if selected question limit reached (in both recording AND interactive/presentation play!)
+      // Check if selected question limit reached (in both export AND interactive/presentation play!)
       if (nextIndex >= targetLimit) {
         const outroEnabled = document.getElementById('toggle-scene-outro')?.checked;
         if (outroEnabled) {
           showSpecialScene('outro', targetLimit, null, () => {
-            if (AppState.isRecording) {
-              finishBatchRecordingSequence();
+            if (AppState.isExporting || AppState.isRecording) {
+              stopVideoExportRecording();
             } else {
               stopAndResetQuiz();
             }
           });
         } else {
-          if (AppState.isRecording) {
-            finishBatchRecordingSequence();
+          if (AppState.isExporting || AppState.isRecording) {
+            stopVideoExportRecording();
           } else {
             stopAndResetQuiz();
           }
@@ -5049,37 +5222,36 @@
     function setAspectRatio(ratio) {
       AppState.aspectRatio = ratio;
       const stage = document.getElementById('stage-viewport');
-      const btn916 = document.getElementById('quick-ratio-916');
-      const btn169 = document.getElementById('quick-ratio-169');
-      const deck916 = document.getElementById('deck-ratio-916');
-      const deck169 = document.getElementById('deck-ratio-169');
+      stage.classList.remove('stage-9-16', 'stage-16-9', 'stage-1-1', 'stage-4-5');
+      if (ratio === '9:16') stage.classList.add('stage-9-16');
+      else if (ratio === '16:9') stage.classList.add('stage-16-9');
+      else if (ratio === '1:1') stage.classList.add('stage-1-1');
+      else if (ratio === '4:5') stage.classList.add('stage-4-5');
 
-      if (ratio === '9:16') {
-        stage.classList.remove('stage-16-9');
-        stage.classList.add('stage-9-16');
+      const ratios = ['9:16', '16:9', '1:1', '4:5'];
+      const idMap = { '9:16': '916', '16:9': '169', '1:1': '11', '4:5': '45' };
 
-        btn916.className = "px-2.5 py-1 rounded font-semibold text-xs transition bg-indigo-600 text-white shadow";
-        btn169.className = "px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white";
+      ratios.forEach(r => {
+        const id = idMap[r];
+        const quickBtn = document.getElementById(`quick-ratio-${id}`);
+        const deckBtn = document.getElementById(`deck-ratio-${id}`);
+        const isActive = (r === ratio);
 
-        deck916.className = "p-3 rounded-xl border border-indigo-500/50 bg-indigo-950/30 text-indigo-300 font-semibold text-xs flex flex-col items-center gap-1.5 transition";
-        deck169.className = "p-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1.5 transition";
-
-        if (canvasRecorderEngine && typeof canvasRecorderEngine.setDimensions === 'function') {
-          canvasRecorderEngine.setDimensions(1080, 1920);
+        if (quickBtn) {
+          quickBtn.className = isActive 
+            ? "px-2.5 py-1 rounded font-semibold text-xs transition bg-indigo-600 text-white shadow" 
+            : "px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white";
         }
-      } else {
-        stage.classList.remove('stage-9-16');
-        stage.classList.add('stage-16-9');
-
-        btn169.className = "px-2.5 py-1 rounded font-semibold text-xs transition bg-indigo-600 text-white shadow";
-        btn916.className = "px-2.5 py-1 rounded font-semibold text-xs transition text-slate-400 hover:text-white";
-
-        deck169.className = "p-3 rounded-xl border border-indigo-500/50 bg-indigo-950/30 text-indigo-300 font-semibold text-xs flex flex-col items-center gap-1.5 transition";
-        deck916.className = "p-3 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1.5 transition";
-
-        if (canvasRecorderEngine && typeof canvasRecorderEngine.setDimensions === 'function') {
-          canvasRecorderEngine.setDimensions(1920, 1080);
+        if (deckBtn) {
+          deckBtn.className = isActive
+            ? "p-2.5 rounded-xl border border-indigo-500/50 bg-indigo-950/30 text-indigo-300 font-semibold text-xs flex flex-col items-center gap-1 transition shadow-md"
+            : "p-2.5 rounded-xl border border-slate-800 bg-slate-900/50 text-slate-400 hover:text-white font-semibold text-xs flex flex-col items-center gap-1 transition";
         }
+      });
+
+      const dims = getDimensionsForExport(ratio, AppState.resolutionPreset || '1080p');
+      if (canvasRecorderEngine && typeof canvasRecorderEngine.setDimensions === 'function') {
+        canvasRecorderEngine.setDimensions(dims.w, dims.h);
       }
       fitQuestionText();
       saveStudioSettings();
@@ -5464,7 +5636,6 @@
         const ctx = this.ctx;
         const W = this.width;
         const H = this.height;
-        const isVertical = H > W;
         const themeKey = (AppState.customColors && AppState.customColors.enabled) ? 'custom' : AppState.theme;
         const theme = STAGE_THEMES[themeKey] || STAGE_THEMES.studio;
 
@@ -5491,452 +5662,298 @@
         const q = AppState.currentQuestion;
         if (!q) {
           this.drawWatermark(ctx, W, H);
+          this.mirrorToLiveCanvas();
           return;
         }
 
-        if (isVertical) {
-          // ==================== 9:16 VERTICAL LAYOUT ====================
-          const headerY = 110;
-          ctx.save();
-          const catPillEl = document.getElementById('stage-category-pill');
-          const catText = catPillEl ? catPillEl.textContent.trim() : 'FLAG CHALLENGE';
-          ctx.font = 'bold 30px Outfit, sans-serif';
-          const catWidth = ctx.measureText(catText).width + 50;
-          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          this.roundRect(ctx, 70, headerY, catWidth, 60, 30, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 3;
-          this.roundRect(ctx, 70, headerY, catWidth, 60, 30, false, true);
+        const ar = AppState.aspectRatio || '9:16';
+        const is169 = ar === '16:9' || (W > H * 1.25);
+        const is11 = ar === '1:1' || (Math.abs(W - H) < 15);
+        const is45 = ar === '4:5' || (H > W && H / W < 1.45 && !is11);
+        const is916 = (!is169 && !is11 && !is45);
 
+        const catPillEl = document.getElementById('stage-category-pill');
+        const catText = catPillEl ? catPillEl.textContent.trim() : 'FLAG CHALLENGE';
+        const counterText = `Q ${AppState.currentIndex + 1} / ${getTotalSelectedQuestions()}`;
+        const isRevealed = AppState.state === 'REVEAL_STATE';
+        const hasFact = isRevealed && AppState.funFactEnabled && Boolean(q.funFact);
+        const letters = ['A', 'B', 'C', 'D'];
+
+        if (is169) {
+          // ==================== 16:9 CINEMA WIDESCREEN ====================
+          const s = W / 1920;
+          const leftColW = Math.round(820 * s);
+          const leftColX = Math.round(90 * s);
+          const rightColX = Math.round(980 * s);
+          const rightColW = W - rightColX - Math.round(90 * s);
+
+          // Top Header (Right Column)
+          ctx.save();
+          ctx.font = `bold ${Math.round(26 * s)}px Outfit, sans-serif`;
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
+          const catWidth = ctx.measureText(catText).width + 50 * s;
+          this.roundRect(ctx, rightColX, 75 * s, catWidth, 52 * s, 26 * s, true, false);
+          ctx.strokeStyle = theme.accentText;
+          ctx.lineWidth = 2 * s;
+          this.roundRect(ctx, rightColX, 75 * s, catWidth, 52 * s, 26 * s, false, true);
           ctx.fillStyle = theme.accentText;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(catText, 95, headerY + 30);
+          ctx.fillText(catText, rightColX + 25 * s, (75 + 26) * s);
 
-          const counterText = `Q ${AppState.currentIndex + 1} / ${getTotalSelectedQuestions()}`;
-          ctx.font = 'bold 28px "JetBrains Mono", monospace';
-          const counterWidth = ctx.measureText(counterText).width + 44;
+          ctx.font = `bold ${Math.round(26 * s)}px "JetBrains Mono", monospace`;
+          const cWidth = ctx.measureText(counterText).width + 40 * s;
           ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - 70 - counterWidth, headerY, counterWidth, 60, 30, true, false);
+          this.roundRect(ctx, W - Math.round(90 * s) - cWidth, 75 * s, cWidth, 52 * s, 26 * s, true, false);
           ctx.strokeStyle = theme.cardBorder;
-          this.roundRect(ctx, W - 70 - counterWidth, headerY, counterWidth, 60, 30, false, true);
-
+          ctx.lineWidth = 2 * s;
+          this.roundRect(ctx, W - Math.round(90 * s) - cWidth, 75 * s, cWidth, 52 * s, 26 * s, false, true);
           ctx.fillStyle = theme.textColor;
           ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - 70 - (counterWidth / 2), headerY + 30);
+          ctx.fillText(counterText, W - Math.round(90 * s) - (cWidth / 2), (75 + 26) * s);
           ctx.restore();
 
-          // Left Margin for 9:16 Vertical Layout
-          const leftX = 70;
-          const contentW = W - 140;
-
-          // Question Prompt Text (Large, High-Contrast & Clean Wrap, Semibold 600)
+          // Left Column: Prompt Text
           ctx.save();
           ctx.fillStyle = theme.textColor;
-          let qFontSize = 52;
-          ctx.font = `600 ${qFontSize}px Outfit, Inter, sans-serif`;
+          ctx.font = `600 ${Math.round(42 * s)}px Outfit, Inter, sans-serif`;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftX, 220, contentW, 62);
-          ctx.restore();
-
-          // Flag Photo (Direct photo, zero background card, left-aligned)
-          const img = this.cachedImages.get(q.flagUrl);
-          const flagY = 405;
-          const targetH = 480; // Full background height
-
-          if (img && img.complete) {
-            const natW = img.naturalWidth || img.width || 640;
-            const natH = img.naturalHeight || img.height || 427;
-            const imgAspect = natW / natH;
-
-            let flagH = targetH;
-            let flagW = Math.round(flagH * imgAspect);
-            if (flagW > contentW) {
-              flagW = contentW;
-              flagH = Math.round(contentW / imgAspect);
-            }
-
-            // Left alignment: starts at leftX (70)
-            const flagX = leftX;
-
-            // Deep floating drop shadow (zero border, zero padding)
-            ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-            ctx.shadowOffsetY = 12;
-            ctx.shadowBlur = 28;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-            this.roundRect(ctx, flagX, flagY, flagW, flagH, 22, true, false);
-            ctx.restore();
-
-            // Draw Flag Photo (clipped with rounded corners, zero border stroke, zero padding)
-            ctx.save();
-            this.roundRect(ctx, flagX, flagY, flagW, flagH, 22, false, false);
-            ctx.clip();
-            ctx.drawImage(img, flagX, flagY, flagW, flagH);
-            ctx.restore();
-          }
-
-          // Countdown Timer Bar
-          const timerBarY = 940;
-          const timerBarW = W - 140;
-          const timerBarH = 26;
-          const timerBarX = 70;
-
-          ctx.save();
-          ctx.font = 'bold 24px "JetBrains Mono", monospace';
-          ctx.fillStyle = theme.id === 'minimal_light' ? '#64748b' : '#94a3b8';
-          ctx.textAlign = 'left';
-          ctx.fillText('TIME REMAINING', timerBarX, timerBarY - 14);
-
-          ctx.textAlign = 'right';
-          ctx.fillStyle = AppState.timeRemaining <= 2 ? '#f43f5e' : theme.accentText;
-          ctx.fillText(`${AppState.timeRemaining.toFixed(1)}s`, timerBarX + timerBarW, timerBarY - 14);
-
-          ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.9)';
-          this.roundRect(ctx, timerBarX, timerBarY, timerBarW, timerBarH, 13, true, false);
-          ctx.strokeStyle = theme.cardBorder;
-          this.roundRect(ctx, timerBarX, timerBarY, timerBarW, timerBarH, 13, false, true);
-
-          const fraction = Math.max(0, AppState.timeRemaining / AppState.timerDuration);
-          if (fraction > 0) {
-            const fillGrad = ctx.createLinearGradient(timerBarX, 0, timerBarX + timerBarW, 0);
-            if (AppState.timeRemaining <= 2) {
-              fillGrad.addColorStop(0, theme.timerWarnGrad[0]);
-              fillGrad.addColorStop(1, theme.timerWarnGrad[1]);
-            } else {
-              fillGrad.addColorStop(0, theme.timerGrad[0]);
-              fillGrad.addColorStop(0.5, theme.timerGrad[1] || theme.timerGrad[0]);
-              fillGrad.addColorStop(1, theme.timerGrad[2] || theme.timerGrad[1]);
-            }
-            ctx.fillStyle = fillGrad;
-            this.roundRect(ctx, timerBarX, timerBarY, timerBarW * fraction, timerBarH, 13, true, false);
-          }
-          ctx.restore();
-
-          // Options Grid (3 Full-Width Cards)
-          const optionStartY = 1030;
-          const optionH = 114;
-          const optionGap = 22;
-          const letters = ['A', 'B', 'C', 'D'];
-
-          AppState.shuffledOptions.forEach((opt, idx) => {
-            const optY = optionStartY + idx * (optionH + optionGap);
-            const isRevealed = AppState.state === 'REVEAL_STATE';
-
-            ctx.save();
-            if (isRevealed && opt.isCorrect) {
-              ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
-              ctx.shadowOffsetY = 6;
-              ctx.shadowBlur = 0;
-              ctx.fillStyle = theme.correctBg;
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, true, false);
-              ctx.strokeStyle = theme.correctBorder;
-              ctx.lineWidth = 4;
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, false, true);
-
-              ctx.fillStyle = theme.correctBadgeBg;
-              this.roundRect(ctx, timerBarX + 24, optY + 24, 66, 66, 16, true, false);
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 36px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], timerBarX + 57, optY + 57);
-
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 42px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, timerBarX + 115, optY + 57);
-
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 44px sans-serif';
-              ctx.textAlign = 'right';
-              ctx.fillText('✓', timerBarX + timerBarW - 35, optY + 57);
-
-            } else if (isRevealed && !opt.isCorrect) {
-              ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(241, 245, 249, 0.6)' : 'rgba(15, 23, 42, 0.4)';
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, true, false);
-              ctx.strokeStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)';
-              ctx.lineWidth = 2;
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, false, true);
-
-              ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.5)';
-              this.roundRect(ctx, timerBarX + 24, optY + 24, 66, 66, 16, true, false);
-              ctx.fillStyle = '#94a3b8';
-              ctx.font = 'bold 36px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], timerBarX + 57, optY + 57);
-
-              ctx.fillStyle = '#94a3b8';
-              ctx.font = 'bold 40px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, timerBarX + 115, optY + 57);
-            } else {
-              ctx.fillStyle = theme.cardBg;
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, true, false);
-              ctx.strokeStyle = theme.cardBorder;
-              ctx.lineWidth = 2;
-              this.roundRect(ctx, timerBarX, optY, timerBarW, optionH, 24, false, true);
-
-              ctx.fillStyle = theme.badgeBg;
-              this.roundRect(ctx, timerBarX + 24, optY + 24, 66, 66, 16, true, false);
-              ctx.strokeStyle = theme.badgeBorder;
-              this.roundRect(ctx, timerBarX + 24, optY + 24, 66, 66, 16, false, true);
-
-              ctx.fillStyle = theme.badgeText;
-              ctx.font = 'bold 36px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], timerBarX + 57, optY + 57);
-
-              ctx.fillStyle = theme.textColor;
-              ctx.font = 'bold 42px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, timerBarX + 115, optY + 57);
-            }
-            ctx.restore();
-          });
-
-          // Fun Fact Banner
-          if (AppState.state === 'REVEAL_STATE' && AppState.funFactEnabled && q.funFact) {
-            const factY = 1520;
-            const factH = 180;
-            ctx.save();
-            ctx.fillStyle = theme.factBg;
-            this.roundRect(ctx, timerBarX, factY, timerBarW, factH, 24, true, false);
-            ctx.strokeStyle = theme.factBorder;
-            ctx.lineWidth = 3;
-            this.roundRect(ctx, timerBarX, factY, timerBarW, factH, 24, false, true);
-
-            ctx.font = '36px sans-serif';
-            ctx.fillText('💡', timerBarX + 35, factY + 55);
-
-            ctx.font = '500 32px Inter, sans-serif';
-            ctx.fillStyle = theme.textColor;
-            ctx.textAlign = 'left';
-            this.wrapText(ctx, q.funFact, timerBarX + 85, factY + 36, timerBarW - 120, 44);
-            ctx.restore();
-          }
-
-        } else {
-          // ==================== 16:9 LANDSCAPE CINEMA LAYOUT ====================
-          const leftColW = 820;
-          const leftColX = 90;
-          const rightColX = 980;
-          const rightColW = W - rightColX - 90;
-
-          // Header
-          ctx.save();
-          const catPillEl = document.getElementById('stage-category-pill');
-          const catText = catPillEl ? catPillEl.textContent.trim() : 'FLAG CHALLENGE';
-          ctx.font = 'bold 26px Outfit, sans-serif';
-          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          const catWidth = ctx.measureText(catText).width + 50;
-          this.roundRect(ctx, rightColX, 75, catWidth, 52, 26, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 2;
-          this.roundRect(ctx, rightColX, 75, catWidth, 52, 26, false, true);
-          ctx.fillStyle = theme.accentText;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(catText, rightColX + 25, 75 + 26);
-
-          const counterText = `Q ${AppState.currentIndex + 1} / ${getTotalSelectedQuestions()}`;
-          ctx.font = 'bold 26px "JetBrains Mono", monospace';
-          const cWidth = ctx.measureText(counterText).width + 40;
-          ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - 90 - cWidth, 75, cWidth, 52, 26, true, false);
-          ctx.strokeStyle = theme.cardBorder;
-          ctx.lineWidth = 2;
-          this.roundRect(ctx, W - 90 - cWidth, 75, cWidth, 52, 26, false, true);
-          ctx.fillStyle = theme.textColor;
-          ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - 90 - (cWidth / 2), 75 + 26);
-          ctx.restore();
-
-          // Left Column: Question Prompt at Top (Clean Wrap, Semibold 600)
-          ctx.save();
-          ctx.fillStyle = theme.textColor;
-          let qFontSize = 42;
-          ctx.font = `600 ${qFontSize}px Outfit, Inter, sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftColX, 85, leftColW, 48);
+          this.wrapText(ctx, q.questionText, leftColX, 85 * s, leftColW, 48 * s);
           ctx.restore();
 
           // Left Column: Flag Photo (Direct photo, zero background card, left-aligned)
           const img = this.cachedImages.get(q.flagUrl);
-          const flagY = 200;
-          const targetH = 475; // Full background height
-
           if (img && img.complete) {
-            const natW = img.naturalWidth || img.width || 640;
-            const natH = img.naturalHeight || img.height || 427;
-            const imgAspect = natW / natH;
-
-            let flagH = targetH;
-            let flagW = Math.round(flagH * imgAspect);
-            if (flagW > leftColW) {
-              flagW = leftColW;
-              flagH = Math.round(leftColW / imgAspect);
-            }
-
-            // Left alignment only: starts directly at leftColX = 90!
-            const flagX = leftColX;
-
-            // Deep floating drop shadow (zero border, zero padding)
-            ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-            ctx.shadowOffsetY = 12;
-            ctx.shadowBlur = 28;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-            this.roundRect(ctx, flagX, flagY, flagW, flagH, 22, true, false);
-            ctx.restore();
-
-            // Draw full flag photo (clipped with rounded corners, zero border stroke, zero padding)
-            ctx.save();
-            this.roundRect(ctx, flagX, flagY, flagW, flagH, 22, false, false);
-            ctx.clip();
-            ctx.drawImage(img, flagX, flagY, flagW, flagH);
-            ctx.restore();
+            this.drawFlagPhoto(ctx, img, leftColX, 200 * s, leftColW, 475 * s, 22 * s);
           }
 
-          // Left Column: Timer Bar Below Flag
-          const timerY = 715;
-          const timerH = 26;
-          ctx.save();
-          ctx.font = 'bold 22px "JetBrains Mono", monospace';
-          ctx.fillStyle = theme.id === 'minimal_light' ? '#64748b' : '#94a3b8';
-          ctx.textAlign = 'left';
-          ctx.fillText('TIME REMAINING', leftColX, timerY - 14);
+          // Left Column: Timer Bar
+          this.drawTimerBar(ctx, theme, leftColX, 715 * s, leftColW, 26 * s, 13 * s, s);
 
-          ctx.textAlign = 'right';
-          ctx.fillStyle = AppState.timeRemaining <= 2 ? '#f43f5e' : theme.accentText;
-          ctx.fillText(`${AppState.timeRemaining.toFixed(1)}s`, leftColX + leftColW, timerY - 14);
-
-          ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.9)';
-          this.roundRect(ctx, leftColX, timerY, leftColW, timerH, 13, true, false);
-
-          const fraction = Math.max(0, AppState.timeRemaining / AppState.timerDuration);
-          if (fraction > 0) {
-            const fillGrad = ctx.createLinearGradient(leftColX, 0, leftColX + leftColW, 0);
-            if (AppState.timeRemaining <= 2) {
-              fillGrad.addColorStop(0, theme.timerWarnGrad[0]);
-              fillGrad.addColorStop(1, theme.timerWarnGrad[1]);
-            } else {
-              fillGrad.addColorStop(0, theme.timerGrad[0]);
-              fillGrad.addColorStop(0.5, theme.timerGrad[1] || theme.timerGrad[0]);
-              fillGrad.addColorStop(1, theme.timerGrad[2] || theme.timerGrad[1]);
-            }
-            ctx.fillStyle = fillGrad;
-            this.roundRect(ctx, leftColX, timerY, leftColW * fraction, timerH, 13, true, false);
-          }
-          ctx.restore();
-
-          // Right Column: Options Grid (Centered vertically in column)
-          const isRevealed = AppState.state === 'REVEAL_STATE';
-          const hasFact = isRevealed && AppState.funFactEnabled && Boolean(q.funFact);
-          const optionH = 95;
-          const optionGap = 18;
-          const optionStartY = hasFact ? 210 : 310;
-          const letters = ['A', 'B', 'C', 'D'];
+          // Right Column: Options Grid
+          const optionH = Math.round(95 * s);
+          const optionGap = Math.round(18 * s);
+          const optionStartY = hasFact ? Math.round(210 * s) : Math.round(300 * s);
 
           AppState.shuffledOptions.forEach((opt, idx) => {
             const optY = optionStartY + idx * (optionH + optionGap);
-            const isRevealed = AppState.state === 'REVEAL_STATE';
-
-            ctx.save();
-            if (isRevealed && opt.isCorrect) {
-              ctx.fillStyle = theme.correctBg;
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, true, false);
-              ctx.strokeStyle = theme.correctBorder;
-              ctx.lineWidth = 4;
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, false, true);
-
-              ctx.fillStyle = theme.correctBadgeBg;
-              this.roundRect(ctx, rightColX + 20, optY + 18, 64, 64, 14, true, false);
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 34px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], rightColX + 52, optY + 50);
-
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 38px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, rightColX + 105, optY + 50);
-
-              ctx.font = 'bold 40px sans-serif';
-              ctx.textAlign = 'right';
-              ctx.fillText('✓', rightColX + rightColW - 30, optY + 50);
-            } else if (isRevealed && !opt.isCorrect) {
-              ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(241, 245, 249, 0.6)' : 'rgba(15, 23, 42, 0.4)';
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, true, false);
-              ctx.strokeStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)';
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, false, true);
-
-              ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.5)';
-              this.roundRect(ctx, rightColX + 20, optY + 18, 64, 64, 14, true, false);
-              ctx.fillStyle = '#94a3b8';
-              ctx.font = 'bold 34px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], rightColX + 52, optY + 50);
-
-              ctx.fillStyle = '#94a3b8';
-              ctx.font = 'bold 36px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, rightColX + 105, optY + 50);
-            } else {
-              ctx.fillStyle = theme.cardBg;
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, true, false);
-              ctx.strokeStyle = theme.cardBorder;
-              this.roundRect(ctx, rightColX, optY, rightColW, optionH, 20, false, true);
-
-              ctx.fillStyle = theme.badgeBg;
-              this.roundRect(ctx, rightColX + 20, optY + 18, 64, 64, 14, true, false);
-              ctx.strokeStyle = theme.badgeBorder;
-              this.roundRect(ctx, rightColX + 20, optY + 18, 64, 64, 14, false, true);
-
-              ctx.fillStyle = theme.badgeText;
-              ctx.font = 'bold 34px Outfit, sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(letters[idx], rightColX + 52, optY + 50);
-
-              ctx.fillStyle = theme.textColor;
-              ctx.font = 'bold 38px Inter, sans-serif';
-              ctx.textAlign = 'left';
-              ctx.fillText(opt.text, rightColX + 105, optY + 50);
-            }
-            ctx.restore();
+            this.drawOptionCard(ctx, theme, letters, opt, idx, rightColX, optY, rightColW, optionH, 20 * s, isRevealed, s);
           });
 
-          // Fun Fact Banner below options in 16:9 (only shown when answer is revealed)
+          // Right Column: Fun Fact Banner
           if (hasFact) {
-            const factY = optionStartY + 3 * (optionH + optionGap) + 12;
-            const factH = 145;
-            ctx.save();
-            ctx.fillStyle = theme.factBg;
-            this.roundRect(ctx, rightColX, factY, rightColW, factH, 20, true, false);
-            ctx.strokeStyle = theme.factBorder;
-            ctx.lineWidth = 2;
-            this.roundRect(ctx, rightColX, factY, rightColW, factH, 20, false, true);
+            const factY = optionStartY + 4 * (optionH + optionGap) + Math.round(10 * s);
+            const factH = Math.round(145 * s);
+            this.drawFactBanner(ctx, theme, rightColX, factY, rightColW, factH, 20 * s, q.funFact, Math.round(25 * s), Math.round(36 * s));
+          }
 
-            ctx.font = '32px sans-serif';
-            ctx.fillText('💡', rightColX + 28, factY + 42);
+        } else if (is45) {
+          // ==================== 4:5 SOCIAL FEED (1080x1350) ====================
+          const s = W / 1080;
+          const leftX = Math.round(65 * s);
+          const contentW = W - Math.round(130 * s);
 
-            ctx.font = '500 25px Inter, sans-serif';
-            ctx.fillStyle = theme.textColor;
-            ctx.textAlign = 'left';
-            this.wrapText(ctx, q.funFact, rightColX + 75, factY + 28, rightColW - 95, 36);
-            ctx.restore();
+          // Header
+          ctx.save();
+          const headerY = Math.round(55 * s);
+          ctx.font = `bold ${Math.round(24 * s)}px Outfit, sans-serif`;
+          const catWidth = ctx.measureText(catText).width + 44 * s;
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
+          this.roundRect(ctx, leftX, headerY, catWidth, 50 * s, 25 * s, true, false);
+          ctx.strokeStyle = theme.accentText;
+          ctx.lineWidth = 2.5 * s;
+          this.roundRect(ctx, leftX, headerY, catWidth, 50 * s, 25 * s, false, true);
+          ctx.fillStyle = theme.accentText;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(catText, leftX + 22 * s, headerY + 25 * s);
+
+          ctx.font = `bold ${Math.round(24 * s)}px "JetBrains Mono", monospace`;
+          const counterWidth = ctx.measureText(counterText).width + 38 * s;
+          ctx.fillStyle = theme.cardBg;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 50 * s, 25 * s, true, false);
+          ctx.strokeStyle = theme.cardBorder;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 50 * s, 25 * s, false, true);
+          ctx.fillStyle = theme.textColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 25 * s);
+          ctx.restore();
+
+          // Question Prompt
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${Math.round(42 * s)}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, q.questionText, leftX, 125 * s, contentW, 50 * s);
+          ctx.restore();
+
+          // Flag Photo
+          const img = this.cachedImages.get(q.flagUrl);
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, 230 * s, contentW, 330 * s, 18 * s);
+          }
+
+          // Timer Bar
+          this.drawTimerBar(ctx, theme, leftX, 585 * s, contentW, 22 * s, 11 * s, s);
+
+          // Options Grid
+          const optionH = Math.round(84 * s);
+          const optionGap = Math.round(14 * s);
+          const optionStartY = Math.round(630 * s);
+
+          AppState.shuffledOptions.forEach((opt, idx) => {
+            const optY = optionStartY + idx * (optionH + optionGap);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 18 * s, isRevealed, s);
+          });
+
+          // Fun Fact Banner
+          if (hasFact) {
+            const factY = Math.round(1030 * s);
+            const factH = Math.round(135 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 18 * s, q.funFact, Math.round(25 * s), Math.round(36 * s));
+          }
+
+        } else if (is11) {
+          // ==================== 1:1 SQUARE (1080x1080) ====================
+          const s = W / 1080;
+          const leftX = Math.round(55 * s);
+          const contentW = W - Math.round(110 * s);
+
+          // Header
+          ctx.save();
+          const headerY = Math.round(38 * s);
+          ctx.font = `bold ${Math.round(20 * s)}px Outfit, sans-serif`;
+          const catWidth = ctx.measureText(catText).width + 38 * s;
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
+          this.roundRect(ctx, leftX, headerY, catWidth, 42 * s, 21 * s, true, false);
+          ctx.strokeStyle = theme.accentText;
+          ctx.lineWidth = 2 * s;
+          this.roundRect(ctx, leftX, headerY, catWidth, 42 * s, 21 * s, false, true);
+          ctx.fillStyle = theme.accentText;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(catText, leftX + 18 * s, headerY + 21 * s);
+
+          ctx.font = `bold ${Math.round(20 * s)}px "JetBrains Mono", monospace`;
+          const counterWidth = ctx.measureText(counterText).width + 34 * s;
+          ctx.fillStyle = theme.cardBg;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 42 * s, 21 * s, true, false);
+          ctx.strokeStyle = theme.cardBorder;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 42 * s, 21 * s, false, true);
+          ctx.fillStyle = theme.textColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 21 * s);
+          ctx.restore();
+
+          // Question Prompt
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${Math.round(34 * s)}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, q.questionText, leftX, 94 * s, contentW, 40 * s);
+          ctx.restore();
+
+          // Flag Photo
+          const img = this.cachedImages.get(q.flagUrl);
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, 165 * s, contentW, 235 * s, 16 * s);
+          }
+
+          // Timer Bar
+          this.drawTimerBar(ctx, theme, leftX, 420 * s, contentW, 18 * s, 9 * s, s);
+
+          // Options Grid
+          const optionH = Math.round(72 * s);
+          const optionGap = Math.round(11 * s);
+          const optionStartY = Math.round(455 * s);
+
+          AppState.shuffledOptions.forEach((opt, idx) => {
+            const optY = optionStartY + idx * (optionH + optionGap);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 16 * s, isRevealed, s);
+          });
+
+          // Fun Fact Banner
+          if (hasFact) {
+            const factY = Math.round(795 * s);
+            const factH = Math.round(120 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 16 * s, q.funFact, Math.round(22 * s), Math.round(30 * s));
+          }
+
+        } else {
+          // ==================== 9:16 VERTICAL SHORTS (1080x1920) ====================
+          const s = W / 1080;
+          const leftX = Math.round(70 * s);
+          const contentW = W - Math.round(140 * s);
+
+          // Header
+          const headerY = Math.round(110 * s);
+          ctx.save();
+          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          const catWidth = ctx.measureText(catText).width + 50 * s;
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
+          this.roundRect(ctx, leftX, headerY, catWidth, 60 * s, 30 * s, true, false);
+          ctx.strokeStyle = theme.accentText;
+          ctx.lineWidth = 3 * s;
+          this.roundRect(ctx, leftX, headerY, catWidth, 60 * s, 30 * s, false, true);
+
+          ctx.fillStyle = theme.accentText;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(catText, leftX + 25 * s, headerY + 30 * s);
+
+          const counterWidth = ctx.measureText(counterText).width + 44 * s;
+          ctx.fillStyle = theme.cardBg;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 60 * s, 30 * s, true, false);
+          ctx.strokeStyle = theme.cardBorder;
+          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 60 * s, 30 * s, false, true);
+
+          ctx.fillStyle = theme.textColor;
+          ctx.textAlign = 'center';
+          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 30 * s);
+          ctx.restore();
+
+          // Question Prompt Text
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${Math.round(52 * s)}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, q.questionText, leftX, 220 * s, contentW, 62 * s);
+          ctx.restore();
+
+          // Flag Photo
+          const img = this.cachedImages.get(q.flagUrl);
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, 405 * s, contentW, 480 * s, 22 * s);
+          }
+
+          // Countdown Timer Bar
+          this.drawTimerBar(ctx, theme, leftX, 940 * s, contentW, 26 * s, 13 * s, s);
+
+          // Options Grid
+          const optionStartY = Math.round(1030 * s);
+          const optionH = Math.round(114 * s);
+          const optionGap = Math.round(22 * s);
+
+          AppState.shuffledOptions.forEach((opt, idx) => {
+            const optY = optionStartY + idx * (optionH + optionGap);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 24 * s, isRevealed, s);
+          });
+
+          // Fun Fact Banner
+          if (hasFact) {
+            const factY = Math.round(1520 * s);
+            const factH = Math.round(180 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 24 * s, q.funFact, Math.round(32 * s), Math.round(44 * s));
           }
         }
 
         // Bake Branding & Copyright Watermark into regular stage frames
         this.drawWatermark(ctx, W, H);
+        this.mirrorToLiveCanvas();
       }
 
       // Draw Full Special Scene on Canvas (Intro / Milestone / Outro)
@@ -5949,6 +5966,7 @@
           ctx.drawImage(customVideoEl, 0, 0, W, H);
           ctx.restore();
           this.drawWatermark(ctx, W, H);
+          this.mirrorToLiveCanvas();
           return;
         }
 
@@ -5971,10 +5989,23 @@
         ctx.fillStyle = radialGlow;
         ctx.fillRect(0, 0, W, H);
 
-        // 2. High-Impact Expansive Center Card
-        const isVert = H > W;
-        const cardW = isVert ? Math.round(W * 0.92) : Math.round(W * 0.88);
-        const cardH = isVert ? Math.round(H * 0.74) : Math.round(H * 0.82);
+        const ar = AppState.aspectRatio || '9:16';
+        const is169 = ar === '16:9' || (W > H * 1.25);
+        const is11 = ar === '1:1' || (Math.abs(W - H) < 15);
+        const is45 = ar === '4:5' || (H > W && H / W < 1.45 && !is11);
+        const is916 = (!is169 && !is11 && !is45);
+
+        let cardW = Math.round(W * 0.92);
+        let cardH = Math.round(H * 0.74);
+        if (is169) {
+          cardW = Math.round(W * 0.88);
+          cardH = Math.round(H * 0.82);
+        } else if (is45) {
+          cardH = Math.round(H * 0.82);
+        } else if (is11) {
+          cardH = Math.round(H * 0.88);
+        }
+
         const cardX = (W - cardW) / 2;
         const cardY = (H - cardH) / 2;
 
@@ -5990,42 +6021,40 @@
         this.roundRect(ctx, cardX, cardY, cardW, cardH, 44, false, true);
 
         if (AppState.state === 'SCENE_INTRO') {
-          // Dynamic Flag Hook Showcase: Random 5 from selected countries (or available count if < 5)
+          // Dynamic Flag Hook Showcase: Random 5 from selected countries
           const introFlags = (AppState.introFlags && AppState.introFlags.length > 0)
             ? AppState.introFlags
             : ((typeof updateIntroFlags === 'function') ? updateIntroFlags() : POPULAR_INTRO_FLAGS);
 
           const flagCount = Math.max(1, introFlags.length);
-          const baseCardW = isVert ? 172 : 230;
-          const baseCardH = isVert ? 115 : 154;
-          const scale = flagCount > 4 ? 0.95 : 1.0;
+          const baseCardW = is169 ? 230 : (is916 ? 172 : (is45 ? 165 : 145));
+          const baseCardH = Math.round(baseCardW * 0.65);
+          const scale = flagCount > 4 ? 0.92 : 1.0;
           const flagCardW = Math.round(baseCardW * scale);
           const flagCardH = Math.round(baseCardH * scale);
-          const flagGap = isVert ? (flagCount > 4 ? 12 : 16) : (flagCount > 4 ? 18 : 24);
+          const flagGap = is169 ? 20 : (is916 ? 14 : 10);
           const totalFlagsW = flagCount * flagCardW + (flagCount - 1) * flagGap;
           const startFlagsX = (W - totalFlagsW) / 2;
-          const flagsY = cardY + (isVert ? 60 : 48);
+          const flagsY = cardY + (is169 ? 48 : (is916 ? 60 : (is45 ? 50 : 38)));
 
           const centerIdx = flagCount >= 3 ? Math.floor(flagCount / 2) : (flagCount === 1 ? 0 : -1);
 
           introFlags.forEach((item, idx) => {
             const isCenter = idx === centerIdx;
-            const fw = isCenter ? flagCardW + 14 : flagCardW;
-            const fh = isCenter ? flagCardH + 10 : flagCardH;
-            const fx = (startFlagsX + idx * (flagCardW + flagGap)) - (isCenter ? 7 : 0);
-            const fy = isCenter ? flagsY - 10 : flagsY;
-            const rad = isVert ? 18 : 22;
+            const fw = isCenter ? flagCardW + 12 : flagCardW;
+            const fh = isCenter ? flagCardH + 8 : flagCardH;
+            const fx = (startFlagsX + idx * (flagCardW + flagGap)) - (isCenter ? 6 : 0);
+            const fy = isCenter ? flagsY - 8 : flagsY;
+            const rad = is11 ? 14 : 18;
 
             ctx.save();
-            // Floating drop shadow
             ctx.shadowColor = isCenter ? 'rgba(245, 158, 11, 0.5)' : 'rgba(0, 0, 0, 0.7)';
-            ctx.shadowOffsetY = isCenter ? 16 : 10;
-            ctx.shadowBlur = isCenter ? 32 : 20;
+            ctx.shadowOffsetY = isCenter ? 14 : 8;
+            ctx.shadowBlur = isCenter ? 28 : 18;
             ctx.fillStyle = '#0f172a';
             this.roundRect(ctx, fx, fy, fw, fh, rad, true, false);
             ctx.restore();
 
-            // Draw Flag Image clipped with rounded corners
             const flagImg = this.cachedImages.get(item.url);
             ctx.save();
             this.roundRect(ctx, fx, fy, fw, fh, rad, false, false);
@@ -6038,7 +6067,7 @@
               }
               ctx.fillStyle = '#1e293b';
               ctx.fillRect(fx, fy, fw, fh);
-              ctx.font = isVert ? 'bold 24px Outfit, sans-serif' : 'bold 28px Outfit, sans-serif';
+              ctx.font = 'bold 22px Outfit, sans-serif';
               ctx.fillStyle = '#94a3b8';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
@@ -6046,14 +6075,13 @@
             }
             ctx.restore();
 
-            // Flag Card Border Outline
             ctx.save();
             if (isCenter) {
-              ctx.strokeStyle = '#f59e0b'; // Gold highlight for center
-              ctx.lineWidth = 4;
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 3.5;
             } else {
               ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.lineWidth = 2.5;
+              ctx.lineWidth = 2;
             }
             this.roundRect(ctx, fx, fy, fw, fh, rad, false, true);
             ctx.restore();
@@ -6062,18 +6090,19 @@
           // 4. Viral Challenge Badge Pill
           const totalQ = getTotalSelectedQuestions();
           const badgeStr = `🔥 99% FAIL • CAN YOU GUESS ALL ${totalQ}?`;
-          ctx.font = isVert ? 'bold 28px Outfit, monospace' : 'bold 30px Outfit, monospace';
+          const bPillFont = (is169 || is916) ? 28 : 22;
+          ctx.font = `bold ${bPillFont}px Outfit, monospace`;
           const bTextW = ctx.measureText(badgeStr).width;
-          const maxPillW = cardW - 60;
-          const bPillW = Math.min(bTextW + 54, maxPillW);
-          const bPillH = isVert ? 52 : 56;
+          const maxPillW = cardW - 50;
+          const bPillW = Math.min(bTextW + 48, maxPillW);
+          const bPillH = (is169 || is916) ? 52 : 44;
           const bPillX = (W - bPillW) / 2;
-          const bPillY = flagsY + flagCardH + (isVert ? 36 : 28);
+          const bPillY = flagsY + flagCardH + ((is169 || is916) ? 32 : 22);
 
           ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, true, false);
           ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = 2;
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, false, true);
 
           ctx.fillStyle = '#fbbf24';
@@ -6081,49 +6110,55 @@
           ctx.textBaseline = 'middle';
           ctx.fillText(badgeStr, W / 2, bPillY + bPillH / 2);
 
-          // 5. Crisp Hero Title
-          ctx.font = isVert ? '900 68px Outfit, sans-serif' : '900 62px Outfit, sans-serif';
+          // 5. Hero Title
+          const titleFont = is169 ? 62 : (is916 ? 66 : (is45 ? 52 : 44));
+          const titleLineH = is169 ? 72 : (is916 ? 76 : (is45 ? 60 : 50));
+          ctx.font = `900 ${titleFont}px Outfit, sans-serif`;
           ctx.fillStyle = textColor;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          const titleY = bPillY + bPillH + (isVert ? 32 : 24);
-          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 120, isVert ? 78 : 72);
+          const titleY = bPillY + bPillH + ((is169 || is916) ? 28 : 18);
+          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 100, titleLineH);
 
-          // 6. Modern Subtle Subtitle
-          ctx.font = isVert ? '600 36px Inter, sans-serif' : '600 32px Inter, sans-serif';
+          // 6. Subtitle
+          const subFont = is169 ? 32 : (is916 ? 34 : (is45 ? 26 : 22));
+          const subLineH = is169 ? 44 : (is916 ? 46 : (is45 ? 36 : 30));
+          ctx.font = `600 ${subFont}px Inter, sans-serif`;
           ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
-          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + (isVert ? 16 : 14), cardW - 140, isVert ? 48 : 44);
+          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + 14, cardW - 120, subLineH);
 
         } else {
           // Checkpoints & Outro (Milestone or Outro Icon & Badge)
-          const iconSize = isVert ? 120 : 130;
+          const iconSize = is169 ? 130 : (is916 ? 120 : (is45 ? 95 : 75));
           const iconX = (W - iconSize) / 2;
-          const iconY = cardY + (isVert ? 60 : 50);
+          const iconY = cardY + (is169 ? 50 : (is916 ? 60 : (is45 ? 44 : 34)));
           ctx.fillStyle = 'rgba(99, 102, 241, 0.16)';
-          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 28, true, false);
+          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 24, true, false);
           ctx.strokeStyle = 'rgba(99, 102, 241, 0.45)';
-          ctx.lineWidth = 3;
-          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 28, false, true);
+          ctx.lineWidth = 2.5;
+          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 24, false, true);
 
           const iconEmoji = AppState.state === 'SCENE_MILESTONE' ? '🔥' : '🎉';
-          ctx.font = isVert ? '64px sans-serif' : '72px sans-serif';
+          const emojiFont = is169 ? 72 : (is916 ? 64 : (is45 ? 50 : 40));
+          ctx.font = `${emojiFont}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(iconEmoji, W / 2, iconY + iconSize / 2 + 3);
+          ctx.fillText(iconEmoji, W / 2, iconY + iconSize / 2 + 2);
 
           // Category / Milestone Pill
           const badgeStr = (textInfo.badge || 'FLAG CHALLENGE').toUpperCase();
-          ctx.font = isVert ? 'bold 28px Outfit, sans-serif' : 'bold 30px Outfit, sans-serif';
+          const bPillFont = (is169 || is916) ? 28 : 22;
+          ctx.font = `bold ${bPillFont}px Outfit, sans-serif`;
           const bTextW = ctx.measureText(badgeStr).width;
-          const bPillW = bTextW + 54;
-          const bPillH = isVert ? 52 : 56;
+          const bPillW = bTextW + 48;
+          const bPillH = (is169 || is916) ? 52 : 42;
           const bPillX = (W - bPillW) / 2;
-          const bPillY = iconY + iconSize + (isVert ? 28 : 22);
+          const bPillY = iconY + iconSize + (is11 ? 16 : 22);
 
           ctx.fillStyle = 'rgba(99, 102, 241, 0.22)';
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, true, false);
           ctx.strokeStyle = accentColor;
-          ctx.lineWidth = 2.5;
+          ctx.lineWidth = 2;
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, false, true);
 
           ctx.fillStyle = accentColor;
@@ -6131,51 +6166,225 @@
           ctx.textBaseline = 'middle';
           ctx.fillText(badgeStr, W / 2, bPillY + bPillH / 2);
 
-          // Crisp Hero Title
-          ctx.font = isVert ? '900 66px Outfit, sans-serif' : '900 60px Outfit, sans-serif';
+          // Hero Title
+          const titleFont = is169 ? 60 : (is916 ? 64 : (is45 ? 50 : 42));
+          const titleLineH = is169 ? 72 : (is916 ? 76 : (is45 ? 58 : 48));
+          ctx.font = `900 ${titleFont}px Outfit, sans-serif`;
           ctx.fillStyle = textColor;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          const titleY = bPillY + bPillH + (isVert ? 30 : 22);
-          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 120, isVert ? 78 : 72);
+          const titleY = bPillY + bPillH + (is11 ? 16 : 24);
+          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 100, titleLineH);
 
-          // Modern Subtle Subtitle
-          ctx.font = isVert ? '600 36px Inter, sans-serif' : '600 32px Inter, sans-serif';
+          // Subtitle
+          const subFont = is169 ? 32 : (is916 ? 34 : (is45 ? 26 : 22));
+          const subLineH = is169 ? 44 : (is916 ? 46 : (is45 ? 36 : 30));
+          ctx.font = `600 ${subFont}px Inter, sans-serif`;
           ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
-          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + (isVert ? 16 : 14), cardW - 140, isVert ? 48 : 44);
+          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + 12, cardW - 120, subLineH);
         }
 
         // 7. Broadcast Accent Line
-        const barW = isVert ? 160 : 180;
-        const barH = 6;
+        const barW = is169 ? 180 : (is916 ? 160 : 130);
+        const barH = 5;
         const barX = (W - barW) / 2;
         const showCopyright = AppState.sceneCopyrightEnabled !== false;
-        const barY = cardY + cardH - (showCopyright ? 105 : 48);
+        const barY = cardY + cardH - (showCopyright ? 95 : 42);
         ctx.fillStyle = accentColor;
-        this.roundRect(ctx, barX, barY, barW, barH, 3, true, false);
+        this.roundRect(ctx, barX, barY, barW, barH, 2.5, true, false);
 
         // 8. Integrated Brand & Copyright Bar inside the Scene Card
         if (showCopyright) {
-          const divY = cardY + cardH - 80;
+          const divY = cardY + cardH - 72;
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(cardX + 50, divY);
-          ctx.lineTo(cardX + cardW - 50, divY);
+          ctx.moveTo(cardX + 40, divY);
+          ctx.lineTo(cardX + cardW - 40, divY);
           ctx.stroke();
 
           const brandSig = `${AppState.watermark?.text || '@CountryQuiz'}  •  Flag Quiz Studio`;
-          ctx.font = isVert ? 'bold 26px Outfit, Inter, sans-serif' : 'bold 24px Outfit, Inter, sans-serif';
+          ctx.font = (is169 || is916) ? 'bold 24px Outfit, Inter, sans-serif' : 'bold 20px Outfit, Inter, sans-serif';
           ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(brandSig, W / 2, divY + 40);
+          ctx.fillText(brandSig, W / 2, divY + 36);
         }
 
         ctx.restore();
 
-        // Watermark badge on canvas
+        // Watermark badge on canvas & mirror
         this.drawWatermark(ctx, W, H);
+        this.mirrorToLiveCanvas();
+      }
+
+      drawFlagPhoto(ctx, img, x, y, maxW, targetH, radius) {
+        const natW = img.naturalWidth || img.width || 640;
+        const natH = img.naturalHeight || img.height || 427;
+        const imgAspect = natW / natH;
+
+        let flagH = targetH;
+        let flagW = Math.round(flagH * imgAspect);
+        if (flagW > maxW) {
+          flagW = maxW;
+          flagH = Math.round(maxW / imgAspect);
+        }
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowOffsetY = Math.round(12 * (targetH / 480));
+        ctx.shadowBlur = Math.round(28 * (targetH / 480));
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.roundRect(ctx, x, y, flagW, flagH, radius, true, false);
+        ctx.restore();
+
+        ctx.save();
+        this.roundRect(ctx, x, y, flagW, flagH, radius, false, false);
+        ctx.clip();
+        ctx.drawImage(img, x, y, flagW, flagH);
+        ctx.restore();
+      }
+
+      drawTimerBar(ctx, theme, x, y, width, height, radius, s) {
+        ctx.save();
+        ctx.font = `bold ${Math.round(22 * s)}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = theme.id === 'minimal_light' ? '#64748b' : '#94a3b8';
+        ctx.textAlign = 'left';
+        ctx.fillText('TIME REMAINING', x, y - 12 * s);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = AppState.timeRemaining <= 2 ? '#f43f5e' : theme.accentText;
+        ctx.fillText(`${AppState.timeRemaining.toFixed(1)}s`, x + width, y - 12 * s);
+
+        ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.9)';
+        this.roundRect(ctx, x, y, width, height, radius, true, false);
+        ctx.strokeStyle = theme.cardBorder;
+        this.roundRect(ctx, x, y, width, height, radius, false, true);
+
+        const fraction = Math.max(0, AppState.timeRemaining / AppState.timerDuration);
+        if (fraction > 0) {
+          const fillGrad = ctx.createLinearGradient(x, 0, x + width, 0);
+          if (AppState.timeRemaining <= 2) {
+            fillGrad.addColorStop(0, theme.timerWarnGrad[0]);
+            fillGrad.addColorStop(1, theme.timerWarnGrad[1]);
+          } else {
+            fillGrad.addColorStop(0, theme.timerGrad[0]);
+            fillGrad.addColorStop(0.5, theme.timerGrad[1] || theme.timerGrad[0]);
+            fillGrad.addColorStop(1, theme.timerGrad[2] || theme.timerGrad[1]);
+          }
+          ctx.fillStyle = fillGrad;
+          this.roundRect(ctx, x, y, width * fraction, height, radius, true, false);
+        }
+        ctx.restore();
+      }
+
+      drawOptionCard(ctx, theme, letters, opt, idx, x, y, width, height, radius, isRevealed, s) {
+        ctx.save();
+        const badgeSize = Math.round(height * 0.58);
+        const badgePad = Math.round((height - badgeSize) / 2);
+        const badgeX = x + badgePad;
+        const badgeY = y + badgePad;
+
+        if (isRevealed && opt.isCorrect) {
+          ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+          ctx.shadowOffsetY = 4 * s;
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = theme.correctBg;
+          this.roundRect(ctx, x, y, width, height, radius, true, false);
+          ctx.strokeStyle = theme.correctBorder;
+          ctx.lineWidth = 3.5 * s;
+          this.roundRect(ctx, x, y, width, height, radius, false, true);
+
+          ctx.fillStyle = theme.correctBadgeBg;
+          this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), true, false);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(34 * s)}px Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(36 * s)}px sans-serif`;
+          ctx.textAlign = 'right';
+          ctx.fillText('✓', x + width - 25 * s, y + height / 2);
+
+        } else if (isRevealed && !opt.isCorrect) {
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(241, 245, 249, 0.6)' : 'rgba(15, 23, 42, 0.4)';
+          this.roundRect(ctx, x, y, width, height, radius, true, false);
+          ctx.strokeStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)';
+          ctx.lineWidth = 1.5 * s;
+          this.roundRect(ctx, x, y, width, height, radius, false, true);
+
+          ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.5)';
+          this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), true, false);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = `bold ${Math.round(32 * s)}px Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+        } else {
+          ctx.fillStyle = theme.cardBg;
+          this.roundRect(ctx, x, y, width, height, radius, true, false);
+          ctx.strokeStyle = theme.cardBorder;
+          ctx.lineWidth = 2 * s;
+          this.roundRect(ctx, x, y, width, height, radius, false, true);
+
+          ctx.fillStyle = theme.badgeBg;
+          this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), true, false);
+          ctx.strokeStyle = theme.badgeBorder;
+          this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), false, true);
+
+          ctx.fillStyle = theme.badgeText;
+          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
+
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `bold ${Math.round(34 * s)}px Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+        }
+        ctx.restore();
+      }
+
+      drawFactBanner(ctx, theme, x, y, width, height, radius, factText, fontPx, lineHPx) {
+        ctx.save();
+        ctx.fillStyle = theme.factBg;
+        this.roundRect(ctx, x, y, width, height, radius, true, false);
+        ctx.strokeStyle = theme.factBorder;
+        ctx.lineWidth = 2.5;
+        this.roundRect(ctx, x, y, width, height, radius, false, true);
+
+        ctx.font = `${Math.round(fontPx * 1.15)}px sans-serif`;
+        ctx.fillText('💡', x + 24, y + Math.round(fontPx * 1.4));
+
+        ctx.font = `500 ${fontPx}px Inter, sans-serif`;
+        ctx.fillStyle = theme.textColor;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        this.wrapText(ctx, factText, x + 68, y + 24, width - 88, lineHPx);
+        ctx.restore();
+      }
+
+      mirrorToLiveCanvas() {
+        const liveCanvas = document.getElementById('exportLiveCanvas');
+        if (liveCanvas && (AppState.isExporting || AppState.isRecording)) {
+          const liveCtx = liveCanvas.getContext('2d');
+          if (liveCtx) {
+            liveCtx.drawImage(this.canvas, 0, 0, liveCanvas.width, liveCanvas.height);
+          }
+        }
       }
 
       roundRect(ctx, x, y, width, height, radius, fill, stroke) {
@@ -6222,32 +6431,27 @@
         if (!wm || !wm.enabled) return;
 
         const text = wm.text || '@CountryQuiz';
-        const isVertical = H > W;
+        const ar = AppState.aspectRatio || '9:16';
+        const isCompact = (ar === '1:1' || ar === '4:5' || H <= 1350);
 
         ctx.save();
 
-        // Calculate scaling based on canvas resolution (1080x1920 vertical or 1920x1080 landscape)
-        let fontSize = 28;
-        let logoSize = 44;
-        let paddingX = 22;
-        let paddingY = 12;
-        let gap = 12;
+        let fontSize = isCompact ? 22 : 28;
+        let logoSize = isCompact ? 36 : 44;
+        let paddingX = isCompact ? 16 : 22;
+        let paddingY = isCompact ? 8 : 12;
+        let gap = isCompact ? 10 : 12;
 
         if (wm.logoSize === 'small') {
-          fontSize = isVertical ? 24 : 20;
-          logoSize = isVertical ? 40 : 34;
-          paddingX = isVertical ? 20 : 16;
-          paddingY = isVertical ? 10 : 8;
-        } else if (wm.logoSize === 'medium') {
-          fontSize = isVertical ? 30 : 25;
-          logoSize = isVertical ? 50 : 42;
-          paddingX = isVertical ? 24 : 20;
-          paddingY = isVertical ? 12 : 10;
+          fontSize = Math.round(fontSize * 0.85);
+          logoSize = Math.round(logoSize * 0.85);
+          paddingX = Math.round(paddingX * 0.85);
+          paddingY = Math.round(paddingY * 0.85);
         } else if (wm.logoSize === 'large') {
-          fontSize = isVertical ? 38 : 32;
-          logoSize = isVertical ? 62 : 52;
-          paddingX = isVertical ? 28 : 24;
-          paddingY = isVertical ? 15 : 12;
+          fontSize = Math.round(fontSize * 1.25);
+          logoSize = Math.round(logoSize * 1.25);
+          paddingX = Math.round(paddingX * 1.25);
+          paddingY = Math.round(paddingY * 1.25);
         }
 
         ctx.font = `bold ${fontSize}px Outfit, Inter, sans-serif`;
@@ -6257,20 +6461,15 @@
         const badgeW = paddingX * 2 + logoSize + gap + textW;
         const badgeH = Math.max(logoSize, fontSize) + paddingY * 2;
 
-        // Position coordinates
-        let badgeX = W - badgeW - 40;
-        let badgeY = H - badgeH - 35;
+        let badgeX = W - badgeW - 35;
+        let badgeY = H - badgeH - 30;
 
         if (wm.position === 'top-right') {
-          badgeX = W - badgeW - 40;
-          badgeY = 40;
+          badgeX = W - badgeW - 35;
+          badgeY = 35;
         } else if (wm.position === 'bottom-left') {
-          badgeX = 40;
-          badgeY = H - badgeH - 35;
-        } else {
-          // bottom-right
-          badgeX = W - badgeW - 40;
-          badgeY = H - badgeH - 35;
+          badgeX = 35;
+          badgeY = H - badgeH - 30;
         }
 
         // Draw pill background
@@ -6278,7 +6477,7 @@
         ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
         ctx.shadowOffsetY = 4;
         ctx.shadowBlur = 12;
-        ctx.fillStyle = 'rgba(3, 7, 18, 0.88)'; // Dark slate-950 backdrop
+        ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
         this.roundRect(ctx, badgeX, badgeY, badgeW, badgeH, pillRadius, true, false);
 
         ctx.shadowColor = 'transparent';
@@ -6290,7 +6489,6 @@
         const logoX = badgeX + paddingX;
         const logoY = badgeY + (badgeH - logoSize) / 2;
 
-        // Draw Logo or Fallback Icon
         ctx.save();
         if (wm.logoShape === 'circle') {
           ctx.beginPath();
@@ -6298,10 +6496,9 @@
           ctx.closePath();
           ctx.clip();
         } else if (wm.logoShape === 'rounded') {
-          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 10, false, false);
+          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8, false, false);
           ctx.clip();
         } else {
-          // square
           ctx.beginPath();
           ctx.rect(logoX, logoY, logoSize, logoSize);
           ctx.closePath();
@@ -6311,7 +6508,6 @@
         if (this.watermarkImage && this.watermarkImage.complete && this.watermarkImage.naturalWidth > 0) {
           ctx.drawImage(this.watermarkImage, logoX, logoY, logoSize, logoSize);
         } else {
-          // Draw fallback icon container & emoji
           ctx.fillStyle = '#4f46e5';
           ctx.fillRect(logoX, logoY, logoSize, logoSize);
           ctx.font = `${Math.floor(logoSize * 0.65)}px sans-serif`;
@@ -6321,7 +6517,6 @@
         }
         ctx.restore();
 
-        // Logo border outline
         ctx.save();
         ctx.strokeStyle = '#f59e0b';
         ctx.lineWidth = 2;
@@ -6330,13 +6525,12 @@
           ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
           ctx.stroke();
         } else if (wm.logoShape === 'rounded') {
-          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 10, false, true);
+          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8, false, true);
         } else {
           ctx.strokeRect(logoX, logoY, logoSize, logoSize);
         }
         ctx.restore();
 
-        // Draw Watermark / Copyright Text
         ctx.font = `bold ${fontSize}px Outfit, Inter, sans-serif`;
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
@@ -6353,17 +6547,34 @@
 
     /**
      * ============================================================
-     * 8. AUTOMATED BATCH RECORDING WORKFLOW
+     * 8. FLAWLESS VIDEO EXPORT & DOWNLOAD ENGINE
      * ============================================================
      */
-    async function startBatchRecording() {
-      if (AppState.isRecording) return;
+    async function startVideoExport() {
+      if (AppState.isExporting) return;
+      AppState.isExporting = true;
+      AppState.isRecording = true;
+
+      // Stop interactive preview playback if running
+      stopAndResetQuiz();
+
+      // AudioContext initialization & safety resume
       audioSynth.init();
+      if (audioSynth.ctx && audioSynth.ctx.state === 'suspended') {
+        try {
+          await Promise.race([
+            audioSynth.ctx.resume(),
+            new Promise(r => setTimeout(r, 250))
+          ]);
+        } catch (e) {
+          console.warn('AudioContext resume warning:', e);
+        }
+      }
 
       // Check server health and local speech proxy
       await checkServerHealth();
 
-      // Freshly reshuffle questions before recording starts if random order is enabled!
+      // Freshly reshuffle questions before export if random order is enabled
       if (AppState.randomOrder) {
         reshuffleQuestions(true);
       }
@@ -6373,14 +6584,14 @@
       const ttsToggle = document.getElementById('toggle-tts');
       if (ttsToggle) ttsToggle.checked = true;
 
-      // If user had a browser-native voice selected, auto-select studio direct audio voice
+      // Ensure natural direct audio voice
       if (!ttsEngine.selectedVoice || ttsEngine.selectedVoice.startsWith('native:') || ttsEngine.selectedVoice === 'native') {
         ttsEngine.selectedVoice = 'google-voice';
         const vSelect = document.getElementById('tts-voice-select');
         if (vSelect) vSelect.value = 'google-voice';
       }
 
-      // Request live microphone if enabled and mix it directly into WebAudio
+      // Optional mic mixing
       const recordVoiceEnabled = document.getElementById('toggle-record-voice')?.checked;
       let micStream = null;
       if (recordVoiceEnabled && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -6393,59 +6604,146 @@
         }
       }
 
-      AppState.isRecording = true;
-      document.getElementById('recording-live-indicator').classList.remove('hidden');
-      document.getElementById('recording-live-indicator').classList.add('flex');
-      document.getElementById('btn-start-record').classList.add('hidden');
-      document.getElementById('btn-stop-record').classList.remove('hidden');
+      // Read current export settings
+      const formatSelect = document.getElementById('select-export-format');
+      if (formatSelect) AppState.exportFormat = formatSelect.value;
+      const resSelect = document.getElementById('select-export-resolution');
+      if (resSelect) AppState.resolutionPreset = resSelect.value;
+      const fpsSelect = document.getElementById('select-export-fps');
+      if (fpsSelect) AppState.fps = parseInt(fpsSelect.value) || 30;
+      const bitrateSelect = document.getElementById('select-export-bitrate');
+      if (bitrateSelect) AppState.bitrateMbps = parseInt(bitrateSelect.value) || 16;
 
-      // Auto-collapse drawer for clean, unobstructed stage view
+      const dims = getDimensionsForExport(AppState.aspectRatio, AppState.resolutionPreset);
+      const exportW = dims.w;
+      const exportH = dims.h;
+      canvasRecorderEngine.canvas.width = exportW;
+      canvasRecorderEngine.canvas.height = exportH;
+
+      // Update in-modal live canvas to match aspect ratio
+      const liveCanvas = document.getElementById('exportLiveCanvas');
+      if (liveCanvas) {
+        liveCanvas.width = exportW;
+        liveCanvas.height = exportH;
+        let cssRatio = '9 / 16';
+        if (AppState.aspectRatio === '16:9') cssRatio = '16 / 9';
+        else if (AppState.aspectRatio === '1:1') cssRatio = '1 / 1';
+        else if (AppState.aspectRatio === '4:5') cssRatio = '4 / 5';
+        liveCanvas.style.aspectRatio = cssRatio;
+      }
+
+      // Reset modal UI elements
+      const modal = document.getElementById('exportModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const liveContainer = document.getElementById('exportLiveCanvasContainer');
+      if (liveContainer) liveContainer.style.display = 'flex';
+
+      const playbackContainer = document.getElementById('exportPlaybackContainer');
+      if (playbackContainer) {
+        playbackContainer.classList.add('hidden');
+        playbackContainer.classList.remove('flex');
+        playbackContainer.style.display = 'none';
+      }
+
+      const actions = document.getElementById('exportModalActions');
+      if (actions) {
+        actions.classList.add('hidden');
+        actions.classList.remove('flex');
+        actions.style.display = 'none';
+      }
+
+      const btnCancel = document.getElementById('btnCancelExport');
+      if (btnCancel) {
+        btnCancel.classList.remove('hidden');
+        btnCancel.style.display = 'block';
+      }
+
+      document.getElementById('exportModalTitle').textContent = 'Rendering & Exporting Video...';
+      document.getElementById('exportModalDesc').textContent = 'Synthesizing voiceover, compositing live graphics & encoding universal MP4...';
+
+      const bar = document.getElementById('exportProgressBar');
+      const pct = document.getElementById('exportProgressPct');
+      const framesLabel = document.getElementById('exportProgressFrames');
+      const etaLabel = document.getElementById('exportEta');
+      if (bar) bar.style.width = '0%';
+      if (pct) pct.textContent = '0%';
+      if (framesLabel) framesLabel.textContent = `Question 1 / ${getTotalSelectedQuestions()}`;
+      if (etaLabel) etaLabel.textContent = 'Starting export...';
+
+      // Header live indicator
+      const liveIndicator = document.getElementById('export-live-indicator');
+      if (liveIndicator) {
+        liveIndicator.classList.remove('hidden');
+        liveIndicator.classList.add('flex');
+      }
+
+      // Auto-collapse drawer for clean stage view
       toggleControlDeck(false);
 
-      canvasRecorderEngine.recordingStartTime = Date.now();
-      canvasRecorderEngine.recordingTimerInterval = setInterval(() => {
-        const elapsedSec = Math.floor((Date.now() - canvasRecorderEngine.recordingStartTime) / 1000);
-        const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
-        const secs = String(elapsedSec % 60).padStart(2, '0');
-        document.getElementById('recording-timer').textContent = `${mins}:${secs}`;
-      }, 500);
+      // Pre-draw initial frame
+      canvasRecorderEngine.drawFrame();
 
+      // Start canvas rendering loop
       canvasRecorderEngine.startRenderingLoop();
 
-      const fps = parseInt(document.getElementById('record-fps')?.value) || 30;
-      const canvasStream = canvasRecorderEngine.canvas.captureStream(fps);
+      // Streams & Tracks setup
+      const canvasStream = canvasRecorderEngine.canvas.captureStream(AppState.fps);
       const synthAudioStream = audioSynth.getAudioStream();
-
-      // Mixed single audio track contains: synthesized voiceover + SFX + keepalive carrier + host mic
       const combinedTracks = [
         ...canvasStream.getVideoTracks(),
         ...synthAudioStream.getAudioTracks()
       ];
-
       const combinedStream = new MediaStream(combinedTracks);
+
+      // Codec & MIME determination: Universal MP4 (H.264 / AAC) default
+      let mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+      let fileExt = 'mp4';
+
+      if (AppState.exportFormat === 'webm') {
+        mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+          ? 'video/webm;codecs=vp9,opus'
+          : (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+            ? 'video/webm;codecs=vp8,opus'
+            : (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm'));
+        fileExt = 'webm';
+      } else {
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
+          mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+          fileExt = 'mp4';
+        } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+          mimeType = 'video/mp4;codecs=avc1';
+          fileExt = 'mp4';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
+          fileExt = 'mp4';
+        } else {
+          // WebM fallback if browser has no MP4 MediaRecorder encoder
+          mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : 'video/webm;codecs=vp8,opus';
+          fileExt = 'webm';
+        }
+      }
+
       canvasRecorderEngine.recordedChunks = [];
-
-      // Determine optimal bitrate based on selected quality preset
-      const qualityPreset = document.getElementById('record-quality-preset')?.value || 'smooth';
-      let videoBitrate = 2800000; // 2.8 Mbps default for smooth recording on standard PCs
-      if (qualityPreset === 'studio') videoBitrate = 4500000;
-      else if (qualityPreset === 'ultra') videoBitrate = 7200000;
-
-      // Select audio-safe MIME type with opus
-      let mimeType = 'video/webm; codecs=vp9,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm; codecs=vp8,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm; codecs=h264,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm; codecs=vp8';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+      canvasRecorderEngine.exportStartTime = performance.now();
+      const videoBitrate = (AppState.bitrateMbps || 16) * 1000000;
 
       try {
         canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream, {
-          mimeType,
+          mimeType: mimeType,
           videoBitsPerSecond: videoBitrate,
           audioBitsPerSecond: 128000
         });
       } catch (e) {
-        canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream);
+        console.warn('Fallback to standard MediaRecorder options:', e);
+        try {
+          canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType });
+        } catch (e2) {
+          canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream);
+        }
       }
 
       canvasRecorderEngine.mediaRecorder.ondataavailable = (event) => {
@@ -6455,12 +6753,47 @@
       };
 
       canvasRecorderEngine.mediaRecorder.onstop = () => {
-        finishVideoExport();
+        finishVideoExport(fileExt);
       };
 
-      canvasRecorderEngine.mediaRecorder.start(250);
+      canvasRecorderEngine.mediaRecorder.start(200);
 
-      // Check Intro Scene
+      // Estimate total duration for smooth progress bar and ETA
+      const totalQ = getTotalSelectedQuestions();
+      const timePerQ = AppState.timerDuration + 3.2;
+      const introTime = document.getElementById('toggle-scene-intro')?.checked ? 4.0 : 0;
+      const outroTime = document.getElementById('toggle-scene-outro')?.checked ? 4.0 : 0;
+      const estTotalSec = Math.max(5, introTime + (totalQ * timePerQ) + outroTime);
+      canvasRecorderEngine.estimatedTotalSeconds = estTotalSec;
+
+      clearInterval(canvasRecorderEngine.exportProgressInterval);
+      canvasRecorderEngine.exportProgressInterval = setInterval(() => {
+        if (!AppState.isExporting) {
+          clearInterval(canvasRecorderEngine.exportProgressInterval);
+          return;
+        }
+        const elapsedSec = (performance.now() - canvasRecorderEngine.exportStartTime) / 1000;
+        const progress = Math.min(0.97, elapsedSec / estTotalSec);
+        const pctVal = Math.round(progress * 100);
+
+        if (bar) bar.style.width = `${pctVal}%`;
+        if (pct) pct.textContent = `${pctVal}%`;
+
+        const curQ = Math.min(totalQ, AppState.currentIndex + 1);
+        if (framesLabel) {
+          framesLabel.textContent = `Q ${curQ} / ${totalQ} • ${elapsedSec.toFixed(1)}s / ${estTotalSec.toFixed(0)}s`;
+        }
+
+        const statusTimer = document.getElementById('export-status-timer');
+        if (statusTimer) statusTimer.textContent = `${pctVal}%`;
+
+        if (etaLabel) {
+          const remainingSec = Math.max(0, Math.round(estTotalSec - elapsedSec));
+          etaLabel.textContent = `ETA: ~${remainingSec}s`;
+        }
+      }, 250);
+
+      // Begin quiz sequence: intro scene or first question
       const introEnabled = document.getElementById('toggle-scene-intro')?.checked;
       if (introEnabled) {
         showSpecialScene('intro', 0, null, () => {
@@ -6471,24 +6804,40 @@
       }
     }
 
-    function finishBatchRecordingSequence() {
+    function finishVideoExportSequence() {
       // Check Outro Scene
       const outroEnabled = document.getElementById('toggle-scene-outro')?.checked;
       if (outroEnabled) {
-        showSpecialScene('outro', AppState.currentIndex, null, () => {
-          stopBatchRecording();
+        showSpecialScene('outro', getTotalSelectedQuestions(), null, () => {
+          stopVideoExportRecording();
         });
       } else {
-        stopBatchRecording();
+        stopVideoExportRecording();
       }
     }
 
-    function stopBatchRecording() {
-      if (!AppState.isRecording) return;
-      AppState.isRecording = false;
+    function stopVideoExportRecording() {
+      if (!AppState.isExporting && !AppState.isRecording) return;
+
+      clearInterval(canvasRecorderEngine.exportProgressInterval);
+
+      const bar = document.getElementById('exportProgressBar');
+      const pct = document.getElementById('exportProgressPct');
+      const etaLabel = document.getElementById('exportEta');
+      if (bar) bar.style.width = '100%';
+      if (pct) pct.textContent = '100%';
+      if (etaLabel) etaLabel.textContent = 'Finalizing file...';
+      document.getElementById('exportModalDesc').textContent = 'Encoding complete! Packaging clean file stream...';
 
       if (canvasRecorderEngine.mediaRecorder && canvasRecorderEngine.mediaRecorder.state !== 'inactive') {
-        canvasRecorderEngine.mediaRecorder.stop();
+        try {
+          canvasRecorderEngine.mediaRecorder.requestData();
+        } catch (e) {}
+        setTimeout(() => {
+          if (canvasRecorderEngine.mediaRecorder && canvasRecorderEngine.mediaRecorder.state !== 'inactive') {
+            canvasRecorderEngine.mediaRecorder.stop();
+          }
+        }, 150);
       }
 
       if (canvasRecorderEngine.micStream) {
@@ -6496,52 +6845,174 @@
         canvasRecorderEngine.micStream = null;
       }
 
-      clearInterval(canvasRecorderEngine.recordingTimerInterval);
-      document.getElementById('recording-live-indicator').classList.add('hidden');
-      document.getElementById('recording-live-indicator').classList.remove('flex');
-      document.getElementById('btn-stop-record').classList.add('hidden');
-      document.getElementById('btn-start-record').classList.remove('hidden');
+      const liveIndicator = document.getElementById('export-live-indicator');
+      if (liveIndicator) {
+        liveIndicator.classList.add('hidden');
+        liveIndicator.classList.remove('flex');
+      }
+
+      canvasRecorderEngine.stopRenderingLoop();
+    }
+
+    function cancelVideoExport() {
+      AppState.isExporting = false;
+      AppState.isRecording = false;
+
+      clearInterval(canvasRecorderEngine.exportProgressInterval);
+
+      if (canvasRecorderEngine.mediaRecorder && canvasRecorderEngine.mediaRecorder.state !== 'inactive') {
+        try {
+          canvasRecorderEngine.mediaRecorder.stop();
+        } catch (e) {}
+      }
+
+      if (canvasRecorderEngine.micStream) {
+        canvasRecorderEngine.micStream.getTracks().forEach(t => t.stop());
+        canvasRecorderEngine.micStream = null;
+      }
+
+      ttsEngine.cancel();
+
+      const videoPlayer = document.getElementById('exportVideoPlayer');
+      if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.src = '';
+      }
+
+      const liveIndicator = document.getElementById('export-live-indicator');
+      if (liveIndicator) {
+        liveIndicator.classList.add('hidden');
+        liveIndicator.classList.remove('flex');
+      }
+
+      const modal = document.getElementById('exportModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
 
       canvasRecorderEngine.stopRenderingLoop();
       stopAndResetQuiz();
     }
 
-    function finishVideoExport() {
-      const blob = new Blob(canvasRecorderEngine.recordedChunks, { type: 'video/webm' });
-      const videoUrl = URL.createObjectURL(blob);
+    function finishVideoExport(fileExt = 'mp4') {
+      AppState.isExporting = false;
+      AppState.isRecording = false;
 
-      const autoDownloadLink = document.createElement('a');
-      autoDownloadLink.href = videoUrl;
-      autoDownloadLink.download = `quizforge_${AppState.aspectRatio.replace(':', 'x')}_${getExportFilenameScope()}_${Date.now()}.webm`;
-      document.body.appendChild(autoDownloadLink);
-      autoDownloadLink.click();
-      document.body.removeChild(autoDownloadLink);
+      const mimeType = canvasRecorderEngine.mediaRecorder?.mimeType || (fileExt === 'mp4' ? 'video/mp4' : 'video/webm');
+      const rawBlob = new Blob(canvasRecorderEngine.recordedChunks, { type: mimeType });
 
-      const modal = document.getElementById('video-export-modal');
-      const previewPlayer = document.getElementById('exported-video-preview');
-      const downloadBtn = document.getElementById('btn-download-video');
-      const resLabel = document.getElementById('export-res-label');
-      const sizeLabel = document.getElementById('export-size-label');
+      if (rawBlob.size === 0) {
+        alert('Export failed: Empty recording chunk stream. Please try again.');
+        cancelVideoExport();
+        return;
+      }
 
-      previewPlayer.src = videoUrl;
-      downloadBtn.href = videoUrl;
-      downloadBtn.download = autoDownloadLink.download;
+      const totalDurationMs = Math.max(1000, performance.now() - canvasRecorderEngine.exportStartTime);
 
-      resLabel.textContent = AppState.aspectRatio === '9:16' ? '1080 × 1920 (9:16)' : '1920 × 1080 (16:9)';
-      const sizeMb = (blob.size / (1024 * 1024)).toFixed(2);
-      sizeLabel.textContent = `${sizeMb} MB`;
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      // If WebM, apply EBML Duration Fixer so playback seek bars work smoothly without freezing
+      if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
+        window.ysFixWebmDuration(rawBlob, totalDurationMs, (fixedBlob) => {
+          finalizeExportDownload(fixedBlob, fileExt);
+        });
+      } else {
+        finalizeExportDownload(rawBlob, fileExt);
+      }
     }
 
-    function closeVideoModal() {
-      const modal = document.getElementById('video-export-modal');
-      const previewPlayer = document.getElementById('exported-video-preview');
-      previewPlayer.pause();
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+    function finalizeExportDownload(blob, fileExt = 'mp4') {
+      const url = URL.createObjectURL(blob);
+      const count = getTotalSelectedQuestions();
+      const arName = AppState.aspectRatio.replace(':', 'x');
+      const resName = AppState.resolutionPreset || '1080p';
+      const filename = `world-flags-quiz_${count}q_${arName}_${resName}_${Date.now()}.${fileExt}`;
+
+      const downloadBtn = document.getElementById('btnDownloadExportedVideo');
+      if (downloadBtn) {
+        downloadBtn.href = url;
+        downloadBtn.download = filename;
+        const mbSize = (blob.size / (1024 * 1024)).toFixed(1);
+        downloadBtn.innerHTML = `<span>⬇️ Download Video (.${fileExt.toUpperCase()} - ${mbSize} MB)</span>`;
+      }
+
+      // Hide live canvas container, show in-modal video player for instant verification
+      const liveContainer = document.getElementById('exportLiveCanvasContainer');
+      if (liveContainer) liveContainer.style.display = 'none';
+
+      const playbackContainer = document.getElementById('exportPlaybackContainer');
+      if (playbackContainer) {
+        playbackContainer.classList.remove('hidden');
+        playbackContainer.classList.add('flex');
+        playbackContainer.style.display = 'flex';
+      }
+
+      const videoPlayer = document.getElementById('exportVideoPlayer');
+      if (videoPlayer) {
+        videoPlayer.src = url;
+        videoPlayer.currentTime = 0;
+        videoPlayer.play().catch(() => {});
+      }
+
+      document.getElementById('exportModalTitle').textContent = '🎉 Video Export Complete & Ready!';
+      document.getElementById('exportModalDesc').textContent = `Your high-definition ${fileExt.toUpperCase()} quiz video is ready. Plays below and downloaded automatically.`;
+
+      const actions = document.getElementById('exportModalActions');
+      if (actions) {
+        actions.classList.remove('hidden');
+        actions.classList.add('flex');
+        actions.style.display = 'flex';
+      }
+
+      const btnCancel = document.getElementById('btnCancelExport');
+      if (btnCancel) {
+        btnCancel.classList.add('hidden');
+        btnCancel.style.display = 'none';
+      }
+
+      // Automatically trigger browser download to user's device
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => a.remove(), 120);
+      } catch (e) {
+        console.warn('Auto download error:', e);
+      }
+
+      // Asynchronously save to server for validation and disk backup
+      try {
+        fetch(`/api/save-file?filename=${encodeURIComponent(filename)}`, {
+          method: 'POST',
+          body: blob
+        }).catch(() => {});
+      } catch (e) {}
+
+      // Burst celebratory confetti
+      if (confettiEngine && typeof confettiEngine.burst === 'function') {
+        confettiEngine.burst();
+      }
     }
+
+    function closeExportModal() {
+      const videoPlayer = document.getElementById('exportVideoPlayer');
+      if (videoPlayer) {
+        videoPlayer.pause();
+      }
+      const modal = document.getElementById('exportModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // Backward compatibility aliases
+    window.startBatchRecording = startVideoExport;
+    window.stopBatchRecording = cancelVideoExport;
+    window.finishBatchRecordingSequence = finishVideoExportSequence;
+    window.stopVideoExportRecording = stopVideoExportRecording;
+    window.closeVideoModal = closeExportModal;
 
     /**
      * ============================================================
@@ -6718,6 +7189,7 @@
       const autoSaveChangeIds = [
         'toggle-random-order',
         'toggle-scene-intro', 'toggle-scene-outro',
+        'select-export-format', 'select-export-resolution', 'select-export-fps', 'select-export-bitrate',
         'record-quality-preset', 'record-fps', 'toggle-record-voice'
       ];
       autoSaveChangeIds.forEach(id => {

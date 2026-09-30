@@ -1,6 +1,52 @@
-$port = 5500
+param(
+    [int]$port = 5500
+)
+
 $root = $PSScriptRoot
 if (-not $root) { $root = "d:\VideoTools\world-flag-guess-studio" }
+
+# 1. Check if our studio server is already running and healthy on this port
+try {
+    $ping = Invoke-RestMethod -Uri "http://localhost:$port/api/tts?ping=1" -TimeoutSec 2 -ErrorAction Stop
+    if ($ping.server -eq "world-flag-guess-studio") {
+        Write-Host "==========================================================" -ForegroundColor Green
+        Write-Host "   World Flag Guess Studio is ALREADY running!            " -ForegroundColor Green
+        Write-Host "   URL: http://localhost:$port/index.html                 " -ForegroundColor Yellow
+        Write-Host "   Opening your web browser now...                        " -ForegroundColor Cyan
+        Write-Host "==========================================================" -ForegroundColor Green
+        Start-Process "http://localhost:$port/index.html"
+        Start-Sleep -Seconds 2
+        exit 0
+    }
+} catch {
+    # Server not responding or not running yet, proceed with startup
+}
+
+# 2. Function to check if a port is in use
+function Test-PortInUse([int]$p) {
+    $conns = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue
+    return ($conns | Where-Object { $_.State -eq "Listen" }) -ne $null
+}
+
+# 3. If port is in use by an orphaned PowerShell instance, free it or find next available port
+if (Test-PortInUse $port) {
+    Write-Host "Port $port has an existing process. Checking ownership..." -ForegroundColor Yellow
+    $tcp = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Where-Object { $_.State -eq "Listen" } | Select-Object -First 1
+    if ($tcp -and $tcp.OwningProcess -and $tcp.OwningProcess -ne $PID) {
+        $proc = Get-Process -Id $tcp.OwningProcess -ErrorAction SilentlyContinue
+        if ($proc -and $proc.ProcessName -like "*powershell*") {
+            Write-Host "Closing stale background server process ($($proc.Id))..." -ForegroundColor Yellow
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Milliseconds 600
+        }
+    }
+}
+
+# Auto-increment port if 5500 is still busy by another application
+while (Test-PortInUse $port) {
+    Write-Host "Port $port is currently in use, trying port $($port + 1)..." -ForegroundColor Yellow
+    $port++
+}
 
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
@@ -12,9 +58,11 @@ try {
     Write-Host "   URL: http://localhost:$port/index.html                 " -ForegroundColor Yellow
     Write-Host "   Root: $root                                            " -ForegroundColor Gray
     Write-Host "==========================================================" -ForegroundColor Cyan
-    Write-Host "Press Ctrl+C in this console to stop the server." -ForegroundColor Gray
+    Write-Host "Press Ctrl+C in this console to stop the server.`n" -ForegroundColor Gray
 
+    # Launch browser automatically
     Start-Process "http://localhost:$port/index.html"
+
 
     while ($listener.IsListening) {
         try {
@@ -36,6 +84,23 @@ try {
             }
 
             $localPath = $request.Url.LocalPath
+
+            # Handle File Saving Endpoint (/api/save-file) for testing and disk output
+            if ($localPath -eq "/api/save-file") {
+                $filename = $request.QueryString["filename"]
+                if (-not $filename) { $filename = "saved_file_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
+                $outPath = Join-Path $root $filename
+                $ms = New-Object System.IO.MemoryStream
+                $request.InputStream.CopyTo($ms)
+                [System.IO.File]::WriteAllBytes($outPath, $ms.ToArray())
+                $ms.Dispose()
+                $response.ContentType = "application/json"
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"file":"' + $filename + '"}')
+                $response.ContentLength64 = $resBytes.Length
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                $response.Close()
+                continue
+            }
 
             # Handle TTS Audio Generation Endpoint (/api/tts)
             if ($localPath -eq "/api/tts") {
@@ -157,6 +222,8 @@ try {
                     ".png"  { "image/png" }
                     ".jpg"  { "image/jpeg" }
                     ".webp" { "image/webp" }
+                    ".svg"  { "image/svg+xml" }
+                    ".mp4"  { "video/mp4" }
                     ".webm" { "video/webm" }
                     ".mp3"  { "audio/mp3" }
                     ".wav"  { "audio/wav" }
@@ -183,5 +250,8 @@ try {
         }
     }
 } finally {
-    $listener.Stop()
+    if ($listener -ne $null) {
+        try { if ($listener.IsListening) { $listener.Stop() } } catch {}
+        try { $listener.Close() } catch {}
+    }
 }

@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Animal Dance Studio - Hidden Animal Video Maker</title>
+  <title>Animal Dance Studio - Viral Hidden Animal Video Maker</title>
   
-  <!-- Modern Google Fonts -->
+  <!-- 15+ Modern Google Fonts for Viral Titles -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700;800&family=Luckiest+Guy&family=Montserrat:wght@700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Black+Ops+One&family=Cinzel:wght@700;900&family=Creepster&family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Luckiest+Guy&family=Montserrat:wght@700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Permanent+Marker&family=Press+Start+2P&family=Righteous&family=Russo+One&family=Titan+One&display=swap" rel="stylesheet">
   
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,11 +25,27 @@
       <div>
         <h1 class="brand-title">Animal Dance Studio</h1>
       </div>
-      <span class="brand-badge">Viral Shorts Engine</span>
+      <span class="brand-badge">Viral Shorts Pro</span>
     </div>
 
-    <!-- Aspect Ratio Switcher -->
+    <!-- Header Center: Ratio Switcher & Undo/Redo & Demos -->
     <div class="header-center-tools">
+      <!-- 6 Demo Templates Button -->
+      <button id="btnOpenDemosModal" class="btn btn-secondary btn-sm" style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4); color: #fbbf24;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 6 Ready Demos
+      </button>
+
+      <!-- History Undo / Redo -->
+      <div style="display:flex; gap:2px; background:var(--bg-surface); padding:2px; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <button id="btnUndo" class="btn btn-secondary btn-sm" title="Undo (Ctrl+Z)" style="padding:0.3rem 0.5rem;">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <button id="btnRedo" class="btn btn-secondary btn-sm" title="Redo (Ctrl+Y)" style="padding:0.3rem 0.5rem;">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <!-- Ratio Selector -->
       <div class="ratio-selector-bar">
         <button class="ratio-pill-btn active" data-ratio="9:16" title="9:16 Shorts / Reels / TikTok (1080x1920)">
           <i class="fa-solid fa-mobile-screen"></i> 9:16 Shorts
@@ -46,8 +62,12 @@
       </div>
     </div>
 
-    <!-- Header Actions -->
+    <!-- Header Right Actions -->
     <div class="header-right-actions">
+      <button id="btnResetProject" class="btn btn-secondary btn-sm" title="Reset All Settings to Factory Default">
+        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+      </button>
+
       <button id="btnToggleMode" class="btn btn-secondary btn-sm" title="Toggle between Editor Gizmos and Clean Audience View">
         <i class="fa-solid fa-eye"></i> <span id="modeLabel">Creator View</span>
       </button>
@@ -97,38 +117,92 @@
         <!-- ================= TAB 1: ANIMALS ================= -->
         <div id="tab-animals" class="tab-pane active">
           
-          <!-- Character Type Selection -->
+          <!-- Character Category Selector -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Dancing Character</span>
+              <span>Transparent Character Library</span>
               <span class="badge" id="charBadge">Shuba Duck</span>
             </div>
+
+            <!-- Sub Category Tabs: Ducks, Cats, Dogs, Other Animals, Uploads -->
+            <div class="char-category-bar">
+              <button class="char-cat-btn active" data-cat="ducks">🦆 Ducks</button>
+              <button class="char-cat-btn" data-cat="dogs">🐶 Dogs</button>
+              <button class="char-cat-btn" data-cat="cats">🐱 Cats</button>
+              <button class="char-cat-btn" data-cat="others">🐾 Others</button>
+              <button class="char-cat-btn" data-cat="custom">📁 Uploads</button>
+            </div>
             
-            <div class="char-grid">
+            <!-- Category: Ducks -->
+            <div class="char-grid" id="charGridDucks">
               <div class="char-card active" data-char="shuba_duck">
                 <img src="assets/animals/shuba_duck.gif" alt="Shuba Duck">
-                <span>Classic Duck</span>
+                <span>Shuba Duck</span>
               </div>
-              <div class="char-card" data-char="dancing_cat">
-                <img src="assets/animals/dancing_cat.gif" alt="Dancing Cat">
-                <span>Dancing Cat</span>
+              <div class="char-card" data-char="duck_dance">
+                <img src="assets/animals/duck_dance.gif" alt="Dancing Duck">
+                <span>Dancing Duck</span>
               </div>
             </div>
 
-            <!-- Upload Custom GIF -->
-            <div style="margin-top: 0.25rem;">
+            <!-- Category: Dogs -->
+            <div class="char-grid" id="charGridDogs" style="display:none;">
+              <div class="char-card" data-char="dog_happy">
+                <img src="assets/animals/dog_happy.gif" alt="Happy Dog">
+                <span>Happy Dog (Pure)</span>
+              </div>
+              <div class="char-card" data-char="dog_dance">
+                <img src="assets/animals/dog_dance.gif" alt="Golden Dog">
+                <span>Golden Dancer</span>
+              </div>
+            </div>
+
+            <!-- Category: Cats -->
+            <div class="char-grid" id="charGridCats" style="display:none;">
+              <div class="char-card" data-char="cat_salsa">
+                <img src="assets/animals/cat_salsa.gif" alt="Salsa Kitten">
+                <span>Salsa Kitten</span>
+              </div>
+              <div class="char-card" data-char="cat_popcat">
+                <img src="assets/animals/cat_popcat.gif" alt="Popcat">
+                <span>Popcat Dancer</span>
+              </div>
+            </div>
+
+            <!-- Category: Other Animals -->
+            <div class="char-grid" id="charGridOthers" style="display:none;">
+              <div class="char-card" data-char="frog_dance">
+                <img src="assets/animals/frog_dance.gif" alt="Dancing Frog">
+                <span>Dancing Frog</span>
+              </div>
+            </div>
+
+            <!-- Category: My Uploads -->
+            <div class="char-grid" id="charGridCustom" style="display:none;">
+              <div id="customCharsList" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.4rem;">
+                <p style="font-size:0.75rem; color:var(--text-muted); text-align:center;">No custom characters saved yet. Upload below!</p>
+              </div>
+            </div>
+
+            <!-- Upload Custom GIF & Chroma-Key Remover -->
+            <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.4rem;">
               <input type="file" id="customGifUpload" accept="image/gif" style="display:none">
-              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customGifUpload').click()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Custom Animated GIF
-              </button>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customGifUpload').click()">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload Custom GIF
+                </button>
+                <button id="btnOpenChromaKeyModal" class="btn btn-secondary" style="flex:1;" title="Remove solid background from any GIF">
+                  <i class="fa-solid fa-wand-magic"></i> Remove BG
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Animal Count & Smart Scatter -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Count & Scatter</span>
-              <span class="badge" id="countBadge">15 Ducks</span>
+              <span>Count & Placement</span>
+              <span class="badge" id="countBadge">15 Animals</span>
             </div>
 
             <!-- Quick Preset Chips -->
@@ -144,7 +218,7 @@
 
             <div class="form-group" style="margin-top: 0.25rem;">
               <div class="form-label">
-                <span>Exact Count</span>
+                <span>Exact Count Input</span>
                 <span class="val-indicator" id="exactCountVal">15</span>
               </div>
               <input type="number" id="inputAnimalCount" class="form-input" min="1" max="100" value="15">
@@ -155,7 +229,7 @@
               <i class="fa-solid fa-shuffle"></i> Smart Depth Scatter (Foreground & Hidden)
             </button>
 
-            <!-- Randomize Sizes -->
+            <!-- Randomize & Reshuffle -->
             <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
               <button id="btnRandomizeSizes" class="btn btn-secondary" style="flex: 1;">
                 <i class="fa-solid fa-up-right-and-down-left-from-center"></i> Random Sizes
@@ -165,24 +239,24 @@
               </button>
             </div>
 
-            <!-- Add Single Animal -->
+            <!-- Add Single Animal (Centered) -->
             <button id="btnAddSingleAnimal" class="btn btn-secondary" style="width: 100%;">
-              <i class="fa-solid fa-plus"></i> Add +1 Animal at Center
+              <i class="fa-solid fa-plus"></i> Add +1 Animal (Dead Center)
             </button>
           </div>
 
           <!-- Answer Reveal / Cheat Key Mode -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Viral Cheat Sheet</span>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">Answer Key</span>
+              <span>Viral Cheat Sheet / Answers</span>
+              <span class="badge" id="revealStatusBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">OFF</span>
             </div>
             <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
-              Highlight all hidden animals with glowing target circles to verify positions or create an Answer Reveal clip!
+              Toggle glowing animated target rings over every animal to verify positions or export an Answer Key!
             </p>
             <div style="display: flex; gap: 0.5rem;">
               <button id="btnToggleAnswerReveal" class="btn btn-secondary" style="flex: 1;">
-                <i class="fa-solid fa-bullseye"></i> <span id="revealBtnText">Show Answer Rings</span>
+                <i class="fa-solid fa-bullseye"></i> <span id="revealBtnText">Toggle Answer Rings</span>
               </button>
               <button id="btnExportAnswerKeyPng" class="btn btn-secondary" style="flex: 1;">
                 <i class="fa-solid fa-camera"></i> Save Key PNG
@@ -221,15 +295,21 @@
             <div style="margin-top: 0.5rem;">
               <input type="file" id="customBgUpload" accept="image/*" style="display:none">
               <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customBgUpload').click()">
-                <i class="fa-solid fa-upload"></i> Upload Custom Background Image
+                <i class="fa-solid fa-upload"></i> Upload Custom Backdrop Image
               </button>
+            </div>
+
+            <!-- Saved Backdrops Gallery -->
+            <div id="savedBackdropsSection" style="margin-top: 0.5rem; display: none;">
+              <div class="form-label"><span>My Saved Backdrops</span></div>
+              <div id="savedBackdropsList" style="display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.25rem 0;"></div>
             </div>
           </div>
 
           <!-- Zoom & Pan Controls -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Pan & Zoom</span>
+              <span>Image Pan & Zoom</span>
               <button id="btnResetBgTransform" class="btn btn-secondary btn-sm" style="padding: 0.15rem 0.5rem; font-size: 0.7rem;">
                 Reset
               </button>
@@ -240,27 +320,36 @@
                 <span>Zoom Scale</span>
                 <span class="val-indicator" id="bgZoomVal">100%</span>
               </div>
-              <input type="range" id="sliderBgZoom" class="range-slider" min="50" max="300" value="100">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderBgZoom" class="range-slider" min="50" max="300" value="100" style="flex:1;">
+                <input type="number" id="inputBgZoom" class="form-input" min="50" max="300" value="100" style="width:75px;">
+              </div>
             </div>
 
             <div class="form-group">
               <div class="form-label">
-                <span>Pan Horizontal (X)</span>
+                <span>Pan X (Horizontal)</span>
                 <span class="val-indicator" id="bgPanXVal">0px</span>
               </div>
-              <input type="range" id="sliderBgPanX" class="range-slider" min="-800" max="800" value="0">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderBgPanX" class="range-slider" min="-800" max="800" value="0" style="flex:1;">
+                <input type="number" id="inputBgPanX" class="form-input" min="-800" max="800" value="0" style="width:75px;">
+              </div>
             </div>
 
             <div class="form-group">
               <div class="form-label">
-                <span>Pan Vertical (Y)</span>
+                <span>Pan Y (Vertical)</span>
                 <span class="val-indicator" id="bgPanYVal">0px</span>
               </div>
-              <input type="range" id="sliderBgPanY" class="range-slider" min="-800" max="800" value="0">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderBgPanY" class="range-slider" min="-800" max="800" value="0" style="flex:1;">
+                <input type="number" id="inputBgPanY" class="form-input" min="-800" max="800" value="0" style="width:75px;">
+              </div>
             </div>
 
             <p style="font-size: 0.72rem; color: var(--text-dim);">
-              <i class="fa-solid fa-hand"></i> Tip: Hold <kbd style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px;">Spacebar</kbd> and drag on the canvas to pan the background directly!
+              <i class="fa-solid fa-hand"></i> Tip: Hold <kbd style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px;">Spacebar</kbd> and drag on canvas to pan background!
             </p>
           </div>
 
@@ -318,39 +407,39 @@
 
             <div class="form-group">
               <div class="form-label">
-                <span>Subtitle / Viral Hook</span>
+                <span>Subtitle / Hook</span>
                 <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; cursor:pointer;">
-                  <input type="checkbox" id="checkShowSubtitle" checked> Show Hook
+                  <input type="checkbox" id="checkShowSubtitle" checked> Show Subtitle
                 </label>
               </div>
               <input type="text" id="inputSubtitleText" class="form-input" value="Can you spot all 15? 99% FAIL!">
             </div>
           </div>
 
-          <!-- Style Presets -->
+          <!-- 12+ Title Style Presets -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Viral Style Presets</span>
+              <span>12+ Viral Style Presets</span>
             </div>
 
             <div class="title-style-grid">
               <div class="title-style-card active" data-style="viral_bold">
                 <span style="color:#ffffff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;">
-                  🎬 Viral Reel Bold
+                  🎬 Viral Reel 3D
                 </span>
               </div>
               <div class="title-style-card" data-style="neon_glow">
                 <span style="color:#38bdf8; text-shadow: 0 0 10px #38bdf8, 0 0 20px #0284c7;">
-                  🌟 Neon Cyber
+                  🌟 Cyber Neon
                 </span>
               </div>
               <div class="title-style-card" data-style="golden_arcade">
                 <span style="color:#fbbf24; text-shadow: 2px 2px 0 #b45309, 4px 4px 0 #78350f;">
-                  🟡 Arcade 3D
+                  🟡 Golden 3D
                 </span>
               </div>
               <div class="title-style-card" data-style="danger_alert">
-                <span style="color:#f43f5e; background: #000; padding: 2px 4px; border-radius: 4px;">
+                <span style="color:#fef08a; background: #dc2626; padding: 2px 4px; border-radius: 4px;">
                   🔴 Danger Alert
                 </span>
               </div>
@@ -364,32 +453,76 @@
                   🟢 Emerald Pop
                 </span>
               </div>
+              <div class="title-style-card" data-style="rainbow_candy">
+                <span style="color:#f472b6; text-shadow: 2px 2px 0 #38bdf8;">
+                  🌈 Candy Pop
+                </span>
+              </div>
+              <div class="title-style-card" data-style="fire_flame">
+                <span style="color:#fbbf24; text-shadow: 0 0 8px #f97316, 0 0 16px #ef4444;">
+                  🔥 Fire Flame
+                </span>
+              </div>
+              <div class="title-style-card" data-style="retro_pixel">
+                <span style="color:#a3e635; font-family:'Press Start 2P', monospace; font-size:0.6rem;">
+                  👾 Retro Pixel
+                </span>
+              </div>
+              <div class="title-style-card" data-style="bubble_pop">
+                <span style="color:#c084fc; text-shadow: 2px 2px 0 #581c87;">
+                  🟣 Y2K Bubble
+                </span>
+              </div>
+              <div class="title-style-card" data-style="royal_gold">
+                <span style="color:#fef08a; text-shadow: 2px 2px 0 #854d0e;">
+                  👑 Royal Gold
+                </span>
+              </div>
+              <div class="title-style-card" data-style="stealth_dark">
+                <span style="color:#ffffff; background:#0f172a; border:1px solid #334155; padding:2px 4px; border-radius:4px;">
+                  🖤 Stealth Dark
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Typography Controls -->
+          <!-- Main Title Typography -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Typography Details</span>
+              <span>Main Title Typography</span>
             </div>
 
             <div class="form-group">
-              <div class="form-label">Font Family</div>
+              <div class="form-label">Font Family (15+ Styles)</div>
               <select id="selectFontFamily" class="form-input">
-                <option value="Outfit" selected>Outfit (Modern Bold)</option>
-                <option value="Bangers">Bangers (Comic / Game)</option>
+                <option value="Outfit" selected>Outfit (Modern Heavy Bold)</option>
                 <option value="Luckiest Guy">Luckiest Guy (Chunky Fun)</option>
+                <option value="Bangers">Bangers (Comic / Game)</option>
                 <option value="Montserrat">Montserrat (Impact Heavy)</option>
-                <option value="Inter">Inter (Clean Ultra)</option>
+                <option value="Anton">Anton (Tall Headline Impact)</option>
+                <option value="Righteous">Righteous (Futuristic Groovy)</option>
+                <option value="Fredoka">Fredoka (Rounded Cute)</option>
+                <option value="Titan One">Titan One (Massive Block)</option>
+                <option value="Russo One">Russo One (Bold Arcade)</option>
+                <option value="Black Ops One">Black Ops One (Military Badge)</option>
+                <option value="Permanent Marker">Permanent Marker (Street Graffiti)</option>
+                <option value="Press Start 2P">Press Start 2P (8-Bit Pixel)</option>
+                <option value="Creepster">Creepster (Spooky Mystery)</option>
+                <option value="Cinzel">Cinzel (Epic Cinematic)</option>
+                <option value="Inter">Inter (Ultra Clean)</option>
               </select>
             </div>
 
+            <!-- UNLIMITED FONT SIZE INPUT (5px to 500px) -->
             <div class="form-group">
               <div class="form-label">
-                <span>Font Size</span>
+                <span>Font Size (5px – 500px)</span>
                 <span class="val-indicator" id="titleSizeVal">64px</span>
               </div>
-              <input type="range" id="sliderTitleSize" class="range-slider" min="32" max="110" value="64">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTitleSize" class="range-slider" min="10" max="300" value="64" style="flex:1;">
+                <input type="number" id="inputTitleSizeExact" class="form-input" min="5" max="500" value="64" style="width:75px;">
+              </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -398,7 +531,7 @@
                 <input type="color" id="inputTextColor" class="form-input" style="height:38px; padding:2px;" value="#ffffff">
               </div>
               <div class="form-group">
-                <div class="form-label">Stroke Color</div>
+                <div class="form-label">Outline Color</div>
                 <input type="color" id="inputStrokeColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
               </div>
             </div>
@@ -408,13 +541,57 @@
                 <span>Outline Stroke Width</span>
                 <span class="val-indicator" id="strokeWidthVal">10px</span>
               </div>
-              <input type="range" id="sliderStrokeWidth" class="range-slider" min="0" max="24" value="10">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderStrokeWidth" class="range-slider" min="0" max="40" value="10" style="flex:1;">
+                <input type="number" id="inputStrokeWidthExact" class="form-input" min="0" max="40" value="10" style="width:75px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtitle Styling Deck -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Subtitle / Hook Styling</span>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Subtitle Font Size</span>
+                <span class="val-indicator" id="subtitleSizeVal">28px</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderSubtitleSize" class="range-slider" min="10" max="150" value="28" style="flex:1;">
+                <input type="number" id="inputSubtitleSizeExact" class="form-input" min="5" max="200" value="28" style="width:75px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <div class="form-label">Subtitle Color</div>
+                <input type="color" id="inputSubtitleColor" class="form-input" style="height:38px; padding:2px;" value="#fde047">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Pill Background</div>
+                <input type="color" id="inputSubtitlePillColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+              </div>
             </div>
 
             <div class="form-group">
               <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
-                <input type="checkbox" id="checkBackplatePill"> Enable Dark Pill Backplate
+                <input type="checkbox" id="checkSubtitlePillEnable" checked> Show Dark Backplate Pill
               </label>
+            </div>
+
+            <!-- Title & Subtitle Spacing (Gap) Control -->
+            <div class="form-group">
+              <div class="form-label">
+                <span>Spacing / Margin (Title to Subtitle)</span>
+                <span class="val-indicator" id="titleGapVal">40px</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTitleGap" class="range-slider" min="0" max="250" value="40" style="flex:1;">
+                <input type="number" id="inputTitleGapExact" class="form-input" min="0" max="250" value="40" style="width:75px;">
+              </div>
             </div>
           </div>
 
@@ -426,36 +603,46 @@
           <!-- Soundtrack Selection -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Soundtrack Selection</span>
+              <span>6 Copyright-Free Soundtracks</span>
               <span class="badge" id="currentTrackBadge">Quack Hop</span>
             </div>
 
             <div class="form-group">
-              <div class="form-label">Built-in Viral BGM</div>
+              <div class="form-label">Built-in Procedural Music</div>
               <select id="selectPresetTrack" class="form-input">
-                <option value="quack_hop" selected>🦆 Quack Hop (Upbeat Bouncy Groove)</option>
-                <option value="detective">🕵️ Sneaky Detective (Mystery Playful Jazz)</option>
-                <option value="arcade">👾 Arcade Bounce (8-Bit Fast Chiptune)</option>
-                <option value="tension">⏱️ Tick-Tock Tension (Suspense & Bass)</option>
+                <option value="quack_hop" selected>🦆 Quack Hop (Upbeat Bouncy Groove, 128 BPM)</option>
+                <option value="detective">🕵️ Sneaky Detective (Mystery Walking Bass, 105 BPM)</option>
+                <option value="arcade">👾 Arcade Bounce (8-Bit Fast Chiptune, 138 BPM)</option>
+                <option value="tension">⏱️ Tick-Tock Tension (Countdown Sub-Bass, 120 BPM)</option>
+                <option value="lofi">☕ Cozy Lofi Vibes (Chill Relaxing Chords, 90 BPM)</option>
+                <option value="polka">🎪 Funny Animal Polka (Bouncy Cartoon March, 130 BPM)</option>
               </select>
             </div>
 
-            <!-- Upload Custom Music -->
-            <div style="margin-top: 0.25rem;">
-              <input type="file" id="customAudioUpload" accept="audio/*" style="display:none">
-              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customAudioUpload').click()">
-                <i class="fa-solid fa-music"></i> Upload Custom Audio (.mp3, .wav, .m4a)
+            <!-- Upload Custom Music (Multiple Files Supported & Saved to LocalStorage/IndexedDB!) -->
+            <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+              <input type="file" id="customAudioUpload" accept="audio/*" multiple style="display:none">
+              <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customAudioUpload').click()" title="Upload multiple audio files at once">
+                <i class="fa-solid fa-music"></i> Upload Audio (Multi)
               </button>
+              <button id="btnDownloadWavTrack" class="btn btn-secondary" style="flex:1;" title="Download current music as copyright-free .WAV">
+                <i class="fa-solid fa-download"></i> Save WAV
+              </button>
+            </div>
+
+            <!-- Saved Audio Gallery -->
+            <div id="savedAudioSection" style="margin-top: 0.5rem; display: none;">
+              <div class="form-label"><span>My Uploaded Audio</span></div>
+              <div id="savedAudioList" style="display: flex; flex-direction: column; gap: 0.35rem;"></div>
             </div>
           </div>
 
           <!-- Waveform & Trimmer -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Audio Trimmer & Timeline</span>
+              <span>Interactive Audio Trimmer</span>
             </div>
 
-            <!-- Waveform Box -->
             <div class="waveform-box">
               <canvas id="waveformCanvas" width="300" height="48"></canvas>
             </div>
@@ -465,7 +652,10 @@
                 <span>Start Time (Trim)</span>
                 <span class="val-indicator" id="trimStartVal">0.0s</span>
               </div>
-              <input type="range" id="sliderTrimStart" class="range-slider" min="0" max="60" step="0.5" value="0">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTrimStart" class="range-slider" min="0" max="60" step="0.5" value="0" style="flex:1;">
+                <input type="number" id="inputTrimStartExact" class="form-input" min="0" max="60" step="0.5" value="0" style="width:75px;">
+              </div>
             </div>
 
             <div class="form-group">
@@ -473,7 +663,10 @@
                 <span>End Time (Trim)</span>
                 <span class="val-indicator" id="trimEndVal">15.0s</span>
               </div>
-              <input type="range" id="sliderTrimEnd" class="range-slider" min="1" max="60" step="0.5" value="15">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTrimEnd" class="range-slider" min="1" max="60" step="0.5" value="15" style="flex:1;">
+                <input type="number" id="inputTrimEndExact" class="form-input" min="1" max="60" step="0.5" value="15" style="width:75px;">
+              </div>
             </div>
 
             <div class="form-group">
@@ -518,7 +711,7 @@
             </div>
 
             <div class="form-group">
-              <div class="form-label">Quick Snap Position</div>
+              <div class="form-label">Quick Snap Preset</div>
               <div class="preset-button-row">
                 <button class="preset-chip" data-snap="bottom_center">Bottom Center</button>
                 <button class="preset-chip" data-snap="bottom_right">Bottom Right</button>
@@ -527,39 +720,69 @@
               </div>
             </div>
 
+            <!-- UNRESTRICTED POSITION SLIDERS & INPUTS (0% to 100%) -->
+            <div class="form-group">
+              <div class="form-label">
+                <span>Position X (Horizontal: 0% – 100%)</span>
+                <span class="val-indicator" id="wmXVal">50%</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderWatermarkX" class="range-slider" min="0" max="100" value="50" style="flex:1;">
+                <input type="number" id="inputWatermarkXExact" class="form-input" min="0" max="100" value="50" style="width:75px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Position Y (Vertical: 0% – 100% No Bottom Limit!)</span>
+                <span class="val-indicator" id="wmYVal">97%</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderWatermarkY" class="range-slider" min="0" max="100" value="97" style="flex:1;">
+                <input type="number" id="inputWatermarkYExact" class="form-input" min="0" max="100" value="97" style="width:75px;">
+              </div>
+            </div>
+
             <div class="form-group">
               <div class="form-label">
                 <span>Opacity</span>
                 <span class="val-indicator" id="watermarkOpacityVal">65%</span>
               </div>
-              <input type="range" id="sliderWatermarkOpacity" class="range-slider" min="10" max="100" value="65">
+              <input type="range" id="sliderWatermarkOpacity" class="range-slider" min="5" max="100" value="65">
             </div>
 
             <div class="form-group">
               <div class="form-label">
-                <span>Font Size</span>
+                <span>Font Size (5px – 100px)</span>
                 <span class="val-indicator" id="watermarkSizeVal">24px</span>
               </div>
-              <input type="range" id="sliderWatermarkSize" class="range-slider" min="14" max="48" value="24">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderWatermarkSize" class="range-slider" min="10" max="100" value="24" style="flex:1;">
+                <input type="number" id="inputWatermarkSizeExact" class="form-input" min="5" max="100" value="24" style="width:75px;">
+              </div>
             </div>
-
-            <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.25rem;">
-              <i class="fa-solid fa-arrows-up-down-left-right"></i> Watermark is also freely draggable anywhere on the preview canvas!
-            </p>
           </div>
 
-          <!-- Countdown Progress Bar -->
+          <!-- Multiple Countdown Timer Options -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Countdown Timer Bar</span>
+              <span>Countdown Timer Options</span>
               <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                 <input type="checkbox" id="checkTimerBarEnable" checked>
-                <span style="font-size:0.75rem;">Show Bar</span>
+                <span style="font-size:0.75rem;">Show Timer</span>
               </label>
             </div>
-            <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
-              Adds a clean shrinking timer bar at the top of the video to create urgency and boost viewer watch-through retention!
-            </p>
+
+            <div class="form-group">
+              <div class="form-label">Timer Presentation Style</div>
+              <select id="selectTimerStyle" class="form-input">
+                <option value="top_bar" selected>Top Shrinking Gradient Bar</option>
+                <option value="bottom_bar">Bottom Shrinking Gradient Bar</option>
+                <option value="digital_badge">Digital Countdown Badge (15s... 0s)</option>
+                <option value="radial_ring">Radial Circular Ring (Top Right)</option>
+                <option value="none">No Timer (Infinite Watch Time)</option>
+              </select>
+            </div>
           </div>
 
         </div>
@@ -569,7 +792,7 @@
 
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Video Production Settings</span>
+              <span>Video Production Engine</span>
             </div>
 
             <!-- Video Duration -->
@@ -586,6 +809,15 @@
                 <input type="number" id="inputCustomDuration" class="form-input" min="3" max="180" value="15" style="width: 90px;">
                 <span style="font-size: 0.78rem; color: var(--text-muted);">custom seconds</span>
               </div>
+            </div>
+
+            <!-- Video Format -->
+            <div class="form-group">
+              <div class="form-label">Video Format</div>
+              <select id="selectExportFormat" class="form-input">
+                <option value="mp4" selected>MP4 Video (H.264 - Universal Windows / Mobile / Shorts - Recommended)</option>
+                <option value="webm">WebM Video (VP8/Opus)</option>
+              </select>
             </div>
 
             <!-- Resolution -->
@@ -627,7 +859,7 @@
 
             <!-- Big Export Action -->
             <button id="btnStartExport" class="btn btn-viral-export" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; margin-top: 0.5rem;">
-              <i class="fa-solid fa-play-circle"></i> Render & Download Video (.webm)
+              <i class="fa-solid fa-play-circle"></i> Render & Download Video (.mp4)
             </button>
 
             <!-- Export Single Frame / Thumbnail -->
@@ -658,13 +890,28 @@
     </aside>
 
     <!-- Center Stage Container -->
-    <main class="center-stage-container">
+    <main class="center-stage-container" id="stageMainContainer">
 
-      <!-- Floating Stage Toolbar -->
+      <!-- Floating Stage Toolbar (Zoom, Reshuffle, Highlights, View Mode) -->
       <div class="stage-floating-toolbar">
         <button id="btnToolbarPlay" class="btn btn-secondary btn-sm" title="Play / Pause live preview (Spacebar)">
           <i class="fa-solid fa-play"></i> Play
         </button>
+
+        <span style="color: var(--border-subtle);">|</span>
+
+        <!-- Viewport Zoom Controls (Does not change video output resolution!) -->
+        <div style="display:flex; align-items:center; gap:3px;">
+          <button id="btnZoomOut" class="btn btn-secondary btn-sm" title="Zoom Out Stage Viewport" style="padding:0.25rem 0.45rem;">
+            <i class="fa-solid fa-magnifying-glass-minus"></i>
+          </button>
+          <button id="btnZoomFit" class="btn btn-secondary btn-sm" title="Fit to Screen" style="padding:0.25rem 0.55rem; font-size:0.75rem;">
+            <span id="viewportZoomLabel">Fit</span>
+          </button>
+          <button id="btnZoomIn" class="btn btn-secondary btn-sm" title="Zoom In Stage Viewport (Up to 300%)" style="padding:0.25rem 0.45rem;">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+          </button>
+        </div>
 
         <span style="color: var(--border-subtle);">|</span>
 
@@ -673,13 +920,7 @@
         </button>
 
         <button id="btnStageRevealToggle" class="btn btn-secondary btn-sm" title="Toggle reveal target rings">
-          <i class="fa-solid fa-bullseye"></i> Reveal Answers
-        </button>
-
-        <span style="color: var(--border-subtle);">|</span>
-
-        <button id="btnZoomFit" class="btn btn-secondary btn-sm" title="Fit canvas to screen">
-          <i class="fa-solid fa-expand"></i> Fit
+          <i class="fa-solid fa-bullseye"></i> <span id="stageRevealText">Highlight All</span>
         </button>
       </div>
 
@@ -709,17 +950,15 @@
     <aside class="right-layer-dock">
       <div class="layer-dock-header">
         <h3>Layers (<span id="totalAnimalLayerCount">15</span>)</h3>
-        <button id="btnPingAllAnimals" class="btn btn-secondary btn-sm" title="Flash highlight all animals">
-          <i class="fa-solid fa-crosshairs"></i> Highlight All
+        <button id="btnPingAllAnimals" class="btn btn-secondary btn-sm" title="Toggle Highlight Rings">
+          <i class="fa-solid fa-crosshairs"></i> <span id="dockHighlightText">Highlight</span>
         </button>
       </div>
 
       <!-- Scrollable Layer List -->
-      <div class="layer-list-scroller" id="layerListScroller">
-        <!-- Rendered dynamically -->
-      </div>
+      <div class="layer-list-scroller" id="layerListScroller"></div>
 
-      <!-- Selected Animal Inspector Details -->
+      <!-- Selected Animal Inspector Details with Numeric Inputs -->
       <div class="layer-inspector-details" id="layerInspector">
         <div class="inspector-header">
           <span id="inspectAnimalTitle">Selected: Duck #1</span>
@@ -736,23 +975,43 @@
           </div>
         </div>
 
+        <!-- Scale with Numeric Input -->
         <div class="form-group">
           <div class="form-label">
             <span>Size / Scale</span>
             <span class="val-indicator" id="inspectScaleVal">100%</span>
           </div>
-          <input type="range" id="sliderInspectScale" class="range-slider" min="20" max="300" value="100">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="range" id="sliderInspectScale" class="range-slider" min="15" max="350" value="100" style="flex:1;">
+            <input type="number" id="inputInspectScaleExact" class="form-input" min="10" max="500" value="100" style="width:75px;">
+          </div>
         </div>
 
+        <!-- Rotation with Numeric Input -->
         <div class="form-group">
           <div class="form-label">
             <span>Rotation Angle</span>
             <span class="val-indicator" id="inspectRotVal">0°</span>
           </div>
-          <input type="range" id="sliderInspectRot" class="range-slider" min="-180" max="180" value="0">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="range" id="sliderInspectRot" class="range-slider" min="-180" max="180" value="0" style="flex:1;">
+            <input type="number" id="inputInspectRotExact" class="form-input" min="-180" max="180" value="0" style="width:75px;">
+          </div>
         </div>
 
-        <div style="display:flex; gap:0.5rem;">
+        <!-- Coordinates X & Y with Numeric Inputs -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+          <div class="form-group">
+            <div class="form-label"><span>Position X %</span></div>
+            <input type="number" id="inputInspectXExact" class="form-input" min="0" max="100" step="0.5" value="50">
+          </div>
+          <div class="form-group">
+            <div class="form-label"><span>Position Y %</span></div>
+            <input type="number" id="inputInspectYExact" class="form-input" min="0" max="100" step="0.5" value="50">
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
           <button id="btnInspectBringFront" class="btn btn-secondary btn-sm" style="flex:1;">
             <i class="fa-solid fa-layer-group"></i> Bring Front
           </button>
@@ -765,34 +1024,163 @@
 
   </div>
 
-  <!-- Export Rendering Modal -->
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. 6 Ready Demo Templates Modal -->
+  <div class="modal-overlay" id="demosModal">
+    <div class="modal-card" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:#fbbf24;"></i>
+          Choose a Viral Demo Template
+        </h3>
+        <button id="btnCloseDemosModal" class="btn btn-secondary btn-sm btn-icon-only">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-muted);">
+        Select any ready-made challenge demo to instantly load backdrops, characters, title styles, and music!
+      </p>
+
+      <div class="demo-templates-grid">
+        <!-- Demo 1 -->
+        <div class="demo-card" data-demo="1">
+          <span class="demo-badge">🔥 Viral Classic</span>
+          <h4>Find 15 Ducks in Water Village</h4>
+          <p>Rustic stilt huts, wooden boats, classic Shuba dancing ducks, and Quack Hop bouncy music.</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 1</button>
+        </div>
+
+        <!-- Demo 2 -->
+        <div class="demo-card" data-demo="2">
+          <span class="demo-badge">🐱 Cozy Clutter</span>
+          <h4>Find 20 Cats in Vintage Attic</h4>
+          <p>Attic library, grandfather clock, cat trees, vibing & white dancing cats with mystery jazz.</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 2</button>
+        </div>
+
+        <!-- Demo 3 -->
+        <div class="demo-card" data-demo="3">
+          <span class="demo-badge">🏮 Neon Arcade</span>
+          <h4>Find 12 Animals in Tokyo Night</h4>
+          <p>Lanterns, ramen stalls, dancing capybaras and happy dogs with upbeat 8-bit chiptune beats.</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 3</button>
+        </div>
+
+        <!-- Demo 4 -->
+        <div class="demo-card" data-demo="4">
+          <span class="demo-badge">💀 Extreme Hard</span>
+          <h4>Extreme: 25 Tiny Hidden Ducks</h4>
+          <p>Micro-sized ducks hidden deep inside boat nooks, roofs, and baskets. Danger alert hook!</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 4</button>
+        </div>
+
+        <!-- Demo 5 -->
+        <div class="demo-card" data-demo="5">
+          <span class="demo-badge">⏱️ Speed Test</span>
+          <h4>Speed Test: 10 Ducks in 10s</h4>
+          <p>Fast-paced 10-second reel with countdown timer bar and high energy polka beat.</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 5</button>
+        </div>
+
+        <!-- Demo 6 -->
+        <div class="demo-card" data-demo="6">
+          <span class="demo-badge">🎯 Answer Reveal</span>
+          <h4>Full Challenge + Answer Reveal</h4>
+          <p>15-second search challenge followed by a 3-second animated reveal circling all answers.</p>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:0.4rem;">Load Demo 6</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Chroma-Key GIF Background Remover Modal -->
+  <div class="modal-overlay" id="chromaKeyModal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-wand-magic" style="color:var(--accent-cyan);"></i>
+          GIF Background Remover (Chroma-Key)
+        </h3>
+        <button id="btnCloseChromaModal" class="btn btn-secondary btn-sm btn-icon-only">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p style="font-size: 0.8rem; color: var(--text-muted);">
+        Click on the preview to sample the background color to erase, or pick a color below:
+      </p>
+
+      <div style="display:flex; justify-content:center; background:#1e293b; padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <canvas id="chromaPreviewCanvas" width="200" height="200" style="cursor:crosshair; max-width:100%; height:auto;"></canvas>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div class="form-group">
+          <div class="form-label">Color to Remove</div>
+          <div style="display:flex; gap:0.4rem; align-items:center;">
+            <input type="color" id="inputChromaColor" class="form-input" style="height:38px; padding:2px; flex:1;" value="#ffffff">
+            <button id="btnAutoDetectBg" class="btn btn-secondary btn-sm" title="Auto-detect border color">Auto</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">
+            <span>Tolerance (1–120)</span>
+            <span class="val-indicator" id="chromaTolVal">35</span>
+          </div>
+          <input type="range" id="sliderChromaTol" class="range-slider" min="5" max="120" value="35">
+        </div>
+      </div>
+
+      <button id="btnApplyChromaKey" class="btn btn-primary" style="width:100%;">
+        <i class="fa-solid fa-scissors"></i> Make Transparent & Save to Library
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Export Rendering Modal -->
   <div class="modal-overlay" id="exportModal">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 480px;">
       <div class="modal-header">
         <h3 class="modal-title">
           <i class="fa-solid fa-video" style="color:var(--accent-emerald);"></i> 
-          Exporting High-Quality Video...
+          <span id="exportModalTitle">Exporting High-Definition Video...</span>
         </h3>
       </div>
 
-      <p style="font-size: 0.85rem; color: var(--text-muted);">
-        Encoding full-motion video with synchronized audio and transparent dancing animals...
+      <p id="exportModalDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+        Recording full-motion video with synchronized audio and fixing EBML metadata for flawless playback...
       </p>
 
-      <div class="progress-bar-container">
+      <!-- Active DOM Live Render Canvas: Keeps GPU rendering alive at full 30 FPS! -->
+      <div id="exportLiveCanvasContainer" style="display:flex; justify-content:center; margin: 0.5rem 0;">
+        <canvas id="exportLiveCanvas" width="1080" height="1920" style="max-height: 220px; width: auto; aspect-ratio: 9/16; border-radius: 8px; border: 1px solid var(--border-subtle); background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.6);"></canvas>
+      </div>
+
+      <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
+      <div id="exportPlaybackContainer" style="display:none; flex-direction:column; align-items:center; margin: 0.5rem 0; width: 100%;">
+        <video id="exportVideoPlayer" controls autoplay loop playsinline style="max-height: 240px; width: 100%; border-radius: 8px; border: 1px solid var(--accent-emerald); background: #000;"></video>
+        <p style="font-size:0.75rem; color:var(--accent-emerald); margin-top:0.4rem; text-align:center;">
+          <i class="fa-solid fa-circle-check"></i> Export Complete! Video is playing above. Test playback or download below.
+        </p>
+      </div>
+
+      <div class="progress-bar-container" id="exportProgressBarContainer">
         <div class="progress-bar-fill" id="exportProgressBar"></div>
       </div>
 
-      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-family:monospace;">
+      <div id="exportProgressStats" style="display:flex; justify-content:space-between; font-size:0.8rem; font-family:monospace; margin-bottom: 0.5rem;">
         <span id="exportProgressPct">0%</span>
-        <span id="exportProgressFrames">Frame 0 / 450</span>
+        <span id="exportProgressFrames">00.0s / 15.0s</span>
         <span id="exportEta">ETA: calculating...</span>
       </div>
 
       <!-- Action buttons when finished -->
       <div id="exportModalActions" style="display:none; gap:0.75rem; margin-top:0.5rem;">
-        <a id="btnDownloadExportedVideo" class="btn btn-viral-export" style="flex:1; text-decoration:none;" download="find-15-ducks.webm">
-          <i class="fa-solid fa-download"></i> Download Video (.webm)
+        <a id="btnDownloadExportedVideo" class="btn btn-viral-export" style="flex:1; text-decoration:none;" download="find-15-ducks.mp4">
+          <i class="fa-solid fa-download"></i> Download Video (.mp4)
         </a>
         <button id="btnCloseExportModal" class="btn btn-secondary">
           Close
@@ -811,11 +1199,15 @@
   <!-- Scripts -->
   <!-- 1. omggif.js GIF decoder -->
   <script src="lib/omggif.js"></script>
-  <!-- 2. GifEngine helper -->
+  <!-- 2. fix-webm-duration.js (Fixes WebM duration metadata for 100% smooth video playback without freeze!) -->
+  <script src="lib/fix-webm-duration.js"></script>
+  <!-- 3. db.js IndexedDB storage manager -->
+  <script src="lib/db.js"></script>
+  <!-- 4. GifEngine with Chroma-Key Background Remover -->
   <script src="js/gif-engine.js"></script>
-  <!-- 3. AudioEngine -->
+  <!-- 5. AudioEngine with 6 copyright-free tracks -->
   <script src="js/audio-engine.js"></script>
-  <!-- 4. Main Studio Interactive Application -->
+  <!-- 6. Main Studio Interactive Application -->
   <script src="js/studio.js"></script>
 </body>
 </html>

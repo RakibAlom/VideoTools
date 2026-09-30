@@ -51,6 +51,21 @@ try {
                 continue
             }
 
+            if ($request.HttpMethod -eq "POST" -and $request.Url.LocalPath -eq "/api/save-file") {
+                $fileName = $request.QueryString["filename"]
+                if (-not $fileName) { $fileName = "downloaded_video.mp4" }
+                $savePath = Join-Path $root $fileName
+                $fs = [System.IO.File]::Create($savePath)
+                $request.InputStream.CopyTo($fs)
+                $fs.Close()
+                $response.StatusCode = 200
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"path":"' + $savePath.Replace("\", "\\") + '"}')
+                $response.ContentType = "application/json"
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                $response.Close()
+                continue
+            }
+
             $localPath = $request.Url.LocalPath
             if ($localPath -eq "/" -or $localPath -eq "") {
                 $localPath = "/index.html"

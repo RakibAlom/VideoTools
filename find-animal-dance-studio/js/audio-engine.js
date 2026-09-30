@@ -1,5 +1,6 @@
 /**
- * AudioEngine - Web Audio API Synthesis, Custom File Trimmer, and Video Recording Stream Mixer
+ * AudioEngine - Web Audio API Synthesis, Custom File Trimmer, Waveform Visualizer, and Video Recording Stream Mixer
+ * Generates 6 distinct copyright-free soundtracks on the fly.
  */
 
 class AudioEngine {
@@ -23,7 +24,6 @@ class AudioEngine {
     this.fadeOut = false;
     this.isPlaying = false;
     this.playbackStartTime = 0;
-    this.pauseOffset = 0;
 
     // Waveform data cache
     this.waveformData = [];
@@ -41,7 +41,7 @@ class AudioEngine {
       this.mediaStreamDest = this.ctx.createMediaStreamDestination();
       this.gainNode.connect(this.mediaStreamDest);
 
-      // Inaudible carrier oscillator to keep MediaRecorder audio track alive
+      // Inaudible carrier oscillator to keep MediaRecorder audio track active in Chromium
       this.carrierOsc = this.ctx.createOscillator();
       const carrierGain = this.ctx.createGain();
       carrierGain.gain.value = 0.00002;
@@ -67,20 +67,32 @@ class AudioEngine {
     }
   }
 
-  /**
-   * Loads custom audio file (.mp3, .wav, .ogg, .m4a)
-   */
   async loadFromFile(file) {
     this.ensureContext();
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
     this.setBuffer(audioBuffer, file.name, false);
+
+    // Save to IndexedDB for permanent storage
+    if (window.storageManager) {
+      window.storageManager.saveItem('audio', {
+        id: `audio_${Date.now()}`,
+        name: file.name,
+        date: new Date().toLocaleDateString(),
+        data: arrayBuffer
+      });
+    }
+
     return audioBuffer;
   }
 
-  /**
-   * Sets the active audio buffer and updates waveform
-   */
+  async loadFromArrayBuffer(arrayBuffer, name) {
+    this.ensureContext();
+    const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer.slice(0));
+    this.setBuffer(audioBuffer, name, false);
+    return audioBuffer;
+  }
+
   setBuffer(audioBuffer, name, isSynthesized = false) {
     this.currentBuffer = audioBuffer;
     this.currentTrackName = name;
@@ -91,9 +103,6 @@ class AudioEngine {
     this.extractWaveformData(audioBuffer);
   }
 
-  /**
-   * Downsamples audio buffer to 100 points for crisp visual waveform display
-   */
   extractWaveformData(buffer, samples = 100) {
     const rawData = buffer.getChannelData(0);
     const blockSize = Math.floor(rawData.length / samples);
@@ -111,11 +120,7 @@ class AudioEngine {
     return this.waveformData;
   }
 
-  /**
-   * Plays the audio within the trimmed range [trimStart, trimEnd]
-   * optionally starting at an offset from trimStart
-   */
-  play(offsetSeconds = 0) {
+  play(offsetSeconds = 0, loop = false) {
     this.ensureContext();
     this.stop();
 
@@ -124,7 +129,6 @@ class AudioEngine {
     const source = this.ctx.createBufferSource();
     source.buffer = this.currentBuffer;
 
-    // Optional fade effects
     const now = this.ctx.currentTime;
     const playLen = Math.max(0.1, this.trimEnd - this.trimStart);
 
@@ -143,10 +147,17 @@ class AudioEngine {
 
     source.connect(this.gainNode);
 
-    const actualStart = this.trimStart + (offsetSeconds % playLen);
-    const remaining = playLen - (offsetSeconds % playLen);
-
-    source.start(0, actualStart, remaining);
+    if (loop) {
+      source.loop = true;
+      source.loopStart = this.trimStart;
+      source.loopEnd = this.trimEnd;
+      const actualStart = this.trimStart + (offsetSeconds % playLen);
+      source.start(0, actualStart);
+    } else {
+      const actualStart = this.trimStart + (offsetSeconds % playLen);
+      const remaining = playLen - (offsetSeconds % playLen);
+      source.start(0, actualStart, remaining);
+    }
     this.activeSource = source;
     this.isPlaying = true;
     this.playbackStartTime = this.ctx.currentTime - (offsetSeconds % playLen);
@@ -170,21 +181,40 @@ class AudioEngine {
     this.isPlaying = false;
   }
 
-  getCurrentPlayPosition() {
-    if (!this.isPlaying || !this.ctx) return 0;
-    const elapsed = this.ctx.currentTime - this.playbackStartTime;
-    const playLen = Math.max(0.1, this.trimEnd - this.trimStart);
-    return elapsed % playLen;
+  async playPreview(arrayBuffer) {
+    this.ensureContext();
+    if (this.previewSource) {
+      this.stopPreview();
+      return false; // stopped
+    }
+    try {
+      const buffer = await this.ctx.decodeAudioData(arrayBuffer.slice(0));
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.gainNode);
+      source.start(0);
+      this.previewSource = source;
+      source.onended = () => {
+        if (this.previewSource === source) this.previewSource = null;
+      };
+      return true; // playing
+    } catch (e) {
+      console.warn('Preview error:', e);
+      return false;
+    }
   }
 
-  /**
-   * PROCEDURAL BGM SYNTHESIS (OfflineAudioContext -> AudioBuffer)
-   * 4 Catchy Viral Styles:
-   * 1. 'quack_hop': Upbeat cheerful bouncing rhythm with marimba & funky bass
-   * 2. 'detective': Sneaky mystery upright bass with finger snaps & tense chords
-   * 3. 'arcade': Chiptune 8-bit fast arpeggio bounce
-   * 4. 'tension': Dramatic ticking clock, low heartbeat bass, and rising pitch
-   */
+  stopPreview() {
+    if (this.previewSource) {
+      try {
+        this.previewSource.stop();
+        this.previewSource.disconnect();
+      } catch (e) {}
+      this.previewSource = null;
+    }
+  }
+
+  // --- PROCEDURAL BGM SYNTHESIS (OfflineAudioContext -> AudioBuffer) ---
   async generatePresetBGM(presetName = 'quack_hop', totalSeconds = 60) {
     this.ensureContext();
     const sampleRate = 44100;
@@ -198,6 +228,10 @@ class AudioEngine {
       this._synthArcade(offlineCtx, totalSeconds);
     } else if (presetName === 'tension') {
       this._synthTension(offlineCtx, totalSeconds);
+    } else if (presetName === 'lofi') {
+      this._synthLofi(offlineCtx, totalSeconds);
+    } else if (presetName === 'polka') {
+      this._synthPolka(offlineCtx, totalSeconds);
     } else {
       this._synthQuackHop(offlineCtx, totalSeconds);
     }
@@ -207,36 +241,24 @@ class AudioEngine {
     return renderedBuffer;
   }
 
-  // --- 1. Quack Hop (128 BPM Funky Bouncy) ---
+  // 1. Quack Hop (128 BPM Funky Bouncy)
   _synthQuackHop(ctx, duration) {
     const bpm = 128;
     const beatSec = 60 / bpm;
     const totalBeats = Math.floor(duration / beatSec);
-
-    // Scale notes (C Major Pentatonic: C4, D4, E4, G4, A4, C5)
     const melodyNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63];
-    const bassNotes = [130.81, 130.81, 164.81, 174.61, 196.00, 196.00, 174.61, 164.81]; // C3, E3, F3, G3
+    const bassNotes = [130.81, 130.81, 164.81, 174.61, 196.00, 196.00, 174.61, 164.81];
 
     for (let beat = 0; beat < totalBeats; beat++) {
       const time = beat * beatSec;
-
-      // Kick on 1 and 3
-      if (beat % 2 === 0) {
-        this._addKick(ctx, time, 0.4);
-      }
-      // Snare on 2 and 4
-      if (beat % 2 === 1) {
-        this._addSnare(ctx, time, 0.25);
-      }
-      // Hi-hat on every half beat
+      if (beat % 2 === 0) this._addKick(ctx, time, 0.4);
+      if (beat % 2 === 1) this._addSnare(ctx, time, 0.25);
       this._addHiHat(ctx, time, 0.12);
       this._addHiHat(ctx, time + beatSec * 0.5, 0.09);
 
-      // Bass note
       const bassFreq = bassNotes[beat % bassNotes.length];
       this._addBassNote(ctx, time, bassFreq, beatSec * 0.6, 0.35);
 
-      // Bouncy melody note (marimba/quack style)
       if (beat % 2 === 0 || Math.sin(beat) > 0) {
         const melFreq = melodyNotes[(beat * 2) % melodyNotes.length];
         this._addMarimbaNote(ctx, time + beatSec * 0.25, melFreq, beatSec * 0.4, 0.25);
@@ -244,68 +266,51 @@ class AudioEngine {
     }
   }
 
-  // --- 2. Sneaky Detective (105 BPM Mystery Jazz) ---
+  // 2. Sneaky Detective (105 BPM Mystery Jazz)
   _synthDetective(ctx, duration) {
     const bpm = 105;
     const beatSec = 60 / bpm;
     const totalBeats = Math.floor(duration / beatSec);
-
-    // Minor blues scale bassline (A1, C2, D2, D#2, E2, G2)
     const bassNotes = [55, 65.41, 73.42, 77.78, 82.41, 98, 82.41, 73.42];
 
     for (let beat = 0; beat < totalBeats; beat++) {
       const time = beat * beatSec;
-
-      // Soft kick on beat 1
-      if (beat % 4 === 0) {
-        this._addKick(ctx, time, 0.3);
-      }
-      // Finger snap / rimshot on 2 and 4
-      if (beat % 2 === 1) {
-        this._addRimshot(ctx, time, 0.2);
-      }
-      // Ride cymbal tick
+      if (beat % 4 === 0) this._addKick(ctx, time, 0.3);
+      if (beat % 2 === 1) this._addRimshot(ctx, time, 0.2);
       this._addHiHat(ctx, time, 0.08);
       this._addHiHat(ctx, time + beatSec * 0.66, 0.06);
 
-      // Walking mystery bass
       const bFreq = bassNotes[beat % bassNotes.length];
       this._addUprightBass(ctx, time, bFreq, beatSec * 0.8, 0.4);
 
-      // Mystery minor vibraphone ping
       if (beat % 4 === 2) {
         this._addMarimbaNote(ctx, time, 440 * (beat % 8 === 2 ? 1.2 : 1.25), beatSec * 0.9, 0.15);
       }
     }
   }
 
-  // --- 3. Arcade Bounce (138 BPM 8-Bit Chiptune) ---
+  // 3. Arcade Bounce (138 BPM 8-Bit Chiptune)
   _synthArcade(ctx, duration) {
     const bpm = 138;
     const beatSec = 60 / bpm;
     const totalBeats = Math.floor(duration / beatSec);
-
     const arps = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
 
     for (let beat = 0; beat < totalBeats; beat++) {
       const time = beat * beatSec;
-
       this._addKick(ctx, time, 0.35);
       if (beat % 2 === 1) this._addSnare(ctx, time, 0.2);
 
-      // Fast 8-bit arpeggios (16th notes)
       for (let s = 0; s < 4; s++) {
         const stepTime = time + s * (beatSec / 4);
         const note = arps[(beat * 4 + s) % arps.length];
         this._addSquareChiptune(ctx, stepTime, note, beatSec / 5, 0.15);
       }
-
-      // 8-bit bass
       this._addBassNote(ctx, time, 110, beatSec * 0.5, 0.28);
     }
   }
 
-  // --- 4. Tick-Tock Tension (Tension Clock & Deep Sub) ---
+  // 4. Tick-Tock Tension (120 BPM Suspense Clock)
   _synthTension(ctx, duration) {
     const bpm = 120;
     const beatSec = 60 / bpm;
@@ -313,26 +318,67 @@ class AudioEngine {
 
     for (let beat = 0; beat < totalBeats; beat++) {
       const time = beat * beatSec;
-
-      // Realistic Clock Tick (Tick... Tock...)
       const isTick = beat % 2 === 0;
       this._addClockTick(ctx, time, isTick ? 1800 : 1200, 0.3);
 
-      // Deep suspense heartbeat sub-bass every 2 beats
       if (beat % 2 === 0) {
         this._addHeartbeat(ctx, time, 55, 0.45);
         this._addHeartbeat(ctx, time + beatSec * 0.3, 48, 0.3);
       }
 
-      // Tension rising chord drone
       if (beat % 8 === 0) {
         this._addTensionDrone(ctx, time, 220 + (beat % 32) * 5, beatSec * 7, 0.12);
       }
     }
   }
 
-  // --- SYNTHESIS INSTRUMENT PRIMITIVES ---
+  // 5. Cozy Lofi Vibes (90 BPM Chill Chords)
+  _synthLofi(ctx, duration) {
+    const bpm = 90;
+    const beatSec = 60 / bpm;
+    const totalBeats = Math.floor(duration / beatSec);
+    const chords = [
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+      [220.00, 261.63, 329.63, 392.00], // Am7
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [196.00, 246.94, 293.66, 349.23]  // G7
+    ];
 
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const time = beat * beatSec;
+      if (beat % 4 === 0) this._addKick(ctx, time, 0.32);
+      if (beat % 4 === 2) this._addRimshot(ctx, time, 0.2);
+      this._addHiHat(ctx, time + beatSec * 0.5, 0.07);
+
+      if (beat % 4 === 0) {
+        const chord = chords[Math.floor(beat / 4) % chords.length];
+        chord.forEach((freq, idx) => {
+          this._addMarimbaNote(ctx, time + idx * 0.03, freq, beatSec * 3.5, 0.12);
+        });
+      }
+    }
+  }
+
+  // 6. Funny Animal Polka (130 BPM Whimsical Cartoon)
+  _synthPolka(ctx, duration) {
+    const bpm = 130;
+    const beatSec = 60 / bpm;
+    const totalBeats = Math.floor(duration / beatSec);
+    const oomphBass = [98.00, 146.83, 110.00, 164.81];
+
+    for (let beat = 0; beat < totalBeats; beat++) {
+      const time = beat * beatSec;
+      const bFreq = oomphBass[beat % oomphBass.length];
+      this._addBassNote(ctx, time, bFreq, beatSec * 0.35, 0.4);
+
+      // Off-beat cheerful chords (the "pah" in oom-pah)
+      this._addMarimbaNote(ctx, time + beatSec * 0.5, 440, beatSec * 0.25, 0.2);
+      this._addMarimbaNote(ctx, time + beatSec * 0.5, 523.25, beatSec * 0.25, 0.15);
+      this._addHiHat(ctx, time + beatSec * 0.5, 0.1);
+    }
+  }
+
+  // --- Instrument Primitives ---
   _addKick(ctx, time, volume = 0.4) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -359,13 +405,10 @@ class AudioEngine {
     osc.start(time);
     osc.stop(time + 0.13);
 
-    // Noise pop
-    const bufferSize = ctx.sampleRate * 0.1;
+    const bufferSize = Math.floor(ctx.sampleRate * 0.1);
     const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
     const noise = ctx.createBufferSource();
     noise.buffer = noiseBuffer;
     const nGain = ctx.createGain();
@@ -408,22 +451,17 @@ class AudioEngine {
     const osc = ctx.createOscillator();
     const filter = ctx.createBiquadFilter();
     const gain = ctx.createGain();
-
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(freq, time);
-
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(350, time);
     filter.frequency.exponentialRampToValueAtTime(100, time + duration);
-
     gain.gain.setValueAtTime(volume, time);
     gain.gain.linearRampToValueAtTime(volume * 0.7, time + duration * 0.5);
     gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
-
     osc.start(time);
     osc.stop(time + duration);
   }
@@ -507,6 +545,71 @@ class AudioEngine {
     gain.connect(ctx.destination);
     osc.start(time);
     osc.stop(time + duration);
+  }
+
+  /**
+   * Encodes the active AudioBuffer to a downloadable .wav file
+   */
+  exportToWavBlob() {
+    if (!this.currentBuffer) return null;
+    const numChannels = this.currentBuffer.numberOfChannels;
+    const sampleRate = this.currentBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let result;
+    if (numChannels === 2) {
+      result = this._interleave(this.currentBuffer.getChannelData(0), this.currentBuffer.getChannelData(1));
+    } else {
+      result = this.currentBuffer.getChannelData(0);
+    }
+
+    const dataLength = result.length * (bitDepth / 8);
+    const buffer = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(buffer);
+
+    // RIFF header
+    this._writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    this._writeString(view, 8, 'WAVE');
+    this._writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+    view.setUint16(32, numChannels * (bitDepth / 8), true);
+    view.setUint16(34, bitDepth, true);
+    this._writeString(view, 36, 'data');
+    view.setUint32(40, dataLength, true);
+
+    // Write PCM samples
+    let offset = 44;
+    for (let i = 0; i < result.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, result[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+  }
+
+  _writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  _interleave(inputL, inputR) {
+    const length = inputL.length + inputR.length;
+    const result = new Float32Array(length);
+    let index = 0;
+    let inputIndex = 0;
+    while (index < length) {
+      result[index++] = inputL[inputIndex];
+      result[index++] = inputR[inputIndex];
+      inputIndex++;
+    }
+    return result;
   }
 }
 

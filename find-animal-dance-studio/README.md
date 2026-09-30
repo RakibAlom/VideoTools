@@ -1,131 +1,141 @@
-# 🦆 Animal Dance Studio - Viral Hidden Animal Video Production Suite
+# 🦆 Animal Dance Studio 2.0 - Viral Hidden Animal Video Production Suite
 
-> **All-In-One Automated Production Suite for "Find The Hidden Dancing Animals" Reels, Shorts, and TikToks**  
-> Built with HTML5, Vanilla ES6+ Canvas Engine, Web Audio API Synthesis, and Pure JS GIF Frame Decoders. Zero Node.js or Python dependencies required.
+> **All-In-One Production Suite for "Find The Hidden Dancing Animals" Reels, Shorts, and TikToks**  
+> Built with HTML5, Vanilla ES6+ Canvas Engine, Web Audio API Synthesis, IndexedDB Storage, and EBML-Patched Video Recording. Zero Node.js or Python dependencies required.
 
 ---
 
 ## ⚡ Quick Start: One-Click Launcher
 
-1. **Double-click `Start-Studio.bat`** inside the `find-animal-dance-studio` folder.
-2. The built-in zero-dependency local server starts and automatically opens **`http://localhost:5501/index.html`** in your default web browser.
-3. Everything is active out of the box: **Transparent Dancing Ducks & Cats**, **Ultra HD Rustic Water Village & Cozy Room Backdrops**, **Web Audio BGM Synthesizers**, and the **1080p/4K Video Recording Engine**!
-
-*(Note: You can also open `index.html` directly via your browser).*
-
----
-
-## 🌟 What is Animal Dance Studio?
-
-**Animal Dance Studio** is engineered specifically for content creators producing the viral "Find The Hidden Animals" challenge videos on **TikTok, Instagram Reels, and YouTube Shorts** (e.g., *"Find 15 Ducks"*, *"Find 20 Cats"*, *"Only 1% Can Find The Last Duck"*).
-
-Viewers watch the video with catchy background music, trying to spot all the animated dancing ducks or cats scattered throughout the scene. Because some animals are hidden in dark corners, boats, roofs, and baskets, viewers frequently pause, rewind, zoom in, and argue in the comments about how many they found. This drives **exceptionally high watch times and massive comment engagement** that algorithms reward with viral reach.
+1. Navigate to: [d:\VideoTools\find-animal-dance-studio](file:///d:/VideoTools/find-animal-dance-studio)
+2. **Double-click [Start-Studio.bat](file:///d:/VideoTools/find-animal-dance-studio/Start-Studio.bat)**  
+   *(The built-in zero-dependency local server starts and automatically opens **`http://localhost:5501/index.html`** in your default web browser).*
+3. *(The local server is already running and ready to use immediately at [http://localhost:5501/index.html](http://localhost:5501/index.html)).*
 
 ---
 
-## 🚀 Key Features
+## 🌟 What's New in Version 2.0
 
-### 1. 🦆 Multi-Animal Scattering & Perspective Depth
-- **Transparent Animated Characters:**
-  - Classic **Shuba Dancing Duck** (the viral white duck with orange feet and cap, directly matching the viral trend).
-  - **Dancing Cat** (transparent animated dancing kitten).
-  - **Custom GIF Upload:** Drop *any* transparent animated GIF (e.g. dancing capybara, puppy, anime chibi, or meme) and the engine extracts all frames automatically!
-- **Dynamic Duplication & Count:**
-  - Quick count presets: **5, 10, 15, 20, 25, 30, 40** or any custom number.
-  - When you set a count (e.g. 20), the studio automatically duplicates the character with organic positioning across the scene.
-- **Smart Depth Distribution (Foreground to Background):**
-  - Realistically sizes animals based on screen depth:
-    - *Foreground (Lower area)*: 1.2x – 1.8x scale (large, clear on boardwalks).
-    - *Midground (Middle area)*: 0.7x – 1.05x scale (medium size).
-    - *Background (Upper area & nooks)*: 0.3x – 0.6x scale (tiny, hidden in boats, roof eaves, pots, and windows!).
-- **One-Click Reshuffle & Randomize Sizes:** Instantly re-roll positions and scales on demand.
+### 1. 🎬 Flawless High-Definition Video Export & In-Modal Playback
+- **Live DOM-Mounted Rendering Surface:** Renders into an in-DOM live canvas during recording, ensuring Chromium GPU compositing delivers all 30/60 FPS frames smoothly without dropping or freezing after 3–4 seconds.
+- **In-Modal Video Player:** As soon as export completes, the video immediately autoplays inside the modal player so you can test and watch the complete video before downloading!
+- **Real-Time Wall-Clock Synchronized Recorder:** Recording runs on accurate real-time wall-clock pacing so a 15-second video exports as an **exact 15.000-second** video clip (no shortened files or out-of-sync audio).
+- **EBML Metadata Patcher (`fix-webm-duration`):** Automatically injects the missing WebM Segment Duration, TimecodeScale, and Seek Cues into the file header.
+- **Universal Player Compatibility:** Downloaded videos play without freezing on **Windows Media Player, VLC, QuickTime, Instagram, TikTok, and YouTube Shorts**.
 
-### 2. 🎯 Buttery-Smooth Direct Manipulation
-- **Direct Canvas Drag-and-Drop:** Click and drag any animal, title, or watermark with 60 FPS precision and zero lag.
-- **Transform Handles:**
-  - **Corner Scale Handle:** Drag to resize an individual animal from micro (hidden) to macro.
-  - **Top Rotation Handle:** Rotate an animal to match sloped roofs, boat decks, or stairs.
-  - **Flip Horizontal:** Toggle between facing left or facing right.
-- **Layer Dock & Inspector:**
-  - Right sidebar listing every animal (`Duck #1` to `Duck #15`).
-  - Pinpoint / Locate button to locate any hidden animal on screen.
-  - Bring to Front / Send to Back for exact z-index layering.
-  - Duplicate or delete individual animals.
-- **Keyboard Shortcuts:**
-  - `Spacebar`: Play / Pause live preview.
-  - `Delete` / `Backspace`: Remove selected animal.
-  - `Arrow Keys`: Nudge selected animal by 1px (or 10px with `Shift`).
-  - `Mouse Wheel`: Zoom background in/out directly on canvas.
+### 2. 🎯 Precision Animal Hit-Testing, Selection & Dragging
+- **Guaranteed Clickable Area:** Even tiny scaled-down animals (e.g. 15% hidden inside corners, boats, or trees) maintain a minimum generous 45px hit target, preventing accidental misses.
+- **Isolated Local-Space Transform:** Hit testing transforms mouse clicks directly into the animal's local rotated space.
+- **Separated Resize & Rotation Handles:** Gizmo handles now maintain guaranteed minimum margin spacing around the animal body, eliminating the bug where resizing a GIF would cause the resize handle to overlap the body and block subsequent selection and dragging.
 
-### 3. 🖼️ Ultra HD Backdrops with Pan & Zoom
-- **Built-In High-Resolution Scenes:**
-  - *Rustic Water Village & Boats* (warm daylight stilt huts, sampan boats, and fishing baskets - matching the viral screenshot).
-  - *Cozy Attic Library & Living Room* (vintage bookshelves, grandfather clock, cat trees, and rugs).
-  - *Tokyo Alley Night Market* (vibrant glowing lanterns, ramen stalls, and vending machines).
-- **Custom Backdrop Upload:** Drag & drop any custom PNG/JPG background.
-- **Pan & Zoom Controls:**
-  - Zoom from 50% to 300%.
-  - Pan X and Pan Y sliders, or hold `Spacebar` and drag on the canvas.
-  - Lighting controls: Adjust Brightness, Contrast, and Saturation.
+### 3. 📐 Top-Aligned Preview Canvas
+- Canvas preview is neatly positioned directly beneath the navigation toolbar with maximized vertical height, eliminating unnecessary bottom dead space.
 
-### 4. ✍️ Viral Headline & Typography Engine
-- **Title Text Customization:**
-  - Main Title (e.g., `Find 15 Ducks`).
-  - **Auto-Sync Count:** Automatically updates the title when animal count changes.
-  - Subtitle / Viral Hook (e.g., `Can you spot all 15? 99% FAIL!`).
-- **6 Viral Style Presets:**
-  - 🎬 **Viral Reel Bold:** Heavy black outline, white fill, 3D drop shadow (identical to top viral reels).
-  - 🌟 **Neon Cyber:** Glowing cyan and blue neon halo.
-  - 🟡 **Arcade 3D:** Golden 3D extruded drop shadow.
-  - 🔴 **Danger Alert:** High-contrast red and yellow sticker banner.
-  - 💎 **Frosted Glass:** Translucent rounded pill backplate with border.
-  - 🟢 **Emerald Pop:** Vibrant green gamer style.
-- **Full Typography Adjustments:** Font selection (`Outfit`, `Bangers`, `Luckiest Guy`, `Montserrat`, `Inter`), font size, stroke color, outline width, and dark pill backplate.
+### 4. ↔️ Title to Subtitle Spacing (Gap) Control
+- Slider and numeric input field (`0px` to `250px`, default 40px) allowing dynamic adjustment of the vertical spacing between the main title and subtitle.
 
-### 5. 🎵 Sound Engine & Audio Trimmer
-- **4 Procedural Built-In Soundtracks (No Copyright Claims):**
-  - 🦆 *Quack Hop:* 128 BPM upbeat bouncy marimba and funk synth bass.
-  - 🕵️ *Sneaky Detective:* 105 BPM mystery walking bass, finger snaps, and jazzy chords.
-  - 👾 *Arcade Bounce:* 138 BPM fast 8-bit chiptune arpeggios and punchy kicks.
-  - ⏱️ *Tick-Tock Tension:* 120 BPM dramatic ticking clock with heartbeat sub-bass.
-- **Custom Audio File Upload:** Upload any MP3, WAV, M4A, or OGG file.
-- **Interactive Audio Trimmer:**
-  - Real-time visual waveform canvas.
-  - Adjustable Start Time and End Time range sliders.
-  - Volume slider (0% to 150%).
-  - Audio Fade-In and Fade-Out options.
-  - Audio preview playback button.
-- **Direct Web Audio Stream Routing:** Audio is mixed directly into the canvas video recorder stream, ensuring audio is 100% in sync and never drops out.
+### 5. 🎛️ Interactive Visual Waveform Trimmer & Multi-Audio Uploads
+- **Interactive Dragging on Waveform:**
+  - Drag the **Left Trim Pin (▶)** to adjust Trim Start time.
+  - Drag the **Right Trim Pin (◀)** to adjust Trim End time.
+  - Drag inside the active trim area to shift the entire trim window.
+  - Real-time numerical input synchronization.
+  - Animated glowing red needle playhead tracking live audio playback.
+- **Multi-File Audio Upload:** Upload multiple audio tracks simultaneously.
+- **Persistent IndexedDB Storage:** All uploaded tracks are saved permanently to IndexedDB.
+- **Audio Audition Library:** Each saved track features an instant **Preview / Stop** audition button, **Use** track button, and **Delete** button.
 
-### 6. 🏷️ Anti-Theft Watermark & Brand Signature
-- **Watermark Toggle:** Keep your videos protected from content re-uploaders.
-- **Default Branding:** Set to `SmartBrain Game` as requested.
-- **Positioning:** One-click snap to *Bottom Center*, *Bottom Right*, *Top Right*, *Top Left*, or freely drag anywhere on the canvas.
-- **Customization:** Adjustable opacity slider (10% to 100%), font size, and text color.
-- **Countdown Timer Bar:** Optional animated progress bar along the top edge of the video to create urgency and boost viewer watch-through retention.
+### 6. 🌟 6 Ready-Made Viral Demo Templates (1-Click Setup)
+Click the **"🌟 6 Ready Demos"** button in the top header to instantly load complete scene setups:
+1. **Demo 1 — "Find 15 Ducks in Water Village":** Rustic stilt huts, wooden boats, classic Shuba dancing ducks, and Quack Hop bouncy music (15s).
+2. **Demo 2 — "Find 20 Cats in Vintage Attic":** Cluttered library, grandfather clock, cat trees, vibing & white dancing cats with mystery jazz (15s).
+3. **Demo 3 — "Find 12 Animals in Tokyo Night":** Lanterns, ramen stalls, dancing capybaras and happy dogs with upbeat 8-bit chiptune beats (15s).
+4. **Demo 4 — "Extreme: 25 Tiny Hidden Ducks":** Micro-sized ducks hidden deep inside boat nooks, roofs, and baskets. Danger alert hook and suspense tension clock (20s).
+5. **Demo 5 — "Speed Test: 10 Animals in 10s":** Fast-paced 10-second challenge with radial circular countdown and polka beat.
+6. **Demo 6 — "Challenge + Answer Reveal Ending":** 15-second search challenge followed by a 3-second animated reveal circling all answers with glowing rings (18s).
 
-### 7. 🎬 Multi-Ratio & High-Definition Video Export
-- **Aspect Ratios:**
-  - 📱 **9:16 Shorts / Reels / TikTok** (1080×1920) — *Default*
-  - 🖥️ **16:9 Widescreen** (1920×1080)
-  - 🟦 **1:1 Square** (1080×1080)
-  - 📱 **4:5 Social Feed** (1080×1350)
-- **Export Resolutions:**
-  - **720p HD** (Fast preview export)
-  - **1080p Full HD** (Standard crisp social format)
-  - **2K QHD** (1440p High Quality)
-  - **4K Ultra HD** (2160p Master Quality)
-- **Export Formats & Bitrates:**
-  - High bitrate encoding (up to 28 Mbps) for zero compression artifacts.
-  - Encoded to `.webm` with VP9/VP8 video and Opus audio.
-- **Bonus Viral Features:**
-  - **"Append 3s Answer Reveal at End":** Automatically adds a 3-second segment at the end of the video circling all hidden animals with glowing target rings!
-  - **"Save Answer Key PNG":** Instantly export an answer sheet image with target rings and numbers.
-  - **"Save HD Thumbnail PNG":** Export high-resolution cover art for YouTube Shorts/Reels thumbnails.
+### 3. 🦆 15+ Transparent Animal Characters & Categorized Tabs
+- **5+ Dancing Ducks:**
+  - `Shuba Duck` (Viral white cartoon duck with cap and orange feet)
+  - `Wow B.Duck` (Animated yellow duck)
+  - `Mallard Duck` (Realistic cartoon mallard)
+  - `FOMO Duck` (Bouncing comic duck)
+  - `B.Duck Dance` (Cute dancing duckling)
+- **5+ Dancing Cats:**
+  - `Vibing Cat` (Famous head-bobbing meme cat)
+  - `White Dancer` (Animated white dancing kitten)
+  - `Orange Tabby` (Grooving orange cat)
+  - `Cute Popcat` (Viral popcat animation)
+  - `Party Cat` (Celebration dancing cat)
+- **5+ Other Animals:**
+  - `Capybara Walk` (Walking capybara)
+  - `Happy Dog` (Energetic dancing puppy)
+  - `Dancing Penguin` (Waddling penguin dance)
+  - `Dancing Rabbit` (Bouncing bunny)
+  - `Dancing Hamster` (Cute hamster dance)
 
-### 8. 💾 Project Preset Save & Load
-- Export your complete scene configuration (animal positions, scales, background adjustments, title text, watermark) to a `.json` project file.
-- Re-import saved projects at any time to create serialized content effortlessly.
+### 4. 🪄 GIF Background Remover (Chroma-Key Tool)
+- Upload *any* animated GIF (even with solid white, black, or green backgrounds).
+- Click **"Remove BG"**:
+  - Sample the background color using the interactive canvas eyedropper or color picker.
+  - Adjust the **Tolerance slider (1–120)**.
+  - Click **"Make Transparent"** to automatically erase the background across all frames with anti-aliasing!
+  - The transparent character is automatically saved to your character library.
+
+### 5. 🎵 6 Copyright-Free Procedural Soundtracks + WAV Exporter
+100% royalty-free, synthesized directly in the browser with zero copyright risk:
+- 🦆 **Quack Hop:** 128 BPM upbeat bouncy marimba and funk synth bass.
+- 🕵️ **Sneaky Detective:** 105 BPM mystery walking upright bass and jazzy chords.
+- 👾 **Arcade Bounce:** 138 BPM fast 8-bit chiptune dance party.
+- ⏱️ **Tick-Tock Tension:** 120 BPM dramatic countdown ticking clock with 808 sub-bass.
+- ☕ **Cozy Lofi Vibes:** 90 BPM relaxing melodic chords and warm Rhodes piano.
+- 🎪 **Funny Animal Polka:** 130 BPM whimsical bouncing cartoon march.
+- **Save WAV Button:** Download any synthesized soundtrack as a standalone `.wav` audio file for external editing!
+
+### 6. 💾 Permanent IndexedDB Storage
+- All uploaded background images, custom GIFs, and audio tracks are saved to the browser's **IndexedDB**.
+- Uploads persist permanently across page reloads and browser restarts.
+- View and manage your saved files with instant **"Use"** and **"Delete"** buttons.
+
+### 7. 🏷️ Unrestricted Watermark Positioning
+- **No Bottom Limitation:** Place the watermark anywhere on the screen, all the way to 0% (top) or 100% (extreme bottom edge).
+- Direct numeric inputs and percentage sliders for X (0%–100%) and Y (0%–100%).
+- Free dragging with no dead zones.
+
+### 8. 🔍 Viewport Zoom Controller (Editor Zoom)
+- Zoom in on the canvas without affecting video resolution:
+  - Zoom levels: **Fit (Auto), 50%, 75%, 100%, 150%, 200%, 300%**.
+  - Zoom into small boats, roofs, or baskets to place tiny hidden animals with pixel-perfect precision.
+
+### 9. ⏱️ 5 Countdown Timer Styles
+- Fully optional (enable/disable toggle).
+- Select from 5 distinct styles:
+  1. **Top Shrinking Gradient Bar**
+  2. **Bottom Shrinking Gradient Bar**
+  3. **Digital Countdown Badge** (`15s... 0s` in top-right)
+  4. **Radial Circular Ring** (Circular progress pie)
+  5. **No Timer** (Clean presentation)
+
+### 10. 🔢 Direct Numeric Inputs Everywhere
+- **Animal Scale:** Slider + input field (`15%` to `350%`).
+- **Rotation Angle:** Slider + input field (`-180°` to `+180°`).
+- **Positions X & Y:** Direct numeric fields (`0%` to `100%`).
+- **Unlimited Font Size:** Direct input field supporting **5px to 500px**!
+
+### 11. ✍️ 12+ Title Style Presets & 15+ Google Fonts
+- Presets: Viral Reel 3D, Cyber Neon, Golden 3D, Danger Alert, Frosted Glass, Emerald Pop, Rainbow Candy, Fire Flame, Retro Pixel, Y2K Bubble, Royal Gold, Stealth Dark.
+- Fonts: `Outfit`, `Luckiest Guy`, `Bangers`, `Montserrat`, `Anton`, `Righteous`, `Fredoka`, `Titan One`, `Russo One`, `Black Ops One`, `Permanent Marker`, `Press Start 2P`, `Creepster`, `Cinzel`, `Inter`.
+- Subtitle controls: independent font size (5–200px), color picker, and dark backplate pill toggle.
+
+### 12. ↶ Complete Undo / Redo History
+- Press `Ctrl+Z` to undo any change.
+- Press `Ctrl+Y` or `Ctrl+Shift+Z` to redo.
+- On-screen **Undo** and **Redo** buttons in the top header.
+- **Reset Project** button to restore default setup.
+
+### 13. 🎯 Fixed Highlight All Toggle & Centered Placement
+- **Highlight All Button:** Functions as a clean **ON / OFF toggle** with glowing visual feedback.
+- **Add +1 Animal:** Spawns the animal at the exact dead center (`0.5, 0.5`) without causing page scrolling or viewport jumps.
 
 ---
 
@@ -139,26 +149,32 @@ find-animal-dance-studio/
 ├── server.ps1               # Zero-dependency PowerShell HTTP Server (CORS enabled)
 ├── README.md                # Documentation & Guide
 ├── lib/
-│   └── omggif.js            # Pure JS GIF Reader & Frame Decoder
+│   ├── omggif.js            # Pure JS GIF Reader & Frame Decoder
+│   ├── fix-webm-duration.js # EBML Header Patcher (Fixes duration & playback)
+│   └── db.js                # IndexedDB persistent storage manager
 ├── js/
-│   ├── gif-engine.js        # Multi-frame caching and animation provider
-│   ├── audio-engine.js      # Web Audio synthesizers, trimmer, and stream mixer
-│   └── studio.js            # Master canvas interaction, drag handles, & video recorder
+│   ├── gif-engine.js        # Multi-frame caching & Chroma-Key Background Remover
+│   ├── audio-engine.js      # 6 Web Audio synthesizers, trimmer, and WAV exporter
+│   └── studio.js            # Master canvas engine, undo/redo, & video recorder
 └── assets/
     ├── animals/
-    │   ├── shuba_duck.gif   # Classic Shuba Dancing Duck (transparent)
-    │   └── dancing_cat.gif  # Transparent Dancing Cat
+    │   ├── shuba_duck.gif   # Classic Shuba Dancing Duck
+    │   ├── duck_wow.gif     # Dance Wow B.Duck
+    │   ├── duck_mallard.gif # Mallard Duck
+    │   ├── duck_fomo.gif    # FOMO Duck
+    │   ├── duck_bduck.gif   # B.Duck Dance
+    │   ├── cat_vibing.gif   # Vibing Cat
+    │   ├── cat_white.gif    # White Dancing Cat
+    │   ├── cat_orange.gif   # Orange Tabby Cat
+    │   ├── cat_popcat.gif   # Popcat
+    │   ├── cat_party.gif    # Party Cat
+    │   ├── capybara_walk.gif# Capybara
+    │   ├── dog_happy.gif    # Happy Dog
+    │   ├── penguin_dance.gif# Dancing Penguin
+    │   ├── rabbit_dance.gif # Dancing Rabbit
+    │   └── hamster_dance.gif# Dancing Hamster
     └── backgrounds/
-        ├── rustic_water_village.jpg  # Water Village with boats (Reference scene)
+        ├── rustic_water_village.jpg  # Water Village with boats
         ├── cozy_cat_room.jpg         # Cozy Attic Library with cat trees
         └── asian_street_market.jpg   # Tokyo Night Alley Market
 ```
-
----
-
-## 💡 Viral Video Tips for Creators
-
-1. **The 3-Second Hook:** Use bold contrast text like `Find 15 Ducks (99% FAIL)` with the classic white text and black stroke.
-2. **Layer Distribution:** Keep 2–3 ducks in the open (e.g. front dock) so viewers immediately understand the game, then hide 3–4 ducks deep inside boats or shaded window sills so they have to watch the video multiple times to count them all.
-3. **Audio Pacing:** Keep duration between **15 to 20 seconds** with bouncy upbeat music like `Quack Hop` so viewers loop the short seamlessly.
-4. **Answer Reveal Call-to-Action:** Enable the `Append 3s Answer Reveal at end` checkbox or ask viewers in your caption: *"Did you find #14 and #15? Check the pinned comment!"* to drive high comment volume!
