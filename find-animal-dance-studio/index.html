@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animal Dance Studio - Hidden Animal Video Maker</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600;700;800&family=Luckiest+Guy&family=Montserrat:wght@700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Studio Design System -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Studio Header -->
+  <header class="studio-header">
+    <div class="brand-wrapper">
+      <span class="brand-logo-icon">🦆</span>
+      <div>
+        <h1 class="brand-title">Animal Dance Studio</h1>
+      </div>
+      <span class="brand-badge">Viral Shorts Engine</span>
+    </div>
+
+    <!-- Aspect Ratio Switcher -->
+    <div class="header-center-tools">
+      <div class="ratio-selector-bar">
+        <button class="ratio-pill-btn active" data-ratio="9:16" title="9:16 Shorts / Reels / TikTok (1080x1920)">
+          <i class="fa-solid fa-mobile-screen"></i> 9:16 Shorts
+        </button>
+        <button class="ratio-pill-btn" data-ratio="16:9" title="16:9 Landscape YouTube (1920x1080)">
+          <i class="fa-solid fa-desktop"></i> 16:9 Wide
+        </button>
+        <button class="ratio-pill-btn" data-ratio="1:1" title="1:1 Square Instagram (1080x1080)">
+          <i class="fa-regular fa-square"></i> 1:1 Square
+        </button>
+        <button class="ratio-pill-btn" data-ratio="4:5" title="4:5 Social Feed (1080x1350)">
+          <i class="fa-solid fa-crop-simple"></i> 4:5 Feed
+        </button>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-right-actions">
+      <button id="btnToggleMode" class="btn btn-secondary btn-sm" title="Toggle between Editor Gizmos and Clean Audience View">
+        <i class="fa-solid fa-eye"></i> <span id="modeLabel">Creator View</span>
+      </button>
+
+      <button id="btnOpenExportModal" class="btn btn-viral-export">
+        <i class="fa-solid fa-video"></i> Export Video
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="studio-workspace">
+
+    <!-- Left Control Deck -->
+    <aside class="left-control-deck">
+      <!-- Tabs -->
+      <nav class="deck-tab-bar">
+        <button class="deck-tab-btn active" data-tab="tab-animals">
+          <span class="tab-icon">🦆</span>
+          <span>Animals</span>
+        </button>
+        <button class="deck-tab-btn" data-tab="tab-bg">
+          <span class="tab-icon">🖼️</span>
+          <span>Backdrop</span>
+        </button>
+        <button class="deck-tab-btn" data-tab="tab-title">
+          <span class="tab-icon">✍️</span>
+          <span>Title</span>
+        </button>
+        <button class="deck-tab-btn" data-tab="tab-audio">
+          <span class="tab-icon">🎵</span>
+          <span>Audio</span>
+        </button>
+        <button class="deck-tab-btn" data-tab="tab-brand">
+          <span class="tab-icon">🏷️</span>
+          <span>Brand</span>
+        </button>
+        <button class="deck-tab-btn" data-tab="tab-export">
+          <span class="tab-icon">⚙️</span>
+          <span>Export</span>
+        </button>
+      </nav>
+
+      <!-- Scrollable Tab Content -->
+      <div class="deck-content-scroller">
+
+        <!-- ================= TAB 1: ANIMALS ================= -->
+        <div id="tab-animals" class="tab-pane active">
+          
+          <!-- Character Type Selection -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Dancing Character</span>
+              <span class="badge" id="charBadge">Shuba Duck</span>
+            </div>
+            
+            <div class="char-grid">
+              <div class="char-card active" data-char="shuba_duck">
+                <img src="assets/animals/shuba_duck.gif" alt="Shuba Duck">
+                <span>Classic Duck</span>
+              </div>
+              <div class="char-card" data-char="dancing_cat">
+                <img src="assets/animals/dancing_cat.gif" alt="Dancing Cat">
+                <span>Dancing Cat</span>
+              </div>
+            </div>
+
+            <!-- Upload Custom GIF -->
+            <div style="margin-top: 0.25rem;">
+              <input type="file" id="customGifUpload" accept="image/gif" style="display:none">
+              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customGifUpload').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Custom Animated GIF
+              </button>
+            </div>
+          </div>
+
+          <!-- Animal Count & Smart Scatter -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Count & Scatter</span>
+              <span class="badge" id="countBadge">15 Ducks</span>
+            </div>
+
+            <!-- Quick Preset Chips -->
+            <div class="preset-button-row">
+              <button class="preset-chip" data-count="5">5</button>
+              <button class="preset-chip" data-count="10">10</button>
+              <button class="preset-chip active" data-count="15">15 (Reel)</button>
+              <button class="preset-chip" data-count="20">20</button>
+              <button class="preset-chip" data-count="25">25</button>
+              <button class="preset-chip" data-count="30">30</button>
+              <button class="preset-chip" data-count="40">40</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.25rem;">
+              <div class="form-label">
+                <span>Exact Count</span>
+                <span class="val-indicator" id="exactCountVal">15</span>
+              </div>
+              <input type="number" id="inputAnimalCount" class="form-input" min="1" max="100" value="15">
+            </div>
+
+            <!-- Smart Scatter Button -->
+            <button id="btnSmartScatter" class="btn btn-primary" style="width: 100%; margin-top: 0.25rem;">
+              <i class="fa-solid fa-shuffle"></i> Smart Depth Scatter (Foreground & Hidden)
+            </button>
+
+            <!-- Randomize Sizes -->
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+              <button id="btnRandomizeSizes" class="btn btn-secondary" style="flex: 1;">
+                <i class="fa-solid fa-up-right-and-down-left-from-center"></i> Random Sizes
+              </button>
+              <button id="btnReshufflePos" class="btn btn-secondary" style="flex: 1;">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> Reshuffle
+              </button>
+            </div>
+
+            <!-- Add Single Animal -->
+            <button id="btnAddSingleAnimal" class="btn btn-secondary" style="width: 100%;">
+              <i class="fa-solid fa-plus"></i> Add +1 Animal at Center
+            </button>
+          </div>
+
+          <!-- Answer Reveal / Cheat Key Mode -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Viral Cheat Sheet</span>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">Answer Key</span>
+            </div>
+            <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+              Highlight all hidden animals with glowing target circles to verify positions or create an Answer Reveal clip!
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="btnToggleAnswerReveal" class="btn btn-secondary" style="flex: 1;">
+                <i class="fa-solid fa-bullseye"></i> <span id="revealBtnText">Show Answer Rings</span>
+              </button>
+              <button id="btnExportAnswerKeyPng" class="btn btn-secondary" style="flex: 1;">
+                <i class="fa-solid fa-camera"></i> Save Key PNG
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 2: BACKDROP ================= -->
+        <div id="tab-bg" class="tab-pane">
+
+          <!-- Background Preset Scenes -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Scene Presets</span>
+              <span class="badge">Ultra HD</span>
+            </div>
+
+            <div class="bg-preset-grid">
+              <div class="bg-thumb-card active" data-bg="rustic_water_village">
+                <img src="assets/backgrounds/rustic_water_village.jpg" alt="Water Village">
+                <span class="bg-label">Water Village</span>
+              </div>
+              <div class="bg-thumb-card" data-bg="cozy_cat_room">
+                <img src="assets/backgrounds/cozy_cat_room.jpg" alt="Cozy Room">
+                <span class="bg-label">Cozy Room</span>
+              </div>
+              <div class="bg-thumb-card" data-bg="asian_street_market">
+                <img src="assets/backgrounds/asian_street_market.jpg" alt="Night Market">
+                <span class="bg-label">Night Market</span>
+              </div>
+            </div>
+
+            <!-- Upload Custom Background -->
+            <div style="margin-top: 0.5rem;">
+              <input type="file" id="customBgUpload" accept="image/*" style="display:none">
+              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customBgUpload').click()">
+                <i class="fa-solid fa-upload"></i> Upload Custom Background Image
+              </button>
+            </div>
+          </div>
+
+          <!-- Zoom & Pan Controls -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Pan & Zoom</span>
+              <button id="btnResetBgTransform" class="btn btn-secondary btn-sm" style="padding: 0.15rem 0.5rem; font-size: 0.7rem;">
+                Reset
+              </button>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Zoom Scale</span>
+                <span class="val-indicator" id="bgZoomVal">100%</span>
+              </div>
+              <input type="range" id="sliderBgZoom" class="range-slider" min="50" max="300" value="100">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Pan Horizontal (X)</span>
+                <span class="val-indicator" id="bgPanXVal">0px</span>
+              </div>
+              <input type="range" id="sliderBgPanX" class="range-slider" min="-800" max="800" value="0">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Pan Vertical (Y)</span>
+                <span class="val-indicator" id="bgPanYVal">0px</span>
+              </div>
+              <input type="range" id="sliderBgPanY" class="range-slider" min="-800" max="800" value="0">
+            </div>
+
+            <p style="font-size: 0.72rem; color: var(--text-dim);">
+              <i class="fa-solid fa-hand"></i> Tip: Hold <kbd style="background:rgba(255,255,255,0.1); padding:2px 4px; border-radius:3px;">Spacebar</kbd> and drag on the canvas to pan the background directly!
+            </p>
+          </div>
+
+          <!-- Color / Visual Adjustments -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Lighting & Atmosphere</span>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Brightness</span>
+                <span class="val-indicator" id="bgBrightnessVal">100%</span>
+              </div>
+              <input type="range" id="sliderBgBrightness" class="range-slider" min="50" max="150" value="100">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Contrast</span>
+                <span class="val-indicator" id="bgContrastVal">100%</span>
+              </div>
+              <input type="range" id="sliderBgContrast" class="range-slider" min="50" max="150" value="100">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Saturation</span>
+                <span class="val-indicator" id="bgSaturationVal">100%</span>
+              </div>
+              <input type="range" id="sliderBgSaturation" class="range-slider" min="0" max="200" value="100">
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 3: TITLE & HOOK ================= -->
+        <div id="tab-title" class="tab-pane">
+
+          <!-- Text Inputs -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Headline & Hook</span>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Main Title</span>
+                <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; cursor:pointer;">
+                  <input type="checkbox" id="checkAutoSyncCount" checked> Auto-Sync Count
+                </label>
+              </div>
+              <input type="text" id="inputTitleText" class="form-input" value="Find 15 Ducks">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Subtitle / Viral Hook</span>
+                <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; cursor:pointer;">
+                  <input type="checkbox" id="checkShowSubtitle" checked> Show Hook
+                </label>
+              </div>
+              <input type="text" id="inputSubtitleText" class="form-input" value="Can you spot all 15? 99% FAIL!">
+            </div>
+          </div>
+
+          <!-- Style Presets -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Viral Style Presets</span>
+            </div>
+
+            <div class="title-style-grid">
+              <div class="title-style-card active" data-style="viral_bold">
+                <span style="color:#ffffff; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;">
+                  🎬 Viral Reel Bold
+                </span>
+              </div>
+              <div class="title-style-card" data-style="neon_glow">
+                <span style="color:#38bdf8; text-shadow: 0 0 10px #38bdf8, 0 0 20px #0284c7;">
+                  🌟 Neon Cyber
+                </span>
+              </div>
+              <div class="title-style-card" data-style="golden_arcade">
+                <span style="color:#fbbf24; text-shadow: 2px 2px 0 #b45309, 4px 4px 0 #78350f;">
+                  🟡 Arcade 3D
+                </span>
+              </div>
+              <div class="title-style-card" data-style="danger_alert">
+                <span style="color:#f43f5e; background: #000; padding: 2px 4px; border-radius: 4px;">
+                  🔴 Danger Alert
+                </span>
+              </div>
+              <div class="title-style-card" data-style="glass_pill">
+                <span style="color:#fff; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 12px;">
+                  💎 Frosted Glass
+                </span>
+              </div>
+              <div class="title-style-card" data-style="emerald_game">
+                <span style="color:#10b981; text-shadow: 2px 2px 0 #064e3b;">
+                  🟢 Emerald Pop
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Typography Controls -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Typography Details</span>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Font Family</div>
+              <select id="selectFontFamily" class="form-input">
+                <option value="Outfit" selected>Outfit (Modern Bold)</option>
+                <option value="Bangers">Bangers (Comic / Game)</option>
+                <option value="Luckiest Guy">Luckiest Guy (Chunky Fun)</option>
+                <option value="Montserrat">Montserrat (Impact Heavy)</option>
+                <option value="Inter">Inter (Clean Ultra)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Font Size</span>
+                <span class="val-indicator" id="titleSizeVal">64px</span>
+              </div>
+              <input type="range" id="sliderTitleSize" class="range-slider" min="32" max="110" value="64">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <div class="form-label">Text Color</div>
+                <input type="color" id="inputTextColor" class="form-input" style="height:38px; padding:2px;" value="#ffffff">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Stroke Color</div>
+                <input type="color" id="inputStrokeColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Outline Stroke Width</span>
+                <span class="val-indicator" id="strokeWidthVal">10px</span>
+              </div>
+              <input type="range" id="sliderStrokeWidth" class="range-slider" min="0" max="24" value="10">
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
+                <input type="checkbox" id="checkBackplatePill"> Enable Dark Pill Backplate
+              </label>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 4: AUDIO ================= -->
+        <div id="tab-audio" class="tab-pane">
+
+          <!-- Soundtrack Selection -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Soundtrack Selection</span>
+              <span class="badge" id="currentTrackBadge">Quack Hop</span>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Built-in Viral BGM</div>
+              <select id="selectPresetTrack" class="form-input">
+                <option value="quack_hop" selected>🦆 Quack Hop (Upbeat Bouncy Groove)</option>
+                <option value="detective">🕵️ Sneaky Detective (Mystery Playful Jazz)</option>
+                <option value="arcade">👾 Arcade Bounce (8-Bit Fast Chiptune)</option>
+                <option value="tension">⏱️ Tick-Tock Tension (Suspense & Bass)</option>
+              </select>
+            </div>
+
+            <!-- Upload Custom Music -->
+            <div style="margin-top: 0.25rem;">
+              <input type="file" id="customAudioUpload" accept="audio/*" style="display:none">
+              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customAudioUpload').click()">
+                <i class="fa-solid fa-music"></i> Upload Custom Audio (.mp3, .wav, .m4a)
+              </button>
+            </div>
+          </div>
+
+          <!-- Waveform & Trimmer -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Audio Trimmer & Timeline</span>
+            </div>
+
+            <!-- Waveform Box -->
+            <div class="waveform-box">
+              <canvas id="waveformCanvas" width="300" height="48"></canvas>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.5rem;">
+              <div class="form-label">
+                <span>Start Time (Trim)</span>
+                <span class="val-indicator" id="trimStartVal">0.0s</span>
+              </div>
+              <input type="range" id="sliderTrimStart" class="range-slider" min="0" max="60" step="0.5" value="0">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>End Time (Trim)</span>
+                <span class="val-indicator" id="trimEndVal">15.0s</span>
+              </div>
+              <input type="range" id="sliderTrimEnd" class="range-slider" min="1" max="60" step="0.5" value="15">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Volume</span>
+                <span class="val-indicator" id="audioVolumeVal">80%</span>
+              </div>
+              <input type="range" id="sliderAudioVolume" class="range-slider" min="0" max="150" value="80">
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+              <label style="display:flex; align-items:center; gap:5px; font-size:0.75rem; cursor:pointer;">
+                <input type="checkbox" id="checkFadeIn"> Fade-In
+              </label>
+              <label style="display:flex; align-items:center; gap:5px; font-size:0.75rem; cursor:pointer;">
+                <input type="checkbox" id="checkFadeOut"> Fade-Out
+              </label>
+            </div>
+
+            <button id="btnAudioPreviewToggle" class="btn btn-secondary" style="margin-top: 0.5rem;">
+              <i class="fa-solid fa-play"></i> Preview Audio Track
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 5: WATERMARK & BRANDING ================= -->
+        <div id="tab-brand" class="tab-pane">
+
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Anti-Theft Watermark</span>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="checkWatermarkEnable" checked>
+                <span style="font-size:0.75rem;">Enabled</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Watermark / Channel Text</div>
+              <input type="text" id="inputWatermarkText" class="form-input" value="SmartBrain Game">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Quick Snap Position</div>
+              <div class="preset-button-row">
+                <button class="preset-chip" data-snap="bottom_center">Bottom Center</button>
+                <button class="preset-chip" data-snap="bottom_right">Bottom Right</button>
+                <button class="preset-chip" data-snap="top_right">Top Right</button>
+                <button class="preset-chip" data-snap="top_left">Top Left</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Opacity</span>
+                <span class="val-indicator" id="watermarkOpacityVal">65%</span>
+              </div>
+              <input type="range" id="sliderWatermarkOpacity" class="range-slider" min="10" max="100" value="65">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Font Size</span>
+                <span class="val-indicator" id="watermarkSizeVal">24px</span>
+              </div>
+              <input type="range" id="sliderWatermarkSize" class="range-slider" min="14" max="48" value="24">
+            </div>
+
+            <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.25rem;">
+              <i class="fa-solid fa-arrows-up-down-left-right"></i> Watermark is also freely draggable anywhere on the preview canvas!
+            </p>
+          </div>
+
+          <!-- Countdown Progress Bar -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Countdown Timer Bar</span>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="checkTimerBarEnable" checked>
+                <span style="font-size:0.75rem;">Show Bar</span>
+              </label>
+            </div>
+            <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+              Adds a clean shrinking timer bar at the top of the video to create urgency and boost viewer watch-through retention!
+            </p>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 6: EXPORT ================= -->
+        <div id="tab-export" class="tab-pane">
+
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Video Production Settings</span>
+            </div>
+
+            <!-- Video Duration -->
+            <div class="form-group">
+              <div class="form-label">Video Length</div>
+              <div class="preset-button-row">
+                <button class="preset-chip" data-dur="10">10s</button>
+                <button class="preset-chip active" data-dur="15">15s (Shorts)</button>
+                <button class="preset-chip" data-dur="20">20s</button>
+                <button class="preset-chip" data-dur="30">30s</button>
+                <button class="preset-chip" data-dur="60">60s</button>
+              </div>
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">
+                <input type="number" id="inputCustomDuration" class="form-input" min="3" max="180" value="15" style="width: 90px;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">custom seconds</span>
+              </div>
+            </div>
+
+            <!-- Resolution -->
+            <div class="form-group">
+              <div class="form-label">Export Resolution</div>
+              <select id="selectResolution" class="form-input">
+                <option value="720p">720p HD (Fast export)</option>
+                <option value="1080p" selected>1080p Full HD (Recommended Crisp)</option>
+                <option value="2k">2K QHD (1440p High Quality)</option>
+                <option value="4k">4K Ultra HD (2160p Master Quality)</option>
+              </select>
+            </div>
+
+            <!-- Frame Rate -->
+            <div class="form-group">
+              <div class="form-label">Frame Rate (FPS)</div>
+              <select id="selectFps" class="form-input">
+                <option value="30" selected>30 FPS (Standard Smooth)</option>
+                <option value="60">60 FPS (Ultra Smooth 60fps)</option>
+              </select>
+            </div>
+
+            <!-- Bitrate Quality -->
+            <div class="form-group">
+              <div class="form-label">Video Bitrate</div>
+              <select id="selectBitrate" class="form-input">
+                <option value="8">8 Mbps (Smooth Web)</option>
+                <option value="16" selected>16 Mbps (Studio Crisp - Recommended)</option>
+                <option value="28">28 Mbps (Lossless Pro)</option>
+              </select>
+            </div>
+
+            <!-- Answer Key Ending -->
+            <div class="form-group" style="margin-top: 0.25rem;">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
+                <input type="checkbox" id="checkAppendReveal"> Append 3s "Answer Reveal" at end
+              </label>
+            </div>
+
+            <!-- Big Export Action -->
+            <button id="btnStartExport" class="btn btn-viral-export" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; margin-top: 0.5rem;">
+              <i class="fa-solid fa-play-circle"></i> Render & Download Video (.webm)
+            </button>
+
+            <!-- Export Single Frame / Thumbnail -->
+            <button id="btnExportThumbnail" class="btn btn-secondary" style="width: 100%;">
+              <i class="fa-solid fa-image"></i> Save Current Frame as HD Thumbnail (PNG)
+            </button>
+          </div>
+
+          <!-- Project Save / Load -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Project Preset File</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="btnSaveProjectJson" class="btn btn-secondary" style="flex: 1;">
+                <i class="fa-solid fa-floppy-disk"></i> Save Project
+              </button>
+              <button id="btnLoadProjectJson" class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('inputLoadProject').click()">
+                <i class="fa-solid fa-folder-open"></i> Load Project
+              </button>
+              <input type="file" id="inputLoadProject" accept=".json" style="display:none">
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- Center Stage Container -->
+    <main class="center-stage-container">
+
+      <!-- Floating Stage Toolbar -->
+      <div class="stage-floating-toolbar">
+        <button id="btnToolbarPlay" class="btn btn-secondary btn-sm" title="Play / Pause live preview (Spacebar)">
+          <i class="fa-solid fa-play"></i> Play
+        </button>
+
+        <span style="color: var(--border-subtle);">|</span>
+
+        <button id="btnStageReshuffle" class="btn btn-secondary btn-sm" title="Reshuffle animal positions">
+          <i class="fa-solid fa-shuffle"></i> Reshuffle
+        </button>
+
+        <button id="btnStageRevealToggle" class="btn btn-secondary btn-sm" title="Toggle reveal target rings">
+          <i class="fa-solid fa-bullseye"></i> Reveal Answers
+        </button>
+
+        <span style="color: var(--border-subtle);">|</span>
+
+        <button id="btnZoomFit" class="btn btn-secondary btn-sm" title="Fit canvas to screen">
+          <i class="fa-solid fa-expand"></i> Fit
+        </button>
+      </div>
+
+      <!-- Master Viewport & Canvas -->
+      <div class="stage-viewport-wrapper" id="stageWrapper">
+        <canvas id="masterCanvas" width="1080" height="1920"></canvas>
+      </div>
+
+      <!-- Floating Bottom Deck (Playback & Scrubber) -->
+      <div class="stage-bottom-deck">
+        <button id="btnDeckPlay" class="btn btn-primary btn-sm btn-icon-only">
+          <i class="fa-solid fa-play"></i>
+        </button>
+
+        <input type="range" id="stageTimeScrubber" class="range-slider time-scrubber" min="0" max="15" step="0.05" value="0">
+
+        <span class="time-readout" id="stageTimeReadout">00:00 / 00:15</span>
+
+        <button id="btnResetPlayhead" class="btn btn-secondary btn-sm btn-icon-only" title="Rewind to start">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Right Layer Dock (Layer Inspector & Animal List) -->
+    <aside class="right-layer-dock">
+      <div class="layer-dock-header">
+        <h3>Layers (<span id="totalAnimalLayerCount">15</span>)</h3>
+        <button id="btnPingAllAnimals" class="btn btn-secondary btn-sm" title="Flash highlight all animals">
+          <i class="fa-solid fa-crosshairs"></i> Highlight All
+        </button>
+      </div>
+
+      <!-- Scrollable Layer List -->
+      <div class="layer-list-scroller" id="layerListScroller">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Selected Animal Inspector Details -->
+      <div class="layer-inspector-details" id="layerInspector">
+        <div class="inspector-header">
+          <span id="inspectAnimalTitle">Selected: Duck #1</span>
+          <div style="display:flex; gap:4px;">
+            <button id="btnInspectFlipX" class="btn btn-secondary btn-sm" title="Flip Horizontal">
+              <i class="fa-solid fa-arrows-left-right"></i>
+            </button>
+            <button id="btnInspectDuplicate" class="btn btn-secondary btn-sm" title="Duplicate">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+            <button id="btnInspectDelete" class="btn btn-secondary btn-sm" style="color:var(--accent-rose);" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">
+            <span>Size / Scale</span>
+            <span class="val-indicator" id="inspectScaleVal">100%</span>
+          </div>
+          <input type="range" id="sliderInspectScale" class="range-slider" min="20" max="300" value="100">
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">
+            <span>Rotation Angle</span>
+            <span class="val-indicator" id="inspectRotVal">0°</span>
+          </div>
+          <input type="range" id="sliderInspectRot" class="range-slider" min="-180" max="180" value="0">
+        </div>
+
+        <div style="display:flex; gap:0.5rem;">
+          <button id="btnInspectBringFront" class="btn btn-secondary btn-sm" style="flex:1;">
+            <i class="fa-solid fa-layer-group"></i> Bring Front
+          </button>
+          <button id="btnInspectSendBack" class="btn btn-secondary btn-sm" style="flex:1;">
+            <i class="fa-solid fa-arrow-down-long"></i> Send Back
+          </button>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Export Rendering Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-video" style="color:var(--accent-emerald);"></i> 
+          Exporting High-Quality Video...
+        </h3>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Encoding full-motion video with synchronized audio and transparent dancing animals...
+      </p>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="exportProgressBar"></div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-family:monospace;">
+        <span id="exportProgressPct">0%</span>
+        <span id="exportProgressFrames">Frame 0 / 450</span>
+        <span id="exportEta">ETA: calculating...</span>
+      </div>
+
+      <!-- Action buttons when finished -->
+      <div id="exportModalActions" style="display:none; gap:0.75rem; margin-top:0.5rem;">
+        <a id="btnDownloadExportedVideo" class="btn btn-viral-export" style="flex:1; text-decoration:none;" download="find-15-ducks.webm">
+          <i class="fa-solid fa-download"></i> Download Video (.webm)
+        </a>
+        <button id="btnCloseExportModal" class="btn btn-secondary">
+          Close
+        </button>
+      </div>
+
+      <button id="btnCancelExport" class="btn btn-secondary" style="margin-top: 0.25rem;">
+        Cancel Export
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <!-- 1. omggif.js GIF decoder -->
+  <script src="lib/omggif.js"></script>
+  <!-- 2. GifEngine helper -->
+  <script src="js/gif-engine.js"></script>
+  <!-- 3. AudioEngine -->
+  <script src="js/audio-engine.js"></script>
+  <!-- 4. Main Studio Interactive Application -->
+  <script src="js/studio.js"></script>
+</body>
+</html>
