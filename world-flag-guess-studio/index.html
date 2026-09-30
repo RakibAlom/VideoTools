@@ -283,7 +283,6 @@
       }
       .stage-16-9 #stage-question-text {
         text-align: left !important;
-        font-size: 1.45rem !important;
         line-height: 1.25 !important;
         font-weight: 600 !important;
         white-space: normal !important;
@@ -355,7 +354,6 @@
       }
       .stage-16-9 #stage-question-text {
         text-align: left !important;
-        font-size: 0.82rem !important;
         line-height: 1.2 !important;
         font-weight: 600 !important;
         white-space: normal !important;
@@ -1776,6 +1774,52 @@
             </button>
           </div>
 
+          <!-- Question Title & Typography Customizer -->
+          <div class="rounded-xl border border-indigo-500/30 bg-slate-900/80 p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <span>📝</span> Question Title & Typography
+              </span>
+              <button type="button" onclick="resetQuestionTitleSettings()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold transition">
+                ↺ Reset
+              </button>
+            </div>
+
+            <!-- Global Question Prompt Input (Multi-line supported) -->
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-1 font-semibold uppercase">Global Question Prompt (Multi-line supported)</label>
+              <textarea id="global-question-prompt-input" rows="2"
+                     placeholder="Which country does this flag belong to?" 
+                     oninput="handleGlobalPromptChange(this.value)" 
+                     class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium resize-none leading-relaxed">Which country does this flag belong to?</textarea>
+            </div>
+
+            <!-- Quick Preset Prompt Chips -->
+            <div class="flex flex-wrap gap-1">
+              <button type="button" onclick="setPresetPrompt('Which country does this flag belong to?')" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Default</button>
+              <button type="button" onclick="setPresetPrompt('Guess this country flag!')" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Guess Flag</button>
+              <button type="button" onclick="setPresetPrompt('Which nation has this flag?')" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Which Nation</button>
+              <button type="button" onclick="setPresetPrompt('Can you name this flag?')" class="text-[9px] px-2 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Name Flag</button>
+            </div>
+
+            <!-- Question Title Font Size Slider & Number Box -->
+            <div class="pt-2 border-t border-slate-800/80">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                <span class="font-semibold uppercase">Question Title Font Size</span>
+                <span id="question-font-size-label" class="font-mono text-indigo-400 font-bold">28px</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="question-font-size-slider" min="14" max="64" value="28" step="1" 
+                       oninput="handleQuestionFontSizeChange(this.value)" 
+                       class="w-full accent-indigo-500 h-1.5 bg-slate-800 rounded">
+                <input type="number" id="question-font-size-number" min="14" max="64" value="28" 
+                       oninput="handleQuestionFontSizeChange(this.value)" 
+                       class="w-14 bg-slate-950 text-xs font-mono text-center text-slate-200 px-1.5 py-1 rounded border border-slate-700 focus:outline-none focus:border-indigo-500">
+              </div>
+              <span class="text-[9px] text-slate-500 mt-0.5 block leading-tight">Increases or decreases question prompt font size (14–64px) live in preview & video export.</span>
+            </div>
+          </div>
+
           <!-- Studio Visual Theme Selector & Customizer -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
@@ -2204,7 +2248,7 @@
 
       <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
       <div id="exportPlaybackContainer" class="hidden flex-col items-center justify-center my-2 w-full">
-        <video id="exportVideoPlayer" controls autoplay loop playsinline style="max-height: 260px; width: 100%; border-radius: 12px; border: 1px solid #10b981; background: #000; box-shadow: 0 8px 24px rgba(16,185,129,0.25);"></video>
+        <video id="exportVideoPlayer" controls autoplay playsinline style="max-height: 260px; width: 100%; border-radius: 12px; border: 1px solid #10b981; background: #000; box-shadow: 0 8px 24px rgba(16,185,129,0.25);"></video>
         <p class="text-xs text-emerald-400 font-semibold mt-2 text-center flex items-center gap-1.5 justify-center">
           <span>✓</span>
           <span>Export Complete! Video is playing above. Test playback or re-download below.</span>
@@ -2648,6 +2692,25 @@
         osc.start(now);
         osc.stop(now + 0.26);
       }
+
+      stopAll() {
+        if (this.ctx) {
+          try {
+            if (this.masterGain) this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+            if (this.voiceGain) this.voiceGain.gain.setValueAtTime(0, this.ctx.currentTime);
+            if (this.sfxGain) this.sfxGain.gain.setValueAtTime(0, this.ctx.currentTime);
+          } catch (e) {}
+          setTimeout(() => {
+            if (this.ctx && this.masterGain) {
+              try {
+                this.masterGain.gain.setValueAtTime(0.95, this.ctx.currentTime);
+                this.voiceGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+                this.sfxGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+              } catch (e) {}
+            }
+          }, 80);
+        }
+      }
     }
 
     const audioSynth = new WebAudioSynthesizer();
@@ -2666,6 +2729,8 @@
         this.currentAudio = null;
         this.currentSource = null;
         this.currentBufferSource = null;
+        this.currentAbortController = null;
+        this.speakRequestId = 0;
         this.isSpeaking = false;
       }
 
@@ -2688,6 +2753,7 @@
         }
         this.cancel();
         this.isSpeaking = true;
+        const reqId = ++this.speakRequestId;
 
         // CRITICAL FOR VIDEO RECORDING:
         // window.speechSynthesis plays to OS speakers only and CANNOT be recorded by MediaRecorder!
@@ -2713,15 +2779,22 @@
               : 'http://localhost:5500';
             const url = `${origin}/api/tts?voice=${voiceParam}&text=${encodeURIComponent(text)}`;
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 7500);
+            this.currentAbortController = new AbortController();
+            const timeoutId = setTimeout(() => {
+              if (this.currentAbortController) this.currentAbortController.abort();
+            }, 7500);
 
-            const res = await fetch(url, { signal: controller.signal });
+            const res = await fetch(url, { signal: this.currentAbortController.signal });
             clearTimeout(timeoutId);
 
+            if (reqId !== this.speakRequestId || !this.isSpeaking) return;
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const arrayBuffer = await res.arrayBuffer();
+
+            if (reqId !== this.speakRequestId || !this.isSpeaking) return;
             const audioBuffer = await audioSynth.ctx.decodeAudioData(arrayBuffer);
+
+            if (reqId !== this.speakRequestId || !this.isSpeaking) return;
 
             const source = audioSynth.ctx.createBufferSource();
             source.buffer = audioBuffer;
@@ -2735,13 +2808,16 @@
               finished = true;
               this.isSpeaking = false;
               this.currentBufferSource = null;
-              if (onEndCallback) onEndCallback();
+              if (reqId === this.speakRequestId && onEndCallback) {
+                onEndCallback();
+              }
             };
 
             source.onended = handleFinish;
             source.start(0);
             return;
           } catch (err) {
+            if (reqId !== this.speakRequestId || !this.isSpeaking) return;
             console.warn('Direct studio audio endpoint notice, falling back to local speech:', err);
             if (AppState.isRecording) {
               const banner = document.getElementById('server-offline-alert');
@@ -2765,6 +2841,7 @@
 
         this.cancel();
         this.isSpeaking = true;
+        const reqId = ++this.speakRequestId;
         const utterance = new SpeechSynthesisUtterance(text);
 
         // Find matched native voice
@@ -2790,7 +2867,9 @@
           if (finished) return;
           finished = true;
           this.isSpeaking = false;
-          if (onEndCallback) onEndCallback();
+          if (reqId === this.speakRequestId && onEndCallback) {
+            onEndCallback();
+          }
         };
 
         utterance.onend = finish;
@@ -2804,7 +2883,12 @@
       }
 
       cancel() {
+        this.speakRequestId = (this.speakRequestId || 0) + 1;
         this.isSpeaking = false;
+        if (this.currentAbortController) {
+          try { this.currentAbortController.abort(); } catch (e) {}
+          this.currentAbortController = null;
+        }
         if (this.currentBufferSource) {
           try {
             this.currentBufferSource.stop();
@@ -3095,6 +3179,8 @@
       fps: 30, // 30 or 60
       bitrateMbps: 16, // 8, 16, 28
       isExporting: false,
+      customQuestionPrompt: '', // Global custom question prompt if set by user
+      questionFontSize: 28, // Question title font size in px (adjustable from 16px to 52px)
       timerDuration: 5,
       timeRemaining: 5,
       timerInterval: null,
@@ -3849,6 +3935,8 @@
           timerDuration: AppState.timerDuration || 5,
           funFactEnabled: Boolean(AppState.funFactEnabled),
           sceneCopyrightEnabled: Boolean(AppState.sceneCopyrightEnabled),
+          customQuestionPrompt: AppState.customQuestionPrompt || '',
+          questionFontSize: AppState.questionFontSize || 28,
           customColors: AppState.customColors || { enabled: false, bg: '#070b14', card: '#0f172a', text: '#f8fafc', accent: '#6366f1' },
           watermark: AppState.watermark,
           tts: {
@@ -4085,6 +4173,22 @@
             if (picker && s.customColors[k]) picker.value = s.customColors[k];
             if (hex && s.customColors[k]) hex.value = s.customColors[k];
           });
+        }
+
+        // 13. Question Prompt & Typography
+        if (s.customQuestionPrompt !== undefined) {
+          AppState.customQuestionPrompt = s.customQuestionPrompt;
+          const qInput = document.getElementById('global-question-prompt-input');
+          if (qInput) qInput.value = s.customQuestionPrompt || 'Which country does this flag belong to?';
+        }
+        if (s.questionFontSize) {
+          AppState.questionFontSize = parseInt(s.questionFontSize) || 28;
+          const slider = document.getElementById('question-font-size-slider');
+          const numInput = document.getElementById('question-font-size-number');
+          const label = document.getElementById('question-font-size-label');
+          if (slider) slider.value = AppState.questionFontSize;
+          if (numInput) numInput.value = AppState.questionFontSize;
+          if (label) label.textContent = `${AppState.questionFontSize}px`;
         }
 
         if (s.theme === 'custom' || (s.customColors && s.customColors.enabled)) {
@@ -4544,7 +4648,10 @@
         // Broadcast Synchronized Timing:
         // Narrator speaks question prompt first -> THEN countdown starts!
         if (ttsEngine.enabled) {
-          ttsEngine.speak(q.questionText || "Which country does this flag belong to?", () => {
+          const promptSpoken = (AppState.customQuestionPrompt && AppState.customQuestionPrompt.trim())
+            ? AppState.customQuestionPrompt.trim()
+            : (q.questionText || "Which country does this flag belong to?");
+          ttsEngine.speak(promptSpoken, () => {
             if (AppState.state === 'RUNNING' && !AppState.userAnswered) {
               startCountdownTimer();
             }
@@ -4559,49 +4666,93 @@
       updateHeaderPlayButton();
     }
 
-    // Responsive Text Sizer: Adapts font size dynamically based on available width,
-    // allowing 1 or 2 natural lines with zero overflow clipping or hidden text.
+    // Responsive Text Sizer: Adapts font size dynamically based on user setting or available width,
+    // allowing 1, 2, or more natural lines with zero overflow clipping or hidden text.
     function fitQuestionText() {
       const el = document.getElementById('stage-question-text');
       if (!el) return;
       const wrapper = el.parentElement;
       if (!wrapper) return;
 
-      const is169 = document.getElementById('stage-viewport')?.classList.contains('stage-16-9');
-      const availW = wrapper.clientWidth;
-      if (availW <= 10) return;
-
       // Ensure natural wrapping and zero clipping so full text is always 100% visible
-      el.style.whiteSpace = 'normal';
-      el.style.wordBreak = 'break-word';
-      el.style.overflowWrap = 'break-word';
-      el.style.overflow = 'visible';
-      el.style.textOverflow = 'clip';
-      el.style.fontWeight = '600';
-      el.style.lineHeight = '1.25';
+      el.style.setProperty('white-space', 'normal', 'important');
+      el.style.setProperty('word-break', 'break-word', 'important');
+      el.style.setProperty('overflow-wrap', 'break-word', 'important');
+      el.style.setProperty('overflow', 'visible', 'important');
+      el.style.setProperty('text-overflow', 'clip', 'important');
+      el.style.setProperty('font-weight', '600', 'important');
+      el.style.setProperty('line-height', '1.25', 'important');
 
-      if (is169) {
-        if (availW < 260) {
-          el.style.fontSize = '0.82rem';
-        } else if (availW < 360) {
-          el.style.fontSize = '1.05rem';
-        } else {
-          el.style.fontSize = '1.45rem';
-        }
+      if (AppState.questionFontSize && AppState.questionFontSize > 0) {
+        el.style.setProperty('font-size', `${AppState.questionFontSize}px`, 'important');
       } else {
-        // 9:16 vertical layout - scaled as per available width for 1 or 2 lines
-        if (availW < 280) {
-          el.style.fontSize = '0.92rem';
-        } else if (availW < 330) {
-          el.style.fontSize = '1.05rem';
-        } else if (availW < 390) {
-          el.style.fontSize = '1.18rem';
-        } else if (availW < 460) {
-          el.style.fontSize = '1.35rem';
+        const is169 = document.getElementById('stage-viewport')?.classList.contains('stage-16-9');
+        const availW = wrapper.clientWidth;
+        if (availW <= 10) return;
+
+        let autoSize = '1.45rem';
+        if (is169) {
+          if (availW < 260) autoSize = '0.82rem';
+          else if (availW < 360) autoSize = '1.05rem';
+          else autoSize = '1.45rem';
         } else {
-          el.style.fontSize = '1.55rem';
+          // 9:16 vertical layout - scaled as per available width for 1 or 2 lines
+          if (availW < 280) autoSize = '0.92rem';
+          else if (availW < 330) autoSize = '1.05rem';
+          else if (availW < 390) autoSize = '1.18rem';
+          else if (availW < 460) autoSize = '1.35rem';
+          else autoSize = '1.55rem';
         }
+        el.style.setProperty('font-size', autoSize, 'important');
       }
+    }
+
+    function handleGlobalPromptChange(val) {
+      AppState.customQuestionPrompt = val;
+      const promptToDisplay = (val && val.trim()) 
+        ? val.trim() 
+        : (AppState.currentQuestion?.questionText || 'Which country does this flag belong to?');
+      const stageQ = document.getElementById('stage-question-text');
+      if (stageQ) {
+        stageQ.textContent = promptToDisplay;
+        fitQuestionText();
+      }
+      if (canvasRecorderEngine && typeof canvasRecorderEngine.drawFrame === 'function') {
+        canvasRecorderEngine.drawFrame();
+      }
+      saveStudioSettings();
+    }
+
+    function setPresetPrompt(text) {
+      const input = document.getElementById('global-question-prompt-input');
+      if (input) input.value = text;
+      handleGlobalPromptChange(text);
+    }
+
+    function handleQuestionFontSizeChange(val) {
+      const size = Math.min(64, Math.max(14, parseInt(val) || 28));
+      AppState.questionFontSize = size;
+      const slider = document.getElementById('question-font-size-slider');
+      const numInput = document.getElementById('question-font-size-number');
+      const label = document.getElementById('question-font-size-label');
+      if (slider) slider.value = size;
+      if (numInput) numInput.value = size;
+      if (label) label.textContent = `${size}px`;
+
+      fitQuestionText();
+      if (canvasRecorderEngine && typeof canvasRecorderEngine.drawFrame === 'function') {
+        canvasRecorderEngine.drawFrame();
+      }
+      saveStudioSettings();
+    }
+
+    function resetQuestionTitleSettings() {
+      AppState.customQuestionPrompt = '';
+      AppState.questionFontSize = 28;
+      const input = document.getElementById('global-question-prompt-input');
+      if (input) input.value = 'Which country does this flag belong to?';
+      handleQuestionFontSizeChange(28);
+      handleGlobalPromptChange('Which country does this flag belong to?');
     }
 
     function renderStageDOM() {
@@ -4610,7 +4761,11 @@
       document.getElementById('current-q-num').textContent = AppState.currentIndex + 1;
       const totalEl = document.getElementById('total-q-num');
       if (totalEl) totalEl.textContent = totalQ;
-      document.getElementById('stage-question-text').textContent = q.questionText;
+
+      const promptToDisplay = (AppState.customQuestionPrompt && AppState.customQuestionPrompt.trim())
+        ? AppState.customQuestionPrompt.trim()
+        : (q.questionText || "Which country does this flag belong to?");
+      document.getElementById('stage-question-text').textContent = promptToDisplay;
       fitQuestionText();
 
       const flagImg = document.getElementById('stage-flag-img');
@@ -5586,11 +5741,40 @@
       }
 
       preloadImage(url) {
-        if (!url || this.cachedImages.has(url)) return;
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = url;
-        img.onload = () => this.cachedImages.set(url, img);
+        if (!url) return;
+        this.preloadImageAsync(url);
+      }
+
+      async preloadImageAsync(url) {
+        if (!url) return null;
+        if (this.cachedImages.has(url)) {
+          const existing = this.cachedImages.get(url);
+          if (existing && existing.complete && existing.naturalWidth > 0) return existing;
+        }
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            this.cachedImages.set(url, img);
+            resolve(img);
+          };
+          img.onerror = () => {
+            if (url.includes('/w640/')) {
+              const fallbackUrl = url.replace('/w640/', '/w320/');
+              const fbImg = new Image();
+              fbImg.crossOrigin = "anonymous";
+              fbImg.onload = () => {
+                this.cachedImages.set(url, fbImg);
+                resolve(fbImg);
+              };
+              fbImg.onerror = () => resolve(null);
+              fbImg.src = fallbackUrl;
+            } else {
+              resolve(null);
+            }
+          };
+          img.src = url;
+        });
       }
 
       loadWatermarkImage(url) {
@@ -5647,7 +5831,7 @@
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, W, H);
 
-        const radialHalo = ctx.createRadialGradient(W / 2, H * 0.35, 50, W / 2, H * 0.35, W * 0.6);
+        const radialHalo = ctx.createRadialGradient(W / 2, H * 0.40, 50, W / 2, H * 0.40, W * 0.65);
         radialHalo.addColorStop(0, theme.haloColor);
         radialHalo.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = radialHalo;
@@ -5679,73 +5863,137 @@
         const hasFact = isRevealed && AppState.funFactEnabled && Boolean(q.funFact);
         const letters = ['A', 'B', 'C', 'D'];
 
-        if (is169) {
-          // ==================== 16:9 CINEMA WIDESCREEN ====================
-          const s = W / 1920;
-          const leftColW = Math.round(820 * s);
-          const leftColX = Math.round(90 * s);
-          const rightColX = Math.round(980 * s);
-          const rightColW = W - rightColX - Math.round(90 * s);
+        // Determine prompt text: respects global customized prompt if set
+        const promptText = (AppState.customQuestionPrompt && AppState.customQuestionPrompt.trim())
+          ? AppState.customQuestionPrompt.trim()
+          : (q.questionText || "Which country does this flag belong to?");
 
-          // Top Header (Right Column)
+        if (is169) {
+          // ==================== 16:9 CINEMA WIDESCREEN (1920x1080) ====================
+          const s = W / 1920;
+          const leftColW = Math.round(840 * s);
+          const leftColX = Math.round(95 * s);
+          const rightColX = Math.round(980 * s);
+          const rightColW = W - rightColX - Math.round(95 * s);
+
+          // Top Header across full stage width
+          const headerY = Math.round(44 * s);
+          const headerH = Math.round(46 * s);
           ctx.save();
-          ctx.font = `bold ${Math.round(26 * s)}px Outfit, sans-serif`;
+
+          // Left: Category Branding Pill
+          ctx.font = `bold ${Math.round(22 * s)}px Outfit, sans-serif`;
           ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          const catWidth = ctx.measureText(catText).width + 50 * s;
-          this.roundRect(ctx, rightColX, 75 * s, catWidth, 52 * s, 26 * s, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 2 * s;
-          this.roundRect(ctx, rightColX, 75 * s, catWidth, 52 * s, 26 * s, false, true);
-          ctx.fillStyle = theme.accentText;
+          const catWidth = ctx.measureText(catText).width + Math.round(46 * s);
+          this.roundRect(ctx, leftColX, headerY, catWidth, headerH, headerH / 2, true, false);
+          ctx.strokeStyle = theme.accentText || '#818cf8';
+          ctx.lineWidth = Math.round(2 * s);
+          this.roundRect(ctx, leftColX, headerY, catWidth, headerH, headerH / 2, false, true);
+          ctx.fillStyle = theme.accentText || '#818cf8';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(catText, rightColX + 25 * s, (75 + 26) * s);
+          ctx.fillText(catText, leftColX + Math.round(23 * s), headerY + headerH / 2);
 
-          ctx.font = `bold ${Math.round(26 * s)}px "JetBrains Mono", monospace`;
-          const cWidth = ctx.measureText(counterText).width + 40 * s;
+          // Right: Counter Pill with pulsing dot
+          ctx.font = `bold ${Math.round(22 * s)}px "JetBrains Mono", monospace`;
+          const cWidth = ctx.measureText(counterText).width + Math.round(52 * s);
+          const counterX = W - Math.round(95 * s) - cWidth;
           ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - Math.round(90 * s) - cWidth, 75 * s, cWidth, 52 * s, 26 * s, true, false);
+          this.roundRect(ctx, counterX, headerY, cWidth, headerH, headerH / 2, true, false);
           ctx.strokeStyle = theme.cardBorder;
-          ctx.lineWidth = 2 * s;
-          this.roundRect(ctx, W - Math.round(90 * s) - cWidth, 75 * s, cWidth, 52 * s, 26 * s, false, true);
-          ctx.fillStyle = theme.textColor;
-          ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - Math.round(90 * s) - (cWidth / 2), (75 + 26) * s);
-          ctx.restore();
+          ctx.lineWidth = Math.round(1.5 * s);
+          this.roundRect(ctx, counterX, headerY, cWidth, headerH, headerH / 2, false, true);
 
-          // Left Column: Prompt Text
-          ctx.save();
+          ctx.fillStyle = '#818cf8';
+          ctx.beginPath();
+          ctx.arc(counterX + Math.round(20 * s), headerY + headerH / 2, Math.round(4.5 * s), 0, Math.PI * 2);
+          ctx.fill();
+
           ctx.fillStyle = theme.textColor;
-          ctx.font = `600 ${Math.round(42 * s)}px Outfit, Inter, sans-serif`;
           ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftColX, 85 * s, leftColW, 48 * s);
+          ctx.fillText(counterText, counterX + Math.round(34 * s), headerY + headerH / 2);
           ctx.restore();
 
-          // Left Column: Flag Photo (Direct photo, zero background card, left-aligned)
+          // Sizing for Question Text (respects custom setting)
+          const baseQFontSize = AppState.questionFontSize || 28;
+          const promptFontSize = Math.round(baseQFontSize * s * 1.35);
+          const promptLineH = Math.round(promptFontSize * 1.25);
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          const promptH = this.measureWrappedTextHeight(ctx, promptText, leftColW, promptLineH);
+
+          // Flag Photo Dimensions
+          const targetFlagH = Math.round(420 * s);
           const img = this.cachedImages.get(q.flagUrl);
-          if (img && img.complete) {
-            this.drawFlagPhoto(ctx, img, leftColX, 200 * s, leftColW, 475 * s, 22 * s);
+          let actualFlagW = Math.round(targetFlagH * 1.5);
+          let actualFlagH = targetFlagH;
+          if (img && img.complete && img.naturalWidth > 0) {
+            const imgAspect = img.naturalWidth / img.naturalHeight;
+            actualFlagW = Math.min(leftColW, Math.round(targetFlagH * imgAspect));
+            actualFlagH = Math.round(actualFlagW / imgAspect);
+            if (actualFlagH > targetFlagH) {
+              actualFlagH = targetFlagH;
+              actualFlagW = Math.round(targetFlagH * imgAspect);
+            }
           }
 
-          // Left Column: Timer Bar
-          this.drawTimerBar(ctx, theme, leftColX, 715 * s, leftColW, 26 * s, 13 * s, s);
+          const timerH = Math.round(44 * s);
+          const gap1 = Math.round(18 * s); // between prompt and flag
+          const gap2 = Math.round(22 * s); // between flag and timer
+          const leftTotalH = promptH + gap1 + actualFlagH + gap2 + timerH;
 
-          // Right Column: Options Grid
-          const optionH = Math.round(95 * s);
-          const optionGap = Math.round(18 * s);
-          const optionStartY = hasFact ? Math.round(210 * s) : Math.round(300 * s);
+          // Right Column Dimensions
+          let rightTotalH = 0;
+          let optionH = 0;
+          let optionGap = 0;
+          let factH = 0;
+          if (hasFact) {
+            optionH = Math.round(84 * s);
+            optionGap = Math.round(14 * s);
+            factH = Math.round(140 * s);
+            rightTotalH = 3 * optionH + 2 * optionGap + Math.round(16 * s) + factH;
+          } else {
+            optionH = Math.round(114 * s);
+            optionGap = Math.round(20 * s);
+            rightTotalH = 3 * optionH + 2 * optionGap;
+          }
 
+          // VERTICALLY CENTERED BLOCK IN VIEWPORT (Eliminates bottom void!)
+          const headerBottom = headerY + headerH + Math.round(16 * s);
+          const watermarkTopSafe = H - Math.round(75 * s);
+          const availH = watermarkTopSafe - headerBottom;
+          const maxBlockH = Math.max(leftTotalH, rightTotalH);
+          const blockStartY = headerBottom + Math.max(10 * s, Math.round((availH - maxBlockH) / 2));
+
+          // Left Column
+          const leftStartY = blockStartY + Math.round((maxBlockH - leftTotalH) / 2);
+          const promptY = leftStartY;
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, promptText, leftColX, promptY, leftColW, promptLineH);
+          ctx.restore();
+
+          const flagY = promptY + promptH + gap1;
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftColX, flagY, leftColW, targetFlagH, Math.round(20 * s), s);
+          }
+
+          const timerY = flagY + actualFlagH + gap2;
+          const timerW = Math.max(actualFlagW, Math.round(leftColW * 0.85));
+          this.drawTimerBar(ctx, theme, leftColX, timerY, timerW, Math.round(16 * s), Math.round(8 * s), s);
+
+          // Right Column: Options & Fact Banner vertically centered
+          const rightStartY = blockStartY + Math.round((maxBlockH - rightTotalH) / 2);
           AppState.shuffledOptions.forEach((opt, idx) => {
-            const optY = optionStartY + idx * (optionH + optionGap);
-            this.drawOptionCard(ctx, theme, letters, opt, idx, rightColX, optY, rightColW, optionH, 20 * s, isRevealed, s);
+            const optY = rightStartY + idx * (optionH + optionGap);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, rightColX, optY, rightColW, optionH, Math.round(18 * s), isRevealed, s);
           });
 
-          // Right Column: Fun Fact Banner
           if (hasFact) {
-            const factY = optionStartY + 4 * (optionH + optionGap) + Math.round(10 * s);
-            const factH = Math.round(145 * s);
-            this.drawFactBanner(ctx, theme, rightColX, factY, rightColW, factH, 20 * s, q.funFact, Math.round(25 * s), Math.round(36 * s));
+            const factY = rightStartY + 3 * (optionH + optionGap) + Math.round(16 * s);
+            this.drawFactBanner(ctx, theme, rightColX, factY, rightColW, factH, Math.round(18 * s), q.funFact, s);
           }
 
         } else if (is45) {
@@ -5754,65 +6002,109 @@
           const leftX = Math.round(65 * s);
           const contentW = W - Math.round(130 * s);
 
-          // Header
+          // Top Header
+          const headerY = Math.round(52 * s);
+          const headerH = Math.round(48 * s);
           ctx.save();
-          const headerY = Math.round(55 * s);
           ctx.font = `bold ${Math.round(24 * s)}px Outfit, sans-serif`;
-          const catWidth = ctx.measureText(catText).width + 44 * s;
-          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          this.roundRect(ctx, leftX, headerY, catWidth, 50 * s, 25 * s, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 2.5 * s;
-          this.roundRect(ctx, leftX, headerY, catWidth, 50 * s, 25 * s, false, true);
-          ctx.fillStyle = theme.accentText;
+          const catWidth = ctx.measureText(catText).width + Math.round(44 * s);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, true, false);
+          ctx.strokeStyle = theme.accentText || '#818cf8';
+          ctx.lineWidth = Math.round(2 * s);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, false, true);
+          ctx.fillStyle = theme.accentText || '#818cf8';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(catText, leftX + 22 * s, headerY + 25 * s);
+          ctx.fillText(catText, leftX + Math.round(22 * s), headerY + headerH / 2);
 
           ctx.font = `bold ${Math.round(24 * s)}px "JetBrains Mono", monospace`;
-          const counterWidth = ctx.measureText(counterText).width + 38 * s;
+          const counterWidth = ctx.measureText(counterText).width + Math.round(50 * s);
+          const counterX = W - leftX - counterWidth;
           ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 50 * s, 25 * s, true, false);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, true, false);
           ctx.strokeStyle = theme.cardBorder;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 50 * s, 25 * s, false, true);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, false, true);
+
+          ctx.fillStyle = '#818cf8';
+          ctx.beginPath();
+          ctx.arc(counterX + Math.round(20 * s), headerY + headerH / 2, Math.round(4 * s), 0, Math.PI * 2);
+          ctx.fill();
+
           ctx.fillStyle = theme.textColor;
-          ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 25 * s);
+          ctx.textAlign = 'left';
+          ctx.fillText(counterText, counterX + Math.round(34 * s), headerY + headerH / 2);
           ctx.restore();
 
-          // Question Prompt
-          ctx.save();
-          ctx.fillStyle = theme.textColor;
-          ctx.font = `600 ${Math.round(42 * s)}px Outfit, Inter, sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftX, 125 * s, contentW, 50 * s);
-          ctx.restore();
+          // Sizing for Question Text
+          const baseQFontSize = AppState.questionFontSize || 28;
+          const promptFontSize = Math.round(baseQFontSize * s * 1.45);
+          const promptLineH = Math.round(promptFontSize * 1.25);
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          const promptH = this.measureWrappedTextHeight(ctx, promptText, contentW, promptLineH);
 
           // Flag Photo
+          const targetFlagH = Math.round(360 * s);
           const img = this.cachedImages.get(q.flagUrl);
-          if (img && img.complete) {
-            this.drawFlagPhoto(ctx, img, leftX, 230 * s, contentW, 330 * s, 18 * s);
+          let actualFlagH = targetFlagH;
+          if (img && img.complete && img.naturalWidth > 0) {
+            const imgAspect = img.naturalWidth / img.naturalHeight;
+            const actualFlagW = Math.min(contentW, Math.round(targetFlagH * imgAspect));
+            actualFlagH = Math.min(targetFlagH, Math.round(actualFlagW / imgAspect));
           }
 
-          // Timer Bar
-          this.drawTimerBar(ctx, theme, leftX, 585 * s, contentW, 22 * s, 11 * s, s);
+          const timerH = Math.round(48 * s);
+          let optionH = 0;
+          let optionGap = 0;
+          let factH = 0;
+          let optionsBlockH = 0;
+          if (hasFact) {
+            optionH = Math.round(86 * s);
+            optionGap = Math.round(14 * s);
+            factH = Math.round(140 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap + Math.round(16 * s) + factH;
+          } else {
+            optionH = Math.round(112 * s);
+            optionGap = Math.round(18 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap;
+          }
 
-          // Options Grid
-          const optionH = Math.round(84 * s);
-          const optionGap = Math.round(14 * s);
-          const optionStartY = Math.round(630 * s);
+          const gap1 = Math.round(18 * s);
+          const gap2 = Math.round(22 * s);
+          const gap3 = Math.round(26 * s);
+          const totalStackH = promptH + gap1 + actualFlagH + gap2 + timerH + gap3 + optionsBlockH;
 
+          // VERTICALLY CENTERED STACK
+          const headerBottom = headerY + headerH + Math.round(20 * s);
+          const watermarkTopSafe = H - Math.round(80 * s);
+          const availH = watermarkTopSafe - headerBottom;
+          const stackStartY = headerBottom + Math.max(10 * s, Math.round((availH - totalStackH) / 2));
+
+          const promptY = stackStartY;
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, promptText, leftX, promptY, contentW, promptLineH);
+          ctx.restore();
+
+          const flagY = promptY + promptH + gap1;
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, flagY, contentW, targetFlagH, Math.round(20 * s), s);
+          }
+
+          const timerY = flagY + actualFlagH + gap2;
+          this.drawTimerBar(ctx, theme, leftX, timerY, contentW, Math.round(18 * s), Math.round(9 * s), s);
+
+          const optionStartY = timerY + timerH + gap3;
           AppState.shuffledOptions.forEach((opt, idx) => {
             const optY = optionStartY + idx * (optionH + optionGap);
-            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 18 * s, isRevealed, s);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, Math.round(18 * s), isRevealed, s);
           });
 
-          // Fun Fact Banner
           if (hasFact) {
-            const factY = Math.round(1030 * s);
-            const factH = Math.round(135 * s);
-            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 18 * s, q.funFact, Math.round(25 * s), Math.round(36 * s));
+            const factY = optionStartY + 3 * (optionH + optionGap) + Math.round(16 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, Math.round(18 * s), q.funFact, s);
           }
 
         } else if (is11) {
@@ -5821,65 +6113,109 @@
           const leftX = Math.round(55 * s);
           const contentW = W - Math.round(110 * s);
 
-          // Header
+          // Top Header
+          const headerY = Math.round(36 * s);
+          const headerH = Math.round(42 * s);
           ctx.save();
-          const headerY = Math.round(38 * s);
           ctx.font = `bold ${Math.round(20 * s)}px Outfit, sans-serif`;
-          const catWidth = ctx.measureText(catText).width + 38 * s;
-          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          this.roundRect(ctx, leftX, headerY, catWidth, 42 * s, 21 * s, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 2 * s;
-          this.roundRect(ctx, leftX, headerY, catWidth, 42 * s, 21 * s, false, true);
-          ctx.fillStyle = theme.accentText;
+          const catWidth = ctx.measureText(catText).width + Math.round(40 * s);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, true, false);
+          ctx.strokeStyle = theme.accentText || '#818cf8';
+          ctx.lineWidth = Math.round(2 * s);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, false, true);
+          ctx.fillStyle = theme.accentText || '#818cf8';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(catText, leftX + 18 * s, headerY + 21 * s);
+          ctx.fillText(catText, leftX + Math.round(20 * s), headerY + headerH / 2);
 
           ctx.font = `bold ${Math.round(20 * s)}px "JetBrains Mono", monospace`;
-          const counterWidth = ctx.measureText(counterText).width + 34 * s;
+          const counterWidth = ctx.measureText(counterText).width + Math.round(46 * s);
+          const counterX = W - leftX - counterWidth;
           ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 42 * s, 21 * s, true, false);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, true, false);
           ctx.strokeStyle = theme.cardBorder;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 42 * s, 21 * s, false, true);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, false, true);
+
+          ctx.fillStyle = '#818cf8';
+          ctx.beginPath();
+          ctx.arc(counterX + Math.round(18 * s), headerY + headerH / 2, Math.round(3.5 * s), 0, Math.PI * 2);
+          ctx.fill();
+
           ctx.fillStyle = theme.textColor;
-          ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 21 * s);
+          ctx.textAlign = 'left';
+          ctx.fillText(counterText, counterX + Math.round(30 * s), headerY + headerH / 2);
           ctx.restore();
 
-          // Question Prompt
-          ctx.save();
-          ctx.fillStyle = theme.textColor;
-          ctx.font = `600 ${Math.round(34 * s)}px Outfit, Inter, sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftX, 94 * s, contentW, 40 * s);
-          ctx.restore();
+          // Sizing for Question Text
+          const baseQFontSize = AppState.questionFontSize || 28;
+          const promptFontSize = Math.round(baseQFontSize * s * 1.25);
+          const promptLineH = Math.round(promptFontSize * 1.25);
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          const promptH = this.measureWrappedTextHeight(ctx, promptText, contentW, promptLineH);
 
           // Flag Photo
+          const targetFlagH = Math.round(280 * s);
           const img = this.cachedImages.get(q.flagUrl);
-          if (img && img.complete) {
-            this.drawFlagPhoto(ctx, img, leftX, 165 * s, contentW, 235 * s, 16 * s);
+          let actualFlagH = targetFlagH;
+          if (img && img.complete && img.naturalWidth > 0) {
+            const imgAspect = img.naturalWidth / img.naturalHeight;
+            const actualFlagW = Math.min(contentW, Math.round(targetFlagH * imgAspect));
+            actualFlagH = Math.min(targetFlagH, Math.round(actualFlagW / imgAspect));
           }
 
-          // Timer Bar
-          this.drawTimerBar(ctx, theme, leftX, 420 * s, contentW, 18 * s, 9 * s, s);
+          const timerH = Math.round(42 * s);
+          let optionH = 0;
+          let optionGap = 0;
+          let factH = 0;
+          let optionsBlockH = 0;
+          if (hasFact) {
+            optionH = Math.round(68 * s);
+            optionGap = Math.round(11 * s);
+            factH = Math.round(120 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap + Math.round(14 * s) + factH;
+          } else {
+            optionH = Math.round(88 * s);
+            optionGap = Math.round(14 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap;
+          }
 
-          // Options Grid
-          const optionH = Math.round(72 * s);
-          const optionGap = Math.round(11 * s);
-          const optionStartY = Math.round(455 * s);
+          const gap1 = Math.round(14 * s);
+          const gap2 = Math.round(18 * s);
+          const gap3 = Math.round(20 * s);
+          const totalStackH = promptH + gap1 + actualFlagH + gap2 + timerH + gap3 + optionsBlockH;
 
+          // VERTICALLY CENTERED STACK
+          const headerBottom = headerY + headerH + Math.round(16 * s);
+          const watermarkTopSafe = H - Math.round(70 * s);
+          const availH = watermarkTopSafe - headerBottom;
+          const stackStartY = headerBottom + Math.max(8 * s, Math.round((availH - totalStackH) / 2));
+
+          const promptY = stackStartY;
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, promptText, leftX, promptY, contentW, promptLineH);
+          ctx.restore();
+
+          const flagY = promptY + promptH + gap1;
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, flagY, contentW, targetFlagH, Math.round(16 * s), s);
+          }
+
+          const timerY = flagY + actualFlagH + gap2;
+          this.drawTimerBar(ctx, theme, leftX, timerY, contentW, Math.round(16 * s), Math.round(8 * s), s);
+
+          const optionStartY = timerY + timerH + gap3;
           AppState.shuffledOptions.forEach((opt, idx) => {
             const optY = optionStartY + idx * (optionH + optionGap);
-            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 16 * s, isRevealed, s);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, Math.round(16 * s), isRevealed, s);
           });
 
-          // Fun Fact Banner
           if (hasFact) {
-            const factY = Math.round(795 * s);
-            const factH = Math.round(120 * s);
-            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 16 * s, q.funFact, Math.round(22 * s), Math.round(30 * s));
+            const factY = optionStartY + 3 * (optionH + optionGap) + Math.round(14 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, Math.round(16 * s), q.funFact, s);
           }
 
         } else {
@@ -5888,66 +6224,116 @@
           const leftX = Math.round(70 * s);
           const contentW = W - Math.round(140 * s);
 
-          // Header
-          const headerY = Math.round(110 * s);
+          // Top Header: Category Pill Left + Counter Pill Right
+          const headerY = Math.round(75 * s);
+          const headerH = Math.round(56 * s);
           ctx.save();
-          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
-          const catWidth = ctx.measureText(catText).width + 50 * s;
+          ctx.font = `bold ${Math.round(26 * s)}px Outfit, sans-serif`;
+          const catWidth = ctx.measureText(catText).width + Math.round(48 * s);
           ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(79, 70, 229, 0.12)' : 'rgba(99, 102, 241, 0.25)';
-          this.roundRect(ctx, leftX, headerY, catWidth, 60 * s, 30 * s, true, false);
-          ctx.strokeStyle = theme.accentText;
-          ctx.lineWidth = 3 * s;
-          this.roundRect(ctx, leftX, headerY, catWidth, 60 * s, 30 * s, false, true);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, true, false);
+          ctx.strokeStyle = theme.accentText || '#818cf8';
+          ctx.lineWidth = Math.round(2 * s);
+          this.roundRect(ctx, leftX, headerY, catWidth, headerH, headerH / 2, false, true);
 
-          ctx.fillStyle = theme.accentText;
+          ctx.fillStyle = theme.accentText || '#818cf8';
           ctx.textAlign = 'left';
           ctx.textBaseline = 'middle';
-          ctx.fillText(catText, leftX + 25 * s, headerY + 30 * s);
+          ctx.fillText(catText, leftX + Math.round(24 * s), headerY + headerH / 2);
 
-          const counterWidth = ctx.measureText(counterText).width + 44 * s;
+          // Right Counter Pill with dot
+          ctx.font = `bold ${Math.round(25 * s)}px "JetBrains Mono", monospace`;
+          const counterWidth = ctx.measureText(counterText).width + Math.round(54 * s);
+          const counterX = W - leftX - counterWidth;
           ctx.fillStyle = theme.cardBg;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 60 * s, 30 * s, true, false);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, true, false);
           ctx.strokeStyle = theme.cardBorder;
-          this.roundRect(ctx, W - leftX - counterWidth, headerY, counterWidth, 60 * s, 30 * s, false, true);
+          this.roundRect(ctx, counterX, headerY, counterWidth, headerH, headerH / 2, false, true);
+
+          ctx.fillStyle = '#818cf8';
+          ctx.beginPath();
+          ctx.arc(counterX + Math.round(20 * s), headerY + headerH / 2, Math.round(4 * s), 0, Math.PI * 2);
+          ctx.fill();
 
           ctx.fillStyle = theme.textColor;
-          ctx.textAlign = 'center';
-          ctx.fillText(counterText, W - leftX - (counterWidth / 2), headerY + 30 * s);
-          ctx.restore();
-
-          // Question Prompt Text
-          ctx.save();
-          ctx.fillStyle = theme.textColor;
-          ctx.font = `600 ${Math.round(52 * s)}px Outfit, Inter, sans-serif`;
           ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          this.wrapText(ctx, q.questionText, leftX, 220 * s, contentW, 62 * s);
+          ctx.fillText(counterText, counterX + Math.round(34 * s), headerY + headerH / 2);
           ctx.restore();
+
+          // Sizing for Question Text (respects custom setting)
+          const baseQFontSize = AppState.questionFontSize || 28;
+          const promptFontSize = Math.round(baseQFontSize * s * 1.55);
+          const promptLineH = Math.round(promptFontSize * 1.25);
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          const promptH = this.measureWrappedTextHeight(ctx, promptText, contentW, promptLineH);
 
           // Flag Photo
+          const targetFlagH = Math.round(440 * s);
           const img = this.cachedImages.get(q.flagUrl);
-          if (img && img.complete) {
-            this.drawFlagPhoto(ctx, img, leftX, 405 * s, contentW, 480 * s, 22 * s);
+          let actualFlagH = targetFlagH;
+          if (img && img.complete && img.naturalWidth > 0) {
+            const imgAspect = img.naturalWidth / img.naturalHeight;
+            const actualFlagW = Math.min(contentW, Math.round(targetFlagH * imgAspect));
+            actualFlagH = Math.min(targetFlagH, Math.round(actualFlagW / imgAspect));
           }
 
-          // Countdown Timer Bar
-          this.drawTimerBar(ctx, theme, leftX, 940 * s, contentW, 26 * s, 13 * s, s);
+          const timerH = Math.round(52 * s);
+          let optionH = 0;
+          let optionGap = 0;
+          let factH = 0;
+          let optionsBlockH = 0;
+          if (hasFact) {
+            optionH = Math.round(112 * s);
+            optionGap = Math.round(16 * s);
+            factH = Math.round(160 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap + Math.round(18 * s) + factH;
+          } else {
+            optionH = Math.round(145 * s);
+            optionGap = Math.round(22 * s);
+            optionsBlockH = 3 * optionH + 2 * optionGap;
+          }
 
-          // Options Grid
-          const optionStartY = Math.round(1030 * s);
-          const optionH = Math.round(114 * s);
-          const optionGap = Math.round(22 * s);
+          const gap1 = Math.round(22 * s);
+          const gap2 = Math.round(26 * s);
+          const gap3 = Math.round(32 * s);
+          const totalStackH = promptH + gap1 + actualFlagH + gap2 + timerH + gap3 + optionsBlockH;
 
+          // VERTICALLY CENTERED STACK IN 9:16 SHORTS
+          const headerBottom = headerY + headerH + Math.round(24 * s);
+          const watermarkTopSafe = H - Math.round(95 * s);
+          const availH = watermarkTopSafe - headerBottom;
+          const stackStartY = headerBottom + Math.max(12 * s, Math.round((availH - totalStackH) / 2));
+
+          // Draw Prompt
+          const promptY = stackStartY;
+          ctx.save();
+          ctx.fillStyle = theme.textColor;
+          ctx.font = `600 ${promptFontSize}px Outfit, Inter, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          this.wrapText(ctx, promptText, leftX, promptY, contentW, promptLineH);
+          ctx.restore();
+
+          // Draw Flag
+          const flagY = promptY + promptH + gap1;
+          if (img && img.complete) {
+            this.drawFlagPhoto(ctx, img, leftX, flagY, contentW, targetFlagH, Math.round(22 * s), s);
+          }
+
+          // Draw Countdown Timer Bar
+          const timerY = flagY + actualFlagH + gap2;
+          this.drawTimerBar(ctx, theme, leftX, timerY, contentW, Math.round(18 * s), Math.round(9 * s), s);
+
+          // Draw Options Grid
+          const optionStartY = timerY + timerH + gap3;
           AppState.shuffledOptions.forEach((opt, idx) => {
             const optY = optionStartY + idx * (optionH + optionGap);
-            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, 24 * s, isRevealed, s);
+            this.drawOptionCard(ctx, theme, letters, opt, idx, leftX, optY, contentW, optionH, Math.round(22 * s), isRevealed, s);
           });
 
-          // Fun Fact Banner
           if (hasFact) {
-            const factY = Math.round(1520 * s);
-            const factH = Math.round(180 * s);
-            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, 24 * s, q.funFact, Math.round(32 * s), Math.round(44 * s));
+            const factY = optionStartY + 3 * (optionH + optionGap) + Math.round(18 * s);
+            this.drawFactBanner(ctx, theme, leftX, factY, contentW, factH, Math.round(22 * s), q.funFact, s);
           }
         }
 
@@ -5975,7 +6361,7 @@
         ctx.save();
         const isCustom = AppState.customColors && AppState.customColors.enabled;
         const bgColor = isCustom ? AppState.customColors.bg : (theme.bgGradient ? theme.bgGradient[0] : '#070b14');
-        const cardBgColor = isCustom ? AppState.customColors.card : 'rgba(15, 23, 42, 0.96)';
+        const cardBgColor = isCustom ? AppState.customColors.card : 'rgba(15, 23, 42, 0.98)';
         const textColor = isCustom ? AppState.customColors.text : '#ffffff';
         const accentColor = isCustom ? AppState.customColors.accent : (theme.accentText || '#818cf8');
 
@@ -5995,114 +6381,153 @@
         const is45 = ar === '4:5' || (H > W && H / W < 1.45 && !is11);
         const is916 = (!is169 && !is11 && !is45);
 
-        let cardW = Math.round(W * 0.92);
-        let cardH = Math.round(H * 0.74);
+        const s = is169 ? (W / 1920) : (W / 1080);
+
+        let cardW = Math.round(W * 0.90);
+        let cardH = Math.round(H * 0.68);
         if (is169) {
-          cardW = Math.round(W * 0.88);
+          cardW = Math.round(W * 0.82);
           cardH = Math.round(H * 0.82);
         } else if (is45) {
-          cardH = Math.round(H * 0.82);
+          cardW = Math.round(W * 0.88);
+          cardH = Math.round(H * 0.78);
         } else if (is11) {
-          cardH = Math.round(H * 0.88);
+          cardW = Math.round(W * 0.90);
+          cardH = Math.round(H * 0.86);
         }
 
         const cardX = (W - cardW) / 2;
         const cardY = (H - cardH) / 2;
+        const cardRadius = Math.round(40 * s);
 
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-        ctx.shadowOffsetY = 20;
-        ctx.shadowBlur = 48;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowOffsetY = Math.round(24 * s);
+        ctx.shadowBlur = Math.round(50 * s);
         ctx.fillStyle = cardBgColor;
-        this.roundRect(ctx, cardX, cardY, cardW, cardH, 44, true, false);
+        this.roundRect(ctx, cardX, cardY, cardW, cardH, cardRadius, true, false);
+        ctx.restore();
 
-        ctx.shadowColor = 'transparent';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 3;
-        this.roundRect(ctx, cardX, cardY, cardW, cardH, 44, false, true);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = Math.round(2.5 * s);
+        this.roundRect(ctx, cardX, cardY, cardW, cardH, cardRadius, false, true);
 
         if (AppState.state === 'SCENE_INTRO') {
-          // Dynamic Flag Hook Showcase: Random 5 from selected countries
+          // Dynamic Flag Hook Showcase: Fanned rotating flags with golden center ring
           const introFlags = (AppState.introFlags && AppState.introFlags.length > 0)
             ? AppState.introFlags
             : ((typeof updateIntroFlags === 'function') ? updateIntroFlags() : POPULAR_INTRO_FLAGS);
 
-          const flagCount = Math.max(1, introFlags.length);
-          const baseCardW = is169 ? 230 : (is916 ? 172 : (is45 ? 165 : 145));
-          const baseCardH = Math.round(baseCardW * 0.65);
-          const scale = flagCount > 4 ? 0.92 : 1.0;
-          const flagCardW = Math.round(baseCardW * scale);
-          const flagCardH = Math.round(baseCardH * scale);
-          const flagGap = is169 ? 20 : (is916 ? 14 : 10);
-          const totalFlagsW = flagCount * flagCardW + (flagCount - 1) * flagGap;
-          const startFlagsX = (W - totalFlagsW) / 2;
-          const flagsY = cardY + (is169 ? 48 : (is916 ? 60 : (is45 ? 50 : 38)));
-
+          const flagCount = Math.min(5, Math.max(1, introFlags.length));
           const centerIdx = flagCount >= 3 ? Math.floor(flagCount / 2) : (flagCount === 1 ? 0 : -1);
 
-          introFlags.forEach((item, idx) => {
-            const isCenter = idx === centerIdx;
-            const fw = isCenter ? flagCardW + 12 : flagCardW;
-            const fh = isCenter ? flagCardH + 8 : flagCardH;
-            const fx = (startFlagsX + idx * (flagCardW + flagGap)) - (isCenter ? 6 : 0);
-            const fy = isCenter ? flagsY - 8 : flagsY;
-            const rad = is11 ? 14 : 18;
+          // Proportional vertical positioning inside card
+          const flagCenterY = cardY + Math.round(cardH * (is169 ? 0.19 : 0.17));
+
+          // Base dimensions for individual flag cards
+          const baseCardW = Math.round((is169 ? 190 : (is916 ? 195 : (is45 ? 165 : 145))) * s);
+          const baseCardH = Math.round(baseCardW * 0.65);
+          const stepX = Math.round(baseCardW * 0.70); // 30% negative overlap
+
+          const rotations = {
+            1: [0],
+            2: [-3, 3],
+            3: [-4, 0, 4],
+            4: [-5, -2, 2, 5],
+            5: [-6, -3, 0, 3, 6]
+          }[flagCount] || [0];
+
+          // Draw order: draw outer flags first so center flag sits on top
+          const drawOrder = (flagCount === 5)
+            ? [0, 4, 1, 3, 2]
+            : (flagCount === 3 ? [0, 2, 1] : Array.from({ length: flagCount }, (_, i) => i));
+
+          const cx = W / 2;
+
+          drawOrder.forEach(idx => {
+            if (idx >= flagCount) return;
+            const item = introFlags[idx];
+            if (!item) return;
+
+            const isCenter = (idx === centerIdx);
+            const scale = isCenter ? 1.15 : 1.0;
+            const fw = Math.round(baseCardW * scale);
+            const fh = Math.round(baseCardH * scale);
+            const rad = Math.round(16 * s * scale);
+
+            const offsetStep = idx - (flagCount - 1) / 2;
+            const fx = cx + offsetStep * stepX;
+            const fy = flagCenterY + (isCenter ? -Math.round(8 * s) : 0);
+            const rot = (rotations[idx] || 0) * (Math.PI / 180);
 
             ctx.save();
-            ctx.shadowColor = isCenter ? 'rgba(245, 158, 11, 0.5)' : 'rgba(0, 0, 0, 0.7)';
-            ctx.shadowOffsetY = isCenter ? 14 : 8;
-            ctx.shadowBlur = isCenter ? 28 : 18;
+            ctx.translate(fx, fy);
+            ctx.rotate(rot);
+
+            // Shadow
+            ctx.save();
+            if (isCenter) {
+              ctx.shadowColor = 'rgba(245, 158, 11, 0.6)';
+              ctx.shadowOffsetY = Math.round(12 * s);
+              ctx.shadowBlur = Math.round(28 * s);
+            } else {
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+              ctx.shadowOffsetY = Math.round(8 * s);
+              ctx.shadowBlur = Math.round(18 * s);
+            }
             ctx.fillStyle = '#0f172a';
-            this.roundRect(ctx, fx, fy, fw, fh, rad, true, false);
+            this.roundRect(ctx, -fw / 2, -fh / 2, fw, fh, rad, true, false);
             ctx.restore();
 
-            const flagImg = this.cachedImages.get(item.url);
+            // Flag image content
             ctx.save();
-            this.roundRect(ctx, fx, fy, fw, fh, rad, false, false);
+            this.roundRect(ctx, -fw / 2, -fh / 2, fw, fh, rad, false, false);
             ctx.clip();
+            const flagImg = this.cachedImages.get(item.url);
             if (flagImg && flagImg.complete && flagImg.naturalWidth > 0) {
-              ctx.drawImage(flagImg, fx, fy, fw, fh);
+              ctx.drawImage(flagImg, -fw / 2, -fh / 2, fw, fh);
             } else {
-              if (item.url && !this.cachedImages.has(item.url)) {
-                this.preloadImage(item.url);
-              }
               ctx.fillStyle = '#1e293b';
-              ctx.fillRect(fx, fy, fw, fh);
-              ctx.font = 'bold 22px Outfit, sans-serif';
+              ctx.fillRect(-fw / 2, -fh / 2, fw, fh);
+              ctx.font = `bold ${Math.round(20 * s)}px Outfit, sans-serif`;
               ctx.fillStyle = '#94a3b8';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
-              ctx.fillText(item.name || 'Flag', fx + fw / 2, fy + fh / 2);
+              ctx.fillText(item.name || 'Flag', 0, 0);
             }
             ctx.restore();
 
+            // Border / Gold Ring
             ctx.save();
             if (isCenter) {
               ctx.strokeStyle = '#f59e0b';
-              ctx.lineWidth = 3.5;
+              ctx.lineWidth = Math.round(4.5 * s);
             } else {
               ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
-              ctx.lineWidth = 2;
+              ctx.lineWidth = Math.round(2.5 * s);
             }
-            this.roundRect(ctx, fx, fy, fw, fh, rad, false, true);
+            this.roundRect(ctx, -fw / 2, -fh / 2, fw, fh, rad, false, true);
+            ctx.restore();
+
             ctx.restore();
           });
 
           // 4. Viral Challenge Badge Pill
           const totalQ = getTotalSelectedQuestions();
           const badgeStr = `🔥 99% FAIL • CAN YOU GUESS ALL ${totalQ}?`;
-          const bPillFont = (is169 || is916) ? 28 : 22;
-          ctx.font = `bold ${bPillFont}px Outfit, monospace`;
+          const bPillFont = Math.round((is169 ? 24 : (is916 ? 26 : 22)) * s);
+          ctx.font = `bold ${bPillFont}px Outfit, "JetBrains Mono", monospace`;
           const bTextW = ctx.measureText(badgeStr).width;
-          const maxPillW = cardW - 50;
-          const bPillW = Math.min(bTextW + 48, maxPillW);
-          const bPillH = (is169 || is916) ? 52 : 44;
+          const maxPillW = cardW - Math.round(40 * s);
+          const bPillW = Math.min(bTextW + Math.round(48 * s), maxPillW);
+          const bPillH = Math.round((is169 ? 48 : (is916 ? 54 : 44)) * s);
           const bPillX = (W - bPillW) / 2;
-          const bPillY = flagsY + flagCardH + ((is169 || is916) ? 32 : 22);
+          const bPillY = cardY + Math.round(cardH * (is169 ? 0.32 : 0.31));
 
           ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, true, false);
           ctx.strokeStyle = '#f59e0b';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = Math.round(2 * s);
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, false, true);
 
           ctx.fillStyle = '#fbbf24';
@@ -6111,54 +6536,55 @@
           ctx.fillText(badgeStr, W / 2, bPillY + bPillH / 2);
 
           // 5. Hero Title
-          const titleFont = is169 ? 62 : (is916 ? 66 : (is45 ? 52 : 44));
-          const titleLineH = is169 ? 72 : (is916 ? 76 : (is45 ? 60 : 50));
+          const titleFont = Math.round((is169 ? 56 : (is916 ? 62 : 46)) * s);
+          const titleLineH = Math.round(titleFont * 1.2);
           ctx.font = `900 ${titleFont}px Outfit, sans-serif`;
           ctx.fillStyle = textColor;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          const titleY = bPillY + bPillH + ((is169 || is916) ? 28 : 18);
-          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 100, titleLineH);
+          const titleY = cardY + Math.round(cardH * (is169 ? 0.44 : 0.43));
+          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - Math.round(80 * s), titleLineH);
 
           // 6. Subtitle
-          const subFont = is169 ? 32 : (is916 ? 34 : (is45 ? 26 : 22));
-          const subLineH = is169 ? 44 : (is916 ? 46 : (is45 ? 36 : 30));
+          const subFont = Math.round((is169 ? 28 : (is916 ? 32 : 24)) * s);
+          const subLineH = Math.round(subFont * 1.35);
           ctx.font = `600 ${subFont}px Inter, sans-serif`;
           ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
-          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + 14, cardW - 120, subLineH);
+          const subY = Math.max(nextY + Math.round(14 * s), cardY + Math.round(cardH * (is169 ? 0.60 : 0.58)));
+          this.wrapText(ctx, textInfo.subtitle, W / 2, subY, cardW - Math.round(100 * s), subLineH);
 
         } else {
           // Checkpoints & Outro (Milestone or Outro Icon & Badge)
-          const iconSize = is169 ? 130 : (is916 ? 120 : (is45 ? 95 : 75));
+          const iconSize = Math.round((is169 ? 120 : (is916 ? 130 : 100)) * s);
           const iconX = (W - iconSize) / 2;
-          const iconY = cardY + (is169 ? 50 : (is916 ? 60 : (is45 ? 44 : 34)));
-          ctx.fillStyle = 'rgba(99, 102, 241, 0.16)';
-          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 24, true, false);
-          ctx.strokeStyle = 'rgba(99, 102, 241, 0.45)';
-          ctx.lineWidth = 2.5;
-          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, 24, false, true);
+          const iconY = cardY + Math.round(cardH * (is169 ? 0.16 : 0.15));
+          ctx.fillStyle = 'rgba(99, 102, 241, 0.18)';
+          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, Math.round(24 * s), true, false);
+          ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+          ctx.lineWidth = Math.round(2.5 * s);
+          this.roundRect(ctx, iconX, iconY, iconSize, iconSize, Math.round(24 * s), false, true);
 
           const iconEmoji = AppState.state === 'SCENE_MILESTONE' ? '🔥' : '🎉';
-          const emojiFont = is169 ? 72 : (is916 ? 64 : (is45 ? 50 : 40));
+          const emojiFont = Math.round(iconSize * 0.55);
           ctx.font = `${emojiFont}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(iconEmoji, W / 2, iconY + iconSize / 2 + 2);
+          ctx.fillText(iconEmoji, W / 2, iconY + iconSize / 2 + 2 * s);
 
           // Category / Milestone Pill
           const badgeStr = (textInfo.badge || 'FLAG CHALLENGE').toUpperCase();
-          const bPillFont = (is169 || is916) ? 28 : 22;
+          const bPillFont = Math.round((is169 ? 24 : (is916 ? 26 : 22)) * s);
           ctx.font = `bold ${bPillFont}px Outfit, sans-serif`;
           const bTextW = ctx.measureText(badgeStr).width;
-          const bPillW = bTextW + 48;
-          const bPillH = (is169 || is916) ? 52 : 42;
+          const bPillW = bTextW + Math.round(48 * s);
+          const bPillH = Math.round((is169 ? 48 : (is916 ? 54 : 44)) * s);
           const bPillX = (W - bPillW) / 2;
-          const bPillY = iconY + iconSize + (is11 ? 16 : 22);
+          const bPillY = cardY + Math.round(cardH * (is169 ? 0.33 : 0.31));
 
           ctx.fillStyle = 'rgba(99, 102, 241, 0.22)';
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, true, false);
           ctx.strokeStyle = accentColor;
-          ctx.lineWidth = 2;
+          ctx.lineWidth = Math.round(2 * s);
           this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, bPillH / 2, false, true);
 
           ctx.fillStyle = accentColor;
@@ -6167,48 +6593,57 @@
           ctx.fillText(badgeStr, W / 2, bPillY + bPillH / 2);
 
           // Hero Title
-          const titleFont = is169 ? 60 : (is916 ? 64 : (is45 ? 50 : 42));
-          const titleLineH = is169 ? 72 : (is916 ? 76 : (is45 ? 58 : 48));
+          const titleFont = Math.round((is169 ? 56 : (is916 ? 62 : 46)) * s);
+          const titleLineH = Math.round(titleFont * 1.2);
           ctx.font = `900 ${titleFont}px Outfit, sans-serif`;
           ctx.fillStyle = textColor;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
-          const titleY = bPillY + bPillH + (is11 ? 16 : 24);
-          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - 100, titleLineH);
+          const titleY = cardY + Math.round(cardH * (is169 ? 0.44 : 0.43));
+          const nextY = this.wrapText(ctx, textInfo.title, W / 2, titleY, cardW - Math.round(80 * s), titleLineH);
 
           // Subtitle
-          const subFont = is169 ? 32 : (is916 ? 34 : (is45 ? 26 : 22));
-          const subLineH = is169 ? 44 : (is916 ? 46 : (is45 ? 36 : 30));
+          const subFont = Math.round((is169 ? 28 : (is916 ? 32 : 24)) * s);
+          const subLineH = Math.round(subFont * 1.35);
           ctx.font = `600 ${subFont}px Inter, sans-serif`;
           ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
-          this.wrapText(ctx, textInfo.subtitle, W / 2, nextY + 12, cardW - 120, subLineH);
+          const subY = Math.max(nextY + Math.round(14 * s), cardY + Math.round(cardH * (is169 ? 0.60 : 0.58)));
+          this.wrapText(ctx, textInfo.subtitle, W / 2, subY, cardW - Math.round(100 * s), subLineH);
         }
 
         // 7. Broadcast Accent Line
-        const barW = is169 ? 180 : (is916 ? 160 : 130);
-        const barH = 5;
+        const barW = Math.round((is169 ? 180 : (is916 ? 160 : 130)) * s);
+        const barH = Math.round(6 * s);
         const barX = (W - barW) / 2;
-        const showCopyright = AppState.sceneCopyrightEnabled !== false;
-        const barY = cardY + cardH - (showCopyright ? 95 : 42);
-        ctx.fillStyle = accentColor;
-        this.roundRect(ctx, barX, barY, barW, barH, 2.5, true, false);
+        const barY = cardY + Math.round(cardH * 0.74);
+        const barGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+        barGrad.addColorStop(0, '#6366f1');
+        barGrad.addColorStop(0.5, '#a855f7');
+        barGrad.addColorStop(1, '#6366f1');
+        ctx.save();
+        ctx.shadowColor = 'rgba(99, 102, 241, 0.6)';
+        ctx.shadowBlur = Math.round(12 * s);
+        ctx.fillStyle = barGrad;
+        this.roundRect(ctx, barX, barY, barW, barH, barH / 2, true, false);
+        ctx.restore();
 
         // 8. Integrated Brand & Copyright Bar inside the Scene Card
+        const showCopyright = AppState.sceneCopyrightEnabled !== false;
         if (showCopyright) {
-          const divY = cardY + cardH - 72;
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.lineWidth = 1.5;
+          const divY = cardY + Math.round(cardH * 0.86);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = Math.round(1.5 * s);
           ctx.beginPath();
-          ctx.moveTo(cardX + 40, divY);
-          ctx.lineTo(cardX + cardW - 40, divY);
+          ctx.moveTo(cardX + Math.round(40 * s), divY);
+          ctx.lineTo(cardX + cardW - Math.round(40 * s), divY);
           ctx.stroke();
 
-          const brandSig = `${AppState.watermark?.text || '@CountryQuiz'}  •  Flag Quiz Studio`;
-          ctx.font = (is169 || is916) ? 'bold 24px Outfit, Inter, sans-serif' : 'bold 20px Outfit, Inter, sans-serif';
-          ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+          const brandSig = `${AppState.watermark?.text || '@CountryQuiz'}  ✓  •  Flag Quiz Studio`;
+          ctx.font = `bold ${Math.round((is169 ? 24 : 26) * s)}px Outfit, Inter, sans-serif`;
+          ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(brandSig, W / 2, divY + 36);
+          ctx.fillText(brandSig, W / 2, divY + Math.round(cardH * 0.065));
         }
 
         ctx.restore();
@@ -6218,7 +6653,7 @@
         this.mirrorToLiveCanvas();
       }
 
-      drawFlagPhoto(ctx, img, x, y, maxW, targetH, radius) {
+      drawFlagPhoto(ctx, img, x, y, maxW, targetH, radius, s = 1.0) {
         const natW = img.naturalWidth || img.width || 640;
         const natH = img.naturalHeight || img.height || 427;
         const imgAspect = natW / natH;
@@ -6232,8 +6667,8 @@
 
         ctx.save();
         ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-        ctx.shadowOffsetY = Math.round(12 * (targetH / 480));
-        ctx.shadowBlur = Math.round(28 * (targetH / 480));
+        ctx.shadowOffsetY = Math.round(14 * s);
+        ctx.shadowBlur = Math.round(30 * s);
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         this.roundRect(ctx, x, y, flagW, flagH, radius, true, false);
         ctx.restore();
@@ -6243,95 +6678,151 @@
         ctx.clip();
         ctx.drawImage(img, x, y, flagW, flagH);
         ctx.restore();
+
+        return { w: flagW, h: flagH };
       }
 
-      drawTimerBar(ctx, theme, x, y, width, height, radius, s) {
+      drawTimerBar(ctx, theme, x, y, width, height, radius, s = 1.0) {
         ctx.save();
-        ctx.font = `bold ${Math.round(22 * s)}px "JetBrains Mono", monospace`;
+
+        // 1. Timer Header: Left Label + Right Pill Badge
+        const labelY = y - Math.round(18 * s);
+        ctx.font = `bold ${Math.round(20 * s)}px "JetBrains Mono", monospace`;
         ctx.fillStyle = theme.id === 'minimal_light' ? '#64748b' : '#94a3b8';
         ctx.textAlign = 'left';
-        ctx.fillText('TIME REMAINING', x, y - 12 * s);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TIME REMAINING', x, labelY);
 
-        ctx.textAlign = 'right';
-        ctx.fillStyle = AppState.timeRemaining <= 2 ? '#f43f5e' : theme.accentText;
-        ctx.fillText(`${AppState.timeRemaining.toFixed(1)}s`, x + width, y - 12 * s);
+        // Right Timer Badge Pill
+        const timeRemaining = Math.max(0, AppState.timeRemaining || 0);
+        const timeStr = `${timeRemaining.toFixed(1)}s`;
+        ctx.font = `bold ${Math.round(22 * s)}px "JetBrains Mono", monospace`;
+        const timeW = ctx.measureText(timeStr).width;
+        const badgeW = Math.round(timeW + 24 * s);
+        const badgeH = Math.round(32 * s);
+        const badgeX = x + width - badgeW;
+        const badgeY = labelY - badgeH / 2;
 
+        const isUrgent = timeRemaining <= 2.0;
+        ctx.fillStyle = isUrgent ? 'rgba(244, 63, 94, 0.22)' : 'rgba(99, 102, 241, 0.2)';
+        this.roundRect(ctx, badgeX, badgeY, badgeW, badgeH, Math.round(8 * s), true, false);
+        ctx.strokeStyle = isUrgent ? '#f43f5e' : 'rgba(99, 102, 241, 0.45)';
+        ctx.lineWidth = 1.5 * s;
+        this.roundRect(ctx, badgeX, badgeY, badgeW, badgeH, Math.round(8 * s), false, true);
+
+        ctx.fillStyle = isUrgent ? '#f43f5e' : (theme.accentText || '#a5b4fc');
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timeStr, badgeX + badgeW / 2, labelY);
+
+        // 2. Timer Progress Track & Fill
         ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.9)';
         this.roundRect(ctx, x, y, width, height, radius, true, false);
-        ctx.strokeStyle = theme.cardBorder;
+        ctx.strokeStyle = theme.id === 'minimal_light' ? '#cbd5e1' : 'rgba(51, 65, 85, 0.7)';
+        ctx.lineWidth = 1.5 * s;
         this.roundRect(ctx, x, y, width, height, radius, false, true);
 
-        const fraction = Math.max(0, AppState.timeRemaining / AppState.timerDuration);
+        const fraction = Math.max(0, Math.min(1, timeRemaining / (AppState.timerDuration || 5)));
         if (fraction > 0) {
+          const fillW = Math.max(radius * 2, width * fraction);
           const fillGrad = ctx.createLinearGradient(x, 0, x + width, 0);
-          if (AppState.timeRemaining <= 2) {
-            fillGrad.addColorStop(0, theme.timerWarnGrad[0]);
-            fillGrad.addColorStop(1, theme.timerWarnGrad[1]);
+          if (isUrgent) {
+            fillGrad.addColorStop(0, '#f43f5e');
+            fillGrad.addColorStop(1, '#fb7185');
           } else {
-            fillGrad.addColorStop(0, theme.timerGrad[0]);
-            fillGrad.addColorStop(0.5, theme.timerGrad[1] || theme.timerGrad[0]);
-            fillGrad.addColorStop(1, theme.timerGrad[2] || theme.timerGrad[1]);
+            fillGrad.addColorStop(0, '#22d3ee');
+            fillGrad.addColorStop(0.5, '#6366f1');
+            fillGrad.addColorStop(1, '#8b5cf6');
           }
+          ctx.save();
+          ctx.shadowColor = isUrgent ? 'rgba(244, 63, 94, 0.6)' : 'rgba(99, 102, 241, 0.5)';
+          ctx.shadowBlur = 10 * s;
           ctx.fillStyle = fillGrad;
-          this.roundRect(ctx, x, y, width * fraction, height, radius, true, false);
+          this.roundRect(ctx, x, y, fillW, height, radius, true, false);
+          ctx.restore();
         }
+
         ctx.restore();
       }
 
-      drawOptionCard(ctx, theme, letters, opt, idx, x, y, width, height, radius, isRevealed, s) {
+      drawOptionCard(ctx, theme, letters, opt, idx, x, y, width, height, radius, isRevealed, s = 1.0) {
         ctx.save();
         const badgeSize = Math.round(height * 0.58);
         const badgePad = Math.round((height - badgeSize) / 2);
         const badgeX = x + badgePad;
         const badgeY = y + badgePad;
 
+        const maxTextW = width - (badgePad + badgeSize + 28 * s) - (isRevealed ? 70 * s : 24 * s);
+
         if (isRevealed && opt.isCorrect) {
-          ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+          ctx.shadowColor = 'rgba(16, 185, 129, 0.45)';
           ctx.shadowOffsetY = 4 * s;
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = theme.correctBg;
+          ctx.shadowBlur = 16 * s;
+          ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(209, 250, 229, 0.95)' : '#064e3b';
           this.roundRect(ctx, x, y, width, height, radius, true, false);
-          ctx.strokeStyle = theme.correctBorder;
+          ctx.strokeStyle = '#10b981';
           ctx.lineWidth = 3.5 * s;
           this.roundRect(ctx, x, y, width, height, radius, false, true);
 
-          ctx.fillStyle = theme.correctBadgeBg;
+          ctx.fillStyle = '#059669';
           this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), true, false);
           ctx.fillStyle = '#ffffff';
-          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.font = `bold ${Math.round(28 * s)}px Outfit, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
 
-          ctx.fillStyle = '#ffffff';
-          ctx.font = `bold ${Math.round(34 * s)}px Inter, sans-serif`;
-          ctx.textAlign = 'left';
-          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+          // Auto-scale country name text
+          let textFontSize = Math.round(34 * s);
+          ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+          let textW = ctx.measureText(opt.text).width;
+          while (textW > maxTextW && textFontSize > Math.round(18 * s)) {
+            textFontSize -= 2;
+            ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+            textW = ctx.measureText(opt.text).width;
+          }
 
           ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(opt.text, badgeX + badgeSize + 18 * s, y + height / 2);
+
+          // Green checkmark
+          ctx.fillStyle = '#34d399';
           ctx.font = `bold ${Math.round(36 * s)}px sans-serif`;
           ctx.textAlign = 'right';
-          ctx.fillText('✓', x + width - 25 * s, y + height / 2);
+          ctx.textBaseline = 'middle';
+          ctx.fillText('✓', x + width - 24 * s, y + height / 2);
 
         } else if (isRevealed && !opt.isCorrect) {
           ctx.fillStyle = theme.id === 'minimal_light' ? 'rgba(241, 245, 249, 0.6)' : 'rgba(15, 23, 42, 0.4)';
           this.roundRect(ctx, x, y, width, height, radius, true, false);
-          ctx.strokeStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(51, 65, 85, 0.4)';
+          ctx.strokeStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(51, 65, 85, 0.35)';
           ctx.lineWidth = 1.5 * s;
           this.roundRect(ctx, x, y, width, height, radius, false, true);
 
           ctx.fillStyle = theme.id === 'minimal_light' ? '#e2e8f0' : 'rgba(30, 41, 59, 0.5)';
           this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), true, false);
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.fillStyle = '#64748b';
+          ctx.font = `bold ${Math.round(28 * s)}px Outfit, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
 
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = `bold ${Math.round(32 * s)}px Inter, sans-serif`;
+          let textFontSize = Math.round(32 * s);
+          ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+          let textW = ctx.measureText(opt.text).width;
+          while (textW > maxTextW && textFontSize > Math.round(18 * s)) {
+            textFontSize -= 2;
+            ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+            textW = ctx.measureText(opt.text).width;
+          }
+
+          ctx.fillStyle = '#64748b';
           ctx.textAlign = 'left';
-          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(opt.text, badgeX + badgeSize + 18 * s, y + height / 2);
+
         } else {
           ctx.fillStyle = theme.cardBg;
           this.roundRect(ctx, x, y, width, height, radius, true, false);
@@ -6345,35 +6836,69 @@
           this.roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, Math.round(14 * s), false, true);
 
           ctx.fillStyle = theme.badgeText;
-          ctx.font = `bold ${Math.round(30 * s)}px Outfit, sans-serif`;
+          ctx.font = `bold ${Math.round(28 * s)}px Outfit, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(letters[idx], badgeX + badgeSize / 2, badgeY + badgeSize / 2);
 
+          let textFontSize = Math.round(34 * s);
+          ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+          let textW = ctx.measureText(opt.text).width;
+          while (textW > maxTextW && textFontSize > Math.round(18 * s)) {
+            textFontSize -= 2;
+            ctx.font = `bold ${textFontSize}px Inter, sans-serif`;
+            textW = ctx.measureText(opt.text).width;
+          }
+
           ctx.fillStyle = theme.textColor;
-          ctx.font = `bold ${Math.round(34 * s)}px Inter, sans-serif`;
           ctx.textAlign = 'left';
-          ctx.fillText(opt.text, badgeX + badgeSize + 16 * s, y + height / 2);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(opt.text, badgeX + badgeSize + 18 * s, y + height / 2);
         }
         ctx.restore();
       }
 
-      drawFactBanner(ctx, theme, x, y, width, height, radius, factText, fontPx, lineHPx) {
+      drawFactBanner(ctx, theme, x, y, width, height, radius, factText, s = 1.0) {
         ctx.save();
-        ctx.fillStyle = theme.factBg;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowOffsetY = 6 * s;
+        ctx.shadowBlur = 18 * s;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.96)';
         this.roundRect(ctx, x, y, width, height, radius, true, false);
-        ctx.strokeStyle = theme.factBorder;
-        ctx.lineWidth = 2.5;
+
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+        ctx.lineWidth = 2.5 * s;
         this.roundRect(ctx, x, y, width, height, radius, false, true);
 
-        ctx.font = `${Math.round(fontPx * 1.15)}px sans-serif`;
-        ctx.fillText('💡', x + 24, y + Math.round(fontPx * 1.4));
+        // Header: Lightbulb Icon + "DID YOU KNOW?" Badge Pill
+        const headerY = y + Math.round(22 * s);
+        ctx.font = `${Math.round(26 * s)}px sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💡', x + Math.round(20 * s), headerY);
 
-        ctx.font = `500 ${fontPx}px Inter, sans-serif`;
-        ctx.fillStyle = theme.textColor;
+        ctx.font = `bold ${Math.round(18 * s)}px "JetBrains Mono", monospace`;
+        const badgeStr = 'DID YOU KNOW?';
+        const bTextW = ctx.measureText(badgeStr).width;
+        const bPillW = bTextW + 20 * s;
+        const bPillH = 28 * s;
+        const bPillX = x + Math.round(58 * s);
+        const bPillY = headerY - bPillH / 2;
+
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.2)';
+        this.roundRect(ctx, bPillX, bPillY, bPillW, bPillH, 6 * s, true, false);
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badgeStr, bPillX + bPillW / 2, headerY);
+
+        // Fact text
+        ctx.font = `600 ${Math.round(26 * s)}px Inter, sans-serif`;
+        ctx.fillStyle = '#f8fafc';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        this.wrapText(ctx, factText, x + 68, y + 24, width - 88, lineHPx);
+        this.wrapText(ctx, factText, x + Math.round(22 * s), y + Math.round(52 * s), width - Math.round(44 * s), Math.round(36 * s));
         ctx.restore();
       }
 
@@ -6401,6 +6926,24 @@
         ctx.closePath();
         if (fill) ctx.fill();
         if (stroke) ctx.stroke();
+      }
+
+      measureWrappedTextHeight(ctx, text, maxWidth, lineHeight) {
+        if (!text) return 0;
+        const words = text.split(' ');
+        let line = '';
+        let lineCount = 1;
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0) {
+            line = words[n] + ' ';
+            lineCount++;
+          } else {
+            line = testLine;
+          }
+        }
+        return lineCount * lineHeight;
       }
 
       wrapText(ctx, text, x, y, maxWidth, lineHeight) {
@@ -6432,15 +6975,15 @@
 
         const text = wm.text || '@CountryQuiz';
         const ar = AppState.aspectRatio || '9:16';
-        const isCompact = (ar === '1:1' || ar === '4:5' || H <= 1350);
+        const s = (ar === '16:9' || W > H * 1.25) ? (W / 1920) : (W / 1080);
 
         ctx.save();
 
-        let fontSize = isCompact ? 22 : 28;
-        let logoSize = isCompact ? 36 : 44;
-        let paddingX = isCompact ? 16 : 22;
-        let paddingY = isCompact ? 8 : 12;
-        let gap = isCompact ? 10 : 12;
+        let fontSize = Math.round(26 * s);
+        let logoSize = Math.round(42 * s);
+        let paddingX = Math.round(20 * s);
+        let paddingY = Math.round(10 * s);
+        let gap = Math.round(12 * s);
 
         if (wm.logoSize === 'small') {
           fontSize = Math.round(fontSize * 0.85);
@@ -6461,28 +7004,28 @@
         const badgeW = paddingX * 2 + logoSize + gap + textW;
         const badgeH = Math.max(logoSize, fontSize) + paddingY * 2;
 
-        let badgeX = W - badgeW - 35;
-        let badgeY = H - badgeH - 30;
+        let badgeX = W - badgeW - Math.round(36 * s);
+        let badgeY = H - badgeH - Math.round(32 * s);
 
         if (wm.position === 'top-right') {
-          badgeX = W - badgeW - 35;
-          badgeY = 35;
+          badgeX = W - badgeW - Math.round(36 * s);
+          badgeY = Math.round(36 * s);
         } else if (wm.position === 'bottom-left') {
-          badgeX = 35;
-          badgeY = H - badgeH - 30;
+          badgeX = Math.round(36 * s);
+          badgeY = H - badgeH - Math.round(32 * s);
         }
 
         // Draw pill background
         const pillRadius = badgeH / 2;
         ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
-        ctx.shadowOffsetY = 4;
-        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4 * s;
+        ctx.shadowBlur = 12 * s;
         ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
         this.roundRect(ctx, badgeX, badgeY, badgeW, badgeH, pillRadius, true, false);
 
         ctx.shadowColor = 'transparent';
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * s;
         this.roundRect(ctx, badgeX, badgeY, badgeW, badgeH, pillRadius, false, true);
 
         // Logo coordinates
@@ -6496,7 +7039,7 @@
           ctx.closePath();
           ctx.clip();
         } else if (wm.logoShape === 'rounded') {
-          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8, false, false);
+          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8 * s, false, false);
           ctx.clip();
         } else {
           ctx.beginPath();
@@ -6519,13 +7062,13 @@
 
         ctx.save();
         ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * s;
         if (wm.logoShape === 'circle') {
           ctx.beginPath();
           ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
           ctx.stroke();
         } else if (wm.logoShape === 'rounded') {
-          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8, false, true);
+          this.roundRect(ctx, logoX, logoY, logoSize, logoSize, 8 * s, false, true);
         } else {
           ctx.strokeRect(logoX, logoY, logoSize, logoSize);
         }
@@ -6681,6 +7224,25 @@
 
       // Auto-collapse drawer for clean stage view
       toggleControlDeck(false);
+
+      // Preload intro hook flags & first question flags so no unloaded images appear
+      const preloadUrls = [];
+      const introFlagsToLoad = (AppState.introFlags && AppState.introFlags.length > 0)
+        ? AppState.introFlags
+        : ((typeof updateIntroFlags === 'function') ? updateIntroFlags() : POPULAR_INTRO_FLAGS);
+      if (Array.isArray(introFlagsToLoad)) {
+        introFlagsToLoad.forEach(f => { if (f && f.url) preloadUrls.push(f.url); });
+      }
+      if (AppState.questions && AppState.questions[0] && AppState.questions[0].flagUrl) {
+        preloadUrls.push(AppState.questions[0].flagUrl);
+      }
+      if (preloadUrls.length > 0) {
+        try {
+          await Promise.all(preloadUrls.map(u => canvasRecorderEngine.preloadImageAsync(u)));
+        } catch (e) {
+          console.warn('Flag preload notice:', e);
+        }
+      }
 
       // Pre-draw initial frame
       canvasRecorderEngine.drawFrame();
