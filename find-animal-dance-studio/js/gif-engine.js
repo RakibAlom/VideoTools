@@ -22,6 +22,7 @@ class GifEngine {
     }
     const buffer = await response.arrayBuffer();
     const gifData = this.decode(buffer, id);
+    await this.prepareBitmaps(gifData);
     this.cache.set(id, gifData);
     return gifData;
   }
@@ -32,7 +33,24 @@ class GifEngine {
   async loadFromFile(file, id = file.name) {
     const buffer = await file.arrayBuffer();
     const gifData = this.decode(buffer, id);
+    await this.prepareBitmaps(gifData);
     this.cache.set(id, gifData);
+    return gifData;
+  }
+
+  /**
+   * Pre-caches ImageBitmap objects for all frames in GPU memory for lag-free rendering
+   */
+  async prepareBitmaps(gifData) {
+    if (!gifData || !gifData.frames || typeof createImageBitmap !== 'function') return gifData;
+    const tasks = gifData.frames.map(async (f) => {
+      if (!f.bitmap) {
+        try {
+          f.bitmap = await createImageBitmap(f.canvas);
+        } catch (e) {}
+      }
+    });
+    await Promise.all(tasks);
     return gifData;
   }
 
@@ -79,15 +97,26 @@ class GifEngine {
       const imgData = new ImageData(new Uint8ClampedArray(fullPixels), width, height);
       fCtx.putImageData(imgData, 0, 0);
 
-      const rawDelay = frameInfo.delay || 10;
-      const delayMs = Math.max(20, rawDelay * 10);
+      // Handle standard browser GIF delay clamping: 0 or 1 hundredths defaults to 100ms (10 fps)
+      const rawDelay = frameInfo.delay;
+      let delayHundredths = (rawDelay === undefined || rawDelay === null || rawDelay <= 1) ? 10 : rawDelay;
+      const delayMs = Math.max(20, delayHundredths * 10);
 
-      frames.push({
+      const frameObj = {
         canvas: frameCanvas,
+        bitmap: null,
         delay: delayMs,
         startTime: cumulativeTime,
         endTime: cumulativeTime + delayMs
-      });
+      };
+
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(frameCanvas).then(bm => {
+          frameObj.bitmap = bm;
+        }).catch(() => {});
+      }
+
+      frames.push(frameObj);
 
       cumulativeTime += delayMs;
 
@@ -118,20 +147,20 @@ class GifEngine {
   }
 
   /**
-   * Retrieves the frame canvas at a given timestamp in ms
+   * Retrieves the frame canvas or hardware-accelerated ImageBitmap at a given timestamp in ms
    */
   getFrame(gifData, timestampMs) {
     if (!gifData || !gifData.frames || gifData.frames.length === 0) return null;
-    if (gifData.frames.length === 1) return gifData.frames[0].canvas;
+    if (gifData.frames.length === 1) return gifData.frames[0].bitmap || gifData.frames[0].canvas;
 
     const t = (timestampMs % gifData.totalDuration + gifData.totalDuration) % gifData.totalDuration;
     for (let i = 0; i < gifData.frames.length; i++) {
       const f = gifData.frames[i];
       if (t >= f.startTime && t < f.endTime) {
-        return f.canvas;
+        return f.bitmap || f.canvas;
       }
     }
-    return gifData.frames[0].canvas;
+    return gifData.frames[0].bitmap || gifData.frames[0].canvas;
   }
 
   /**
@@ -225,6 +254,15 @@ class GifEngine {
       }
 
       ctx.putImageData(imgData, 0, 0);
+
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(f.canvas).then(bm => {
+          if (f.bitmap && typeof f.bitmap.close === 'function') {
+            try { f.bitmap.close(); } catch(e) {}
+          }
+          f.bitmap = bm;
+        }).catch(() => {});
+      }
     });
 
     return gifData;
@@ -271,6 +309,15 @@ class GifEngine {
       }
 
       ctx.putImageData(imgData, 0, 0);
+
+      if (typeof createImageBitmap === 'function') {
+        createImageBitmap(f.canvas).then(bm => {
+          if (f.bitmap && typeof f.bitmap.close === 'function') {
+            try { f.bitmap.close(); } catch(e) {}
+          }
+          f.bitmap = bm;
+        }).catch(() => {});
+      }
     });
 
     return gifData;

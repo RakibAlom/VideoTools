@@ -213,6 +213,17 @@ try {
                 continue
             }
 
+            # Quick status/ping check
+            if ($localPath -eq "/api/status") {
+                $response.ContentType = "application/json"
+                $statusJson = '{"status":"ok","server":"world-flag-guess-studio","port":' + $port + ',"ffmpeg":' + $(if ($detectedFfmpeg) { 'true' } else { 'false' }) + '}'
+                $sBytes = [System.Text.Encoding]::UTF8.GetBytes($statusJson)
+                $response.ContentLength64 = $sBytes.Length
+                $response.OutputStream.Write($sBytes, 0, $sBytes.Length)
+                $response.Close()
+                continue
+            }
+
             # Handle TTS Audio Generation Endpoint (/api/tts)
             if ($localPath -eq "/api/tts") {
                 # Quick healthcheck / ping support
@@ -325,10 +336,31 @@ try {
                 continue
             }
 
-            # Map requested path to local files
-            $path = $localPath.TrimStart('/')
-            if ($path -like "world-flag-guess-studio/*") {
+            # Handle Favicon cleanly (never 404)
+            $cleanPath = [System.Uri]::UnescapeDataString($localPath).TrimStart('/')
+            if ($cleanPath -eq "favicon.ico") {
+                $response.ContentType = "image/svg+xml"
+                $svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌐</text></svg>'
+                $svgBytes = [System.Text.Encoding]::UTF8.GetBytes($svgIcon)
+                $response.ContentLength64 = $svgBytes.Length
+                $response.OutputStream.Write($svgBytes, 0, $svgBytes.Length)
+                $response.Close()
+                continue
+            }
+
+            # Map requested path to local files across workspace
+            $targetDir = $root
+            $path = $cleanPath
+
+            if ($path -like "find-animal-dance-studio/*") {
+                $path = $path.Substring(25)
+                $targetDir = "d:\VideoTools\find-animal-dance-studio"
+            } elseif ($path -eq "find-animal-dance-studio" -or $path -eq "find-animal-dance-studio/") {
+                $path = "index.html"
+                $targetDir = "d:\VideoTools\find-animal-dance-studio"
+            } elseif ($path -like "world-flag-guess-studio/*") {
                 $path = $path.Substring(24)
+                $targetDir = "d:\VideoTools\world-flag-guess-studio"
             } elseif ($path -like "100-countryguess/*") {
                 $path = $path.Substring(17)
             } elseif ($path -like "QuizForge-Studio/*") {
@@ -337,11 +369,22 @@ try {
                 $path = "index.html"
             }
 
-            if (-not $path -or $path -eq "") { 
+            if (-not $path -or $path -eq "" -or $path -eq "/") { 
                 $path = "index.html" 
             }
 
-            $filePath = Join-Path $root $path
+            $filePath = Join-Path $targetDir ($path.Replace('/', '\'))
+
+            # Fallback checks across workspace
+            if (-not (Test-Path $filePath -PathType Leaf)) {
+                $altPath1 = Join-Path $root ($cleanPath.Replace('/', '\'))
+                $altPath2 = Join-Path "d:\VideoTools" ($cleanPath.Replace('/', '\'))
+                if (Test-Path $altPath1 -PathType Leaf) {
+                    $filePath = $altPath1
+                } elseif (Test-Path $altPath2 -PathType Leaf) {
+                    $filePath = $altPath2
+                }
+            }
 
             if (Test-Path $filePath -PathType Leaf) {
                 $ext = [System.IO.Path]::GetExtension($filePath).ToLower()
@@ -369,7 +412,8 @@ try {
                 }
             } else {
                 $response.StatusCode = 404
-                $msg = [System.Text.Encoding]::UTF8.GetBytes("404 Not Found: $path in world-flag-guess-studio")
+                $msg = [System.Text.Encoding]::UTF8.GetBytes("404 Not Found: $path (Resolved: $filePath)")
+                Write-Host "404: $localPath (Resolved: $filePath)" -ForegroundColor Red
                 $response.ContentLength64 = $msg.Length
                 if ($request.HttpMethod -ne "HEAD") {
                     $response.OutputStream.Write($msg, 0, $msg.Length)

@@ -1029,20 +1029,30 @@ class AnimalDanceStudio {
   }
 
   drawFrame(ctx, width, height, timeMs, cleanMode = false) {
+    this.drawFrameWithCache(ctx, width, height, timeMs, cleanMode, null, null);
+  }
+
+  drawFrameWithCache(ctx, width, height, timeMs, cleanMode = false, bgBitmap = null, overlayBitmap = null) {
     ctx.save();
 
-    // 1. Background
-    this.renderBackground(ctx, width, height);
+    // 1. Background (instant 1-blit from pre-rendered bitmap if available)
+    if (bgBitmap) {
+      ctx.drawImage(bgBitmap, 0, 0);
+    } else {
+      this.renderBackground(ctx, width, height);
+    }
 
-    // 2. Animals (sorted by depth)
+    // 2. Animals (sorted by depth, dynamic animated GIF frames via GPU ImageBitmaps)
     this.renderAnimals(ctx, width, height, timeMs, cleanMode);
 
-    // 3. Title & Subtitle
-    this.renderTitle(ctx, width, height, cleanMode);
-
-    // 4. Watermark / Branding (unrestricted position)
-    if (this.watermark.enabled) {
-      this.renderWatermark(ctx, width, height, cleanMode);
+    // 3. Title & Subtitle + Watermark (instant 1-blit from pre-rendered overlay if available)
+    if (overlayBitmap) {
+      ctx.drawImage(overlayBitmap, 0, 0);
+    } else {
+      this.renderTitle(ctx, width, height, cleanMode);
+      if (this.watermark.enabled) {
+        this.renderWatermark(ctx, width, height, cleanMode);
+      }
     }
 
     // 5. Countdown Timer
@@ -1060,10 +1070,13 @@ class AnimalDanceStudio {
 
   renderBackground(ctx, width, height) {
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, width, height);
-    if (!this.bg.isLoaded || !this.bg.img.width) return;
+    ctx.imageSmoothingQuality = (width >= 2160 || height >= 2160) ? 'medium' : 'high';
+    
+    if (!this.bg.isLoaded || !this.bg.img.width) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+      return;
+    }
 
     ctx.save();
     const hasFilter = (this.bg.brightness !== 100 || this.bg.contrast !== 100 || this.bg.saturation !== 100);
@@ -1088,13 +1101,19 @@ class AnimalDanceStudio {
     const drawX = (width - drawW) / 2 + (this.bg.panX * (width / 1080));
     const drawY = (height - drawH) / 2 + (this.bg.panY * (height / 1920));
 
+    // Fill background only if the image doesn't completely cover the canvas
+    if (drawX > 0 || drawY > 0 || (drawX + drawW) < width || (drawY + drawH) < height) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, width, height);
+    }
+
     ctx.drawImage(this.bg.img, drawX, drawY, drawW, drawH);
     ctx.restore();
   }
 
   renderAnimals(ctx, width, height, timeMs, cleanMode) {
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = (width >= 2160 || height >= 2160) ? 'medium' : 'high';
     const frameCache = new Map();
 
     for (let i = 0; i < this.animals.length; i++) {
@@ -1363,12 +1382,99 @@ class AnimalDanceStudio {
       ctx.shadowBlur = 12 * scale;
       ctx.shadowOffsetY = 6 * scale;
       ctx.lineWidth = strokeWidth;
-      ctx.strokeStyle = this.title.strokeColor;
+      ctx.strokeStyle = this.title.strokeColor || '#000000';
       ctx.strokeText(this.title.text, x, y);
       ctx.shadowColor = 'transparent';
-      ctx.fillStyle = this.title.textColor;
+      ctx.fillStyle = this.title.textColor || '#ffffff';
       ctx.fillText(this.title.text, x, y);
 
+    } else if (style === 'clean_pill') {
+      // 2. Modern White Pill (Clean, Minimalist & Ultra High Legibility)
+      const tm = ctx.measureText(this.title.text);
+      const boxW = tm.width + 50 * scale;
+      const boxH = fontSize * 1.4;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = 16 * scale;
+      ctx.shadowOffsetY = 6 * scale;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 20 * scale);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(this.title.text, x, y);
+
+    } else if (style === 'tiktok_yellow') {
+      // 3. Viral Shorts Yellow (High-Contrast Yellow with Solid Black 3D Shadow)
+      for (let s = 6 * scale; s >= 1; s--) {
+        ctx.fillStyle = '#000000';
+        ctx.fillText(this.title.text, x + s, y + s);
+      }
+      ctx.lineWidth = strokeWidth * 0.9;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(this.title.text, x, y);
+      ctx.fillStyle = '#facc15';
+      ctx.fillText(this.title.text, x, y);
+
+    } else if (style === 'gradient_sunset') {
+      // 4. Sunset Flame (Warm Sunset Orange to Rose Gradient)
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 12 * scale;
+      ctx.shadowOffsetY = 6 * scale;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = '#450a0a';
+      ctx.strokeText(this.title.text, x, y);
+      ctx.shadowColor = 'transparent';
+      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      g.addColorStop(0, '#ff7a00');
+      g.addColorStop(1, '#f43f5e');
+      ctx.fillStyle = g;
+      ctx.fillText(this.title.text, x, y);
+
+    } else if (style === 'cyan_ice') {
+      // 5. Glacier Ice (Crisp Cyan-Sky Gradient with Deep Navy Outline)
+      ctx.shadowColor = 'rgba(6, 182, 212, 0.7)';
+      ctx.shadowBlur = 18 * scale;
+      ctx.shadowOffsetY = 5 * scale;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = '#082f49';
+      ctx.strokeText(this.title.text, x, y);
+      ctx.shadowColor = 'transparent';
+      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      g.addColorStop(0, '#e0f2fe');
+      g.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = g;
+      ctx.fillText(this.title.text, x, y);
+
+    } else if (style === 'lime_fresh') {
+      // 6. Electric Lime (Punchy Modern Neon Lime)
+      for (let s = 5 * scale; s >= 1; s--) {
+        ctx.fillStyle = '#052e16';
+        ctx.fillText(this.title.text, x + s, y + s);
+      }
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeStyle = '#14532d';
+      ctx.strokeText(this.title.text, x, y);
+      ctx.fillStyle = '#a3e635';
+      ctx.fillText(this.title.text, x, y);
+
+    } else if (style === 'glass_border') {
+      // 7. Obsidian Glow Pill (Translucent Dark Pill with Indigo Rim)
+      const tm = ctx.measureText(this.title.text);
+      const boxW = tm.width + 50 * scale;
+      const boxH = fontSize * 1.4;
+      ctx.shadowColor = 'rgba(99, 102, 241, 0.5)';
+      ctx.shadowBlur = 20 * scale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.beginPath();
+      ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 18 * scale);
+      ctx.fill();
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2.5 * scale;
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText(this.title.text, x, y);
     } else if (style === 'neon_glow') {
       // 2. Cyber Neon
       ctx.shadowColor = '#06b6d4';
@@ -2114,17 +2220,25 @@ class AnimalDanceStudio {
       if (!file) return;
       const reader = new FileReader();
       reader.onload = async (evt) => {
-        this.loadBackground(evt.target.result, 'custom_bg');
+        const dataUrl = evt.target.result;
+        this.loadBackground(dataUrl, 'custom_bg');
         if (window.storageManager) {
           await window.storageManager.saveItem('backgrounds', {
-            id: `bg_${Date.now()}`,
+            id: 'current_active_bg',
             name: file.name,
             date: new Date().toLocaleDateString(),
-            dataUrl: evt.target.result
+            dataUrl: dataUrl
+          });
+          await window.storageManager.saveItem('backgrounds', {
+            id: 'bg_' + Date.now(),
+            name: file.name,
+            date: new Date().toLocaleDateString(),
+            dataUrl: dataUrl
           });
           this.refreshSavedUploadsUI();
         }
-        this.showToast(`Custom background loaded!`, 'success');
+        this.debouncedSaveState();
+        this.showToast('Custom background loaded!', 'success');
       };
       reader.readAsDataURL(file);
     });
@@ -2134,7 +2248,8 @@ class AnimalDanceStudio {
       this.bg.zoom = val / 100;
       document.getElementById('sliderBgZoom').value = val;
       document.getElementById('inputBgZoom').value = val;
-      document.getElementById('bgZoomVal').textContent = `${val}%`;
+      document.getElementById('bgZoomVal').textContent = val + '%';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderBgZoom').addEventListener('input', (e) => syncBgZoom(parseInt(e.target.value)));
     document.getElementById('inputBgZoom').addEventListener('input', (e) => syncBgZoom(parseInt(e.target.value) || 100));
@@ -2143,7 +2258,8 @@ class AnimalDanceStudio {
       this.bg.panX = val;
       document.getElementById('sliderBgPanX').value = val;
       document.getElementById('inputBgPanX').value = val;
-      document.getElementById('bgPanXVal').textContent = `${val}px`;
+      document.getElementById('bgPanXVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderBgPanX').addEventListener('input', (e) => syncBgPanX(parseInt(e.target.value)));
     document.getElementById('inputBgPanX').addEventListener('input', (e) => syncBgPanX(parseInt(e.target.value) || 0));
@@ -2152,14 +2268,38 @@ class AnimalDanceStudio {
       this.bg.panY = val;
       document.getElementById('sliderBgPanY').value = val;
       document.getElementById('inputBgPanY').value = val;
-      document.getElementById('bgPanYVal').textContent = `${val}px`;
+      document.getElementById('bgPanYVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderBgPanY').addEventListener('input', (e) => syncBgPanY(parseInt(e.target.value)));
     document.getElementById('inputBgPanY').addEventListener('input', (e) => syncBgPanY(parseInt(e.target.value) || 0));
 
-    document.getElementById('btnResetBgTransform').addEventListener('click', () => this.resetBackgroundTransform());
+    document.getElementById('btnResetBgTransform').addEventListener('click', () => {
+      this.resetBackgroundTransform();
+      this.debouncedSaveState();
+    });
 
-    // Title Controls & 12+ Styles
+    // Lighting & Atmosphere Sliders
+    document.getElementById('sliderBgBrightness')?.addEventListener('input', (e) => {
+      this.bg.brightness = parseInt(e.target.value) || 100;
+      const v = document.getElementById('bgBrightnessVal');
+      if (v) v.textContent = this.bg.brightness + '%';
+      this.debouncedSaveState();
+    });
+    document.getElementById('sliderBgContrast')?.addEventListener('input', (e) => {
+      this.bg.contrast = parseInt(e.target.value) || 100;
+      const v = document.getElementById('bgContrastVal');
+      if (v) v.textContent = this.bg.contrast + '%';
+      this.debouncedSaveState();
+    });
+    document.getElementById('sliderBgSaturation')?.addEventListener('input', (e) => {
+      this.bg.saturation = parseInt(e.target.value) || 100;
+      const v = document.getElementById('bgSaturationVal');
+      if (v) v.textContent = this.bg.saturation + '%';
+      this.debouncedSaveState();
+    });
+
+    // Title Controls & 18+ Styles
     document.getElementById('inputTitleText').addEventListener('input', (e) => {
       this.title.text = e.target.value;
       this.debouncedSaveState();
@@ -2183,12 +2323,14 @@ class AnimalDanceStudio {
         document.querySelectorAll('.title-style-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
         this.title.style = card.dataset.style;
-        this.pushHistoryState(`Title style: ${card.dataset.style}`);
+        this.pushHistoryState('Title style: ' + card.dataset.style);
+        this.debouncedSaveState();
       });
     });
 
     document.getElementById('selectFontFamily').addEventListener('change', (e) => {
       this.title.fontFamily = e.target.value;
+      this.debouncedSaveState();
     });
 
     // UNLIMITED FONT SIZE (5px to 500px)
@@ -2197,19 +2339,27 @@ class AnimalDanceStudio {
       this.title.fontSize = val;
       document.getElementById('sliderTitleSize').value = Math.min(300, val);
       document.getElementById('inputTitleSizeExact').value = val;
-      document.getElementById('titleSizeVal').textContent = `${val}px`;
+      document.getElementById('titleSizeVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderTitleSize').addEventListener('input', (e) => syncTitleSize(parseInt(e.target.value)));
     document.getElementById('inputTitleSizeExact').addEventListener('input', (e) => syncTitleSize(parseInt(e.target.value) || 64));
 
-    document.getElementById('inputTextColor').addEventListener('input', (e) => this.title.textColor = e.target.value);
-    document.getElementById('inputStrokeColor').addEventListener('input', (e) => this.title.strokeColor = e.target.value);
+    document.getElementById('inputTextColor').addEventListener('input', (e) => {
+      this.title.textColor = e.target.value;
+      this.debouncedSaveState();
+    });
+    document.getElementById('inputStrokeColor').addEventListener('input', (e) => {
+      this.title.strokeColor = e.target.value;
+      this.debouncedSaveState();
+    });
 
     const syncStrokeWidth = (val) => {
       this.title.strokeWidth = val;
       document.getElementById('sliderStrokeWidth').value = val;
       document.getElementById('inputStrokeWidthExact').value = val;
-      document.getElementById('strokeWidthVal').textContent = `${val}px`;
+      document.getElementById('strokeWidthVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderStrokeWidth').addEventListener('input', (e) => syncStrokeWidth(parseInt(e.target.value)));
     document.getElementById('inputStrokeWidthExact').addEventListener('input', (e) => syncStrokeWidth(parseInt(e.target.value) || 0));
@@ -2219,31 +2369,42 @@ class AnimalDanceStudio {
       this.title.subtitleFontSize = val;
       document.getElementById('sliderSubtitleSize').value = val;
       document.getElementById('inputSubtitleSizeExact').value = val;
-      document.getElementById('subtitleSizeVal').textContent = `${val}px`;
+      document.getElementById('subtitleSizeVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderSubtitleSize').addEventListener('input', (e) => syncSubSize(parseInt(e.target.value)));
     document.getElementById('inputSubtitleSizeExact').addEventListener('input', (e) => syncSubSize(parseInt(e.target.value) || 28));
 
-    document.getElementById('inputSubtitleColor').addEventListener('input', (e) => this.title.subtitleColor = e.target.value);
-    document.getElementById('inputSubtitlePillColor').addEventListener('input', (e) => this.title.subtitlePillColor = e.target.value);
-    document.getElementById('checkSubtitlePillEnable').addEventListener('change', (e) => this.title.showSubtitlePill = e.target.checked);
+    document.getElementById('inputSubtitleColor').addEventListener('input', (e) => {
+      this.title.subtitleColor = e.target.value;
+      this.debouncedSaveState();
+    });
+    document.getElementById('inputSubtitlePillColor').addEventListener('input', (e) => {
+      this.title.subtitlePillColor = e.target.value;
+      this.debouncedSaveState();
+    });
+    document.getElementById('checkSubtitlePillEnable').addEventListener('change', (e) => {
+      this.title.showSubtitlePill = e.target.checked;
+      this.debouncedSaveState();
+    });
 
     // Title to Subtitle Spacing (Gap) Controls
     const syncTitleGap = (val) => {
       this.title.gap = val;
       document.getElementById('sliderTitleGap').value = val;
       document.getElementById('inputTitleGapExact').value = val;
-      document.getElementById('titleGapVal').textContent = `${val}px`;
+      document.getElementById('titleGapVal').textContent = val + 'px';
+      this.debouncedSaveState();
     };
     document.getElementById('sliderTitleGap').addEventListener('input', (e) => syncTitleGap(parseInt(e.target.value) || 0));
     document.getElementById('inputTitleGapExact').addEventListener('input', (e) => syncTitleGap(parseInt(e.target.value) || 0));
-
     // Audio Preset Switcher (6 Copyright-Free Tracks)
     document.getElementById('selectPresetTrack').addEventListener('change', async (e) => {
       const track = e.target.value;
       this.showToast(`Synthesizing "${track}" music...`, 'info');
       await window.audioEngine.generatePresetBGM(track, 30);
       this.onAudioTrackLoaded(track.replace('_', ' ').toUpperCase(), window.audioEngine.duration, true, true);
+      this.debouncedSaveState();
     });
 
     // Custom Audio Upload (Supports Multiple Files & Saves to IndexedDB!)
@@ -2326,8 +2487,8 @@ class AnimalDanceStudio {
     });
 
     // Watermark (UNRESTRICTED POSITION 0% TO 100% WITH NO BOTTOM LIMITATION)
-    document.getElementById('checkWatermarkEnable').addEventListener('change', (e) => this.watermark.enabled = e.target.checked);
-    document.getElementById('inputWatermarkText').addEventListener('input', (e) => this.watermark.text = e.target.value);
+    document.getElementById('checkWatermarkEnable').addEventListener('change', (e) => { this.watermark.enabled = e.target.checked; this.debouncedSaveState(); });
+    document.getElementById('inputWatermarkText').addEventListener('input', (e) => { this.watermark.text = e.target.value; this.debouncedSaveState(); });
 
     const syncWmX = (val) => {
       this.watermark.nx = val / 100;
@@ -2492,11 +2653,11 @@ class AnimalDanceStudio {
       const bSelect = document.getElementById('selectBitrate');
       if (bSelect) {
         if (this.resolutionPreset === '4k') {
+          bSelect.value = '25';
+          this.bitrate = 25000000;
+        } else if (this.resolutionPreset === '2k') {
           bSelect.value = '18';
           this.bitrate = 18000000;
-        } else if (this.resolutionPreset === '2k') {
-          bSelect.value = '12';
-          this.bitrate = 12000000;
         } else {
           bSelect.value = '8';
           this.bitrate = 8000000;
@@ -3610,8 +3771,12 @@ class AnimalDanceStudio {
             <i class="fa-solid fa-xmark"></i>
           </button>
         `;
-        thumb.querySelector('img').addEventListener('click', () => {
-          this.loadBackground(item.dataUrl, item.id);
+        thumb.querySelector('img').addEventListener('click', async () => {
+          this.loadBackground(item.dataUrl, 'custom_bg');
+          if (window.storageManager) {
+            await window.storageManager.saveItem('backgrounds', { id: 'current_active_bg', name: item.name || 'Saved Backdrop', date: new Date().toLocaleDateString(), dataUrl: item.dataUrl });
+          }
+          this.debouncedSaveState();
         });
         thumb.querySelector('button').addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -3904,29 +4069,84 @@ class AnimalDanceStudio {
     const exportW = dims.w;
     const exportH = dims.h;
 
-    // 2. Compute target bitrate: use user's selected bitrate or optimized default (8 Mbps)
-    const targetBitrate = this.bitrate || 8000000;
+    // 2. Compute target bitrate: use user's selected bitrate or optimized default
+    let targetBitrate = this.bitrate || 8000000;
+    if (this.resolutionPreset === '4k' && targetBitrate < 25000000) {
+      targetBitrate = 25000000; // 25 Mbps optimal master bitrate for 4K
+    } else if (this.resolutionPreset === '2k' && targetBitrate < 16000000) {
+      targetBitrate = 16000000;
+    }
 
-    // 3. Mounted DOM Live Canvas: Crisp, distortion-free rendering
-    const exportCanvas = document.getElementById('exportLiveCanvas');
-    exportCanvas.width = exportW;
-    exportCanvas.height = exportH;
-    exportCanvas.style.aspectRatio = `${exportW} / ${exportH}`;
-    const exportCtx = exportCanvas.getContext('2d', {
+    // 3. Pre-warm ImageBitmaps in GPU memory for all characters so 4K draws without texture stutter
+    if (window.gifEngine && typeof window.gifEngine.prepareBitmaps === 'function') {
+      for (const gifData of this.loadedGifs.values()) {
+        if (gifData) {
+          try { await window.gifEngine.prepareBitmaps(gifData); } catch (e) {}
+        }
+      }
+    }
+
+    // 4. Pre-render Static Background (Layer 1) at full export resolution once
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.width = exportW;
+    bgCanvas.height = exportH;
+    const bgCtx = bgCanvas.getContext('2d', { alpha: false });
+    bgCtx.imageSmoothingEnabled = true;
+    bgCtx.imageSmoothingQuality = (this.resolutionPreset === '4k' || this.resolutionPreset === '2k') ? 'medium' : 'high';
+    this.renderBackground(bgCtx, exportW, exportH);
+    let staticBgBitmap = null;
+    if (typeof createImageBitmap === 'function') {
+      try { staticBgBitmap = await createImageBitmap(bgCanvas); } catch (e) {}
+    }
+    if (!staticBgBitmap) staticBgBitmap = bgCanvas;
+
+    // 5. Pre-render Static Overlays (Title, Subtitle, Watermark - Layer 3) at full export resolution once
+    const overlayCanvas = document.createElement('canvas');
+    overlayCanvas.width = exportW;
+    overlayCanvas.height = exportH;
+    const overlayCtx = overlayCanvas.getContext('2d');
+    overlayCtx.imageSmoothingEnabled = true;
+    overlayCtx.imageSmoothingQuality = (this.resolutionPreset === '4k' || this.resolutionPreset === '2k') ? 'medium' : 'high';
+    this.renderTitle(overlayCtx, exportW, exportH, true);
+    if (this.watermark.enabled) {
+      this.renderWatermark(overlayCtx, exportW, exportH, true);
+    }
+    let staticOverlayBitmap = null;
+    if (typeof createImageBitmap === 'function') {
+      try { staticOverlayBitmap = await createImageBitmap(overlayCanvas); } catch (e) {}
+    }
+    if (!staticOverlayBitmap) staticOverlayBitmap = overlayCanvas;
+
+    // 6. Dedicated Off-DOM Recording Canvas: Eliminates heavy 4K DOM compositing overhead!
+    const recordCanvas = document.createElement('canvas');
+    recordCanvas.width = exportW;
+    recordCanvas.height = exportH;
+    const recordCtx = recordCanvas.getContext('2d', {
       alpha: false,
-      desynchronized: false
+      desynchronized: true
     });
-    exportCtx.imageSmoothingEnabled = true;
-    exportCtx.imageSmoothingQuality = 'high';
+    recordCtx.imageSmoothingEnabled = true;
+    recordCtx.imageSmoothingQuality = (this.resolutionPreset === '4k' || this.resolutionPreset === '2k') ? 'medium' : 'high';
 
-    // Pre-draw frame 0 so captureStream immediately receives a full-quality graphic
-    this.drawFrame(exportCtx, exportW, exportH, 0, true);
+    // Pre-draw frame 0 so captureStream immediately receives a pristine, full-quality graphic
+    this.drawFrameWithCache(recordCtx, exportW, exportH, 0, true, staticBgBitmap, staticOverlayBitmap);
+
+    // Setup lightweight DOM live preview canvas (e.g. max 480px) for smooth UI without freezing GPU
+    const livePreviewCanvas = document.getElementById('exportLiveCanvas');
+    const previewScale = Math.min(1, 480 / Math.max(exportW, exportH));
+    livePreviewCanvas.width = Math.round(exportW * previewScale);
+    livePreviewCanvas.height = Math.round(exportH * previewScale);
+    livePreviewCanvas.style.aspectRatio = `${exportW} / ${exportH}`;
+    const livePreviewCtx = livePreviewCanvas.getContext('2d', { alpha: false });
+    livePreviewCtx.imageSmoothingEnabled = true;
+    livePreviewCtx.imageSmoothingQuality = 'medium';
+    livePreviewCtx.drawImage(recordCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
 
     const totalSeconds = this.videoDuration + (this.appendRevealEnding ? 3 : 0);
     const targetDurationMs = totalSeconds * 1000;
 
-    // Stream Setup
-    const stream = exportCanvas.captureStream(this.fps);
+    // Stream Setup from dedicated recording canvas
+    const stream = recordCanvas.captureStream(this.fps);
     const videoTrack = (stream && stream.getVideoTracks) ? stream.getVideoTracks()[0] : null;
     if (hasAudio) {
       const audioTrack = window.audioEngine.getAudioTrack();
@@ -3935,7 +4155,7 @@ class AnimalDanceStudio {
       }
     }
 
-    // 4. Codec determination: Prioritize highest quality codecs with lossless/high-bitrate support
+    // 7. Codec determination: AVC Level 5.1/5.2 support 4K 2160p Master Quality without errors
     let mimeCandidates = [];
     if (this.exportFormat === 'webm') {
       mimeCandidates = [
@@ -3945,9 +4165,12 @@ class AnimalDanceStudio {
       ];
     } else {
       mimeCandidates = [
-        hasAudio ? 'video/mp4;codecs=avc1.640028,mp4a.40.2' : 'video/mp4;codecs=avc1.640028',
-        hasAudio ? 'video/mp4;codecs=avc1.4d401f,mp4a.40.2' : 'video/mp4;codecs=avc1.4d401f',
+        // Level 5.1 (0x33) and Level 5.2 (0x34) are required for 4K H.264
+        hasAudio ? 'video/mp4;codecs=avc1.640033,mp4a.40.2' : 'video/mp4;codecs=avc1.640033',
+        hasAudio ? 'video/mp4;codecs=avc1.640034,mp4a.40.2' : 'video/mp4;codecs=avc1.640034',
+        // Generic AVC1 without profile/level constraint allows browser to auto-select 4K profile
         hasAudio ? 'video/mp4;codecs=avc1,mp4a.40.2' : 'video/mp4;codecs=avc1',
+        hasAudio ? 'video/mp4;codecs=avc1.640028,mp4a.40.2' : 'video/mp4;codecs=avc1.640028',
         'video/mp4',
         hasAudio ? 'video/webm;codecs=vp9,opus' : 'video/webm;codecs=vp9',
         hasAudio ? 'video/webm;codecs=vp8,opus' : 'video/webm;codecs=vp8',
@@ -3990,6 +4213,18 @@ class AnimalDanceStudio {
       fileExt = mimeType.includes('webm') ? 'webm' : 'mp4';
     }
 
+    const cleanupExportBitmaps = () => {
+      if (staticBgBitmap && typeof staticBgBitmap.close === 'function') {
+        try { staticBgBitmap.close(); } catch (e) {}
+      }
+      if (staticOverlayBitmap && typeof staticOverlayBitmap.close === 'function') {
+        try { staticOverlayBitmap.close(); } catch (e) {}
+      }
+      staticBgBitmap = null;
+      staticOverlayBitmap = null;
+    };
+    this.currentExportCleanup = cleanupExportBitmaps;
+
     this.exportMediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) this.exportChunks.push(e.data);
     };
@@ -3999,8 +4234,9 @@ class AnimalDanceStudio {
       this.showToast('Recording error occurred during video capture', 'error');
     };
 
-    // ON STOP: Fix EBML metadata using fix-webm-duration so it plays without freezing!
+    // ON STOP: Fix metadata using server remux or client-side fixers for seamless playback!
     this.exportMediaRecorder.onstop = () => {
+      cleanupExportBitmaps();
       if (hasAudio) {
         window.audioEngine.stop();
       }
@@ -4012,8 +4248,42 @@ class AnimalDanceStudio {
         return;
       }
 
-      // If WebM, apply EBML Duration Fixer to guarantee flawless, seekable playback
-      if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
+      if (fileExt === 'mp4') {
+        const desc = document.getElementById('exportModalDesc');
+        const eta = document.getElementById('exportEta');
+        if (desc) desc.textContent = 'Packaging universal FastStart MP4 for mobile, tablet & WhatsApp...';
+        if (eta) eta.textContent = 'Optimizing for all devices...';
+
+        const exportFilename = 'find-' + this.animals.length + '-animals_' + this.resolutionPreset + '_SmartBrain.mp4';
+        const remuxUrl = '/api/remux-mp4?filename=' + encodeURIComponent(exportFilename);
+
+        // 1. Primary: Use server-side FastStart H.264/AAC pipeline (instantaneous -c copy +faststart)
+        fetch(remuxUrl, {
+          method: 'POST',
+          body: rawBlob
+        })
+        .then(async (response) => {
+          if (response.ok) {
+            const remuxBlob = await response.blob();
+            if (remuxBlob && remuxBlob.size > 1000) {
+              console.log('Universal FastStart MP4 optimized via server pipeline.');
+              this.finalizeExportDownload(remuxBlob, fileExt);
+              return;
+            }
+          }
+          throw new Error('Server remux returned invalid stream or status ' + response.status);
+        })
+        .catch((err) => {
+          console.warn('Server remux unavailable, applying in-browser Universal MP4 duration normalizer:', err);
+          if (typeof window.ysFixMp4Duration === 'function') {
+            window.ysFixMp4Duration(rawBlob, targetDurationMs, (fixedBlob) => {
+              this.finalizeExportDownload(fixedBlob, fileExt);
+            });
+          } else {
+            this.finalizeExportDownload(rawBlob, fileExt);
+          }
+        });
+      } else if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
         window.ysFixWebmDuration(rawBlob, targetDurationMs, (fixedBlob) => {
           this.finalizeExportDownload(fixedBlob, fileExt);
         });
@@ -4029,9 +4299,13 @@ class AnimalDanceStudio {
     this.exportMediaRecorder.start(100); // 100ms timeslice sends continuous chunks
 
     const startTime = performance.now();
+    let lastPreviewUpdateMs = -999;
 
     const recordTick = () => {
-      if (!this.isExporting) return;
+      if (!this.isExporting) {
+        cleanupExportBitmaps();
+        return;
+      }
 
       const elapsedMs = performance.now() - startTime;
       const progress = Math.min(1.0, elapsedMs / targetDurationMs);
@@ -4040,8 +4314,15 @@ class AnimalDanceStudio {
       const prevReveal = this.answerRevealMode;
       if (isRevealSection) this.answerRevealMode = true;
 
-      this.drawFrame(exportCtx, exportW, exportH, elapsedMs, true);
+      // Ultra-fast 4K drawing using pre-rendered static backdrop + overlays
+      this.drawFrameWithCache(recordCtx, exportW, exportH, elapsedMs, true, staticBgBitmap, staticOverlayBitmap);
       this.answerRevealMode = prevReveal;
+
+      // Smooth, non-blocking live preview update (every ~100ms / 10 FPS)
+      if (elapsedMs - lastPreviewUpdateMs >= 100) {
+        lastPreviewUpdateMs = elapsedMs;
+        livePreviewCtx.drawImage(recordCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
+      }
 
       // Update UI progress accurately
       bar.style.width = `${Math.round(progress * 100)}%`;
@@ -4109,6 +4390,10 @@ class AnimalDanceStudio {
 
   cancelVideoExport() {
     this.isExporting = false;
+    if (this.currentExportCleanup) {
+      try { this.currentExportCleanup(); } catch (e) {}
+      this.currentExportCleanup = null;
+    }
     if (this.exportMediaRecorder && this.exportMediaRecorder.state !== 'inactive') {
       this.exportMediaRecorder.stop();
     }
@@ -4179,16 +4464,194 @@ class AnimalDanceStudio {
   // LOCAL STORAGE PERSISTENCE (AUTO-SAVE & RESTORE)
   // =========================================================================
 
+  // =========================================================================
+  // UI SYNCHRONIZATION HELPERS
+  // =========================================================================
+
+  syncTitleUI() {
+    const inTitle = document.getElementById('inputTitleText');
+    if (inTitle) inTitle.value = this.title.text || '';
+
+    const chkAuto = document.getElementById('checkAutoSyncCount');
+    if (chkAuto) chkAuto.checked = !!this.title.autoSyncCount;
+
+    const inSub = document.getElementById('inputSubtitleText');
+    if (inSub) inSub.value = this.title.subtitle || '';
+
+    const chkSub = document.getElementById('checkShowSubtitle');
+    if (chkSub) chkSub.checked = !!this.title.showSubtitle;
+
+    // Highlight selected style card
+    document.querySelectorAll('.title-style-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.style === this.title.style);
+    });
+
+    // Font Family dropdown
+    const selFont = document.getElementById('selectFontFamily');
+    if (selFont && this.title.fontFamily) selFont.value = this.title.fontFamily;
+
+    // Font Size
+    const curSize = this.title.fontSize || 64;
+    const slSize = document.getElementById('sliderTitleSize');
+    const inSizeExact = document.getElementById('inputTitleSizeExact');
+    const valSize = document.getElementById('titleSizeVal');
+    if (slSize) slSize.value = Math.min(300, curSize);
+    if (inSizeExact) inSizeExact.value = curSize;
+    if (valSize) valSize.textContent = `${curSize}px`;
+
+    // Text & Outline Colors
+    const inColor = document.getElementById('inputTextColor');
+    if (inColor && this.title.textColor) inColor.value = this.title.textColor;
+
+    const inStroke = document.getElementById('inputStrokeColor');
+    if (inStroke && this.title.strokeColor) inStroke.value = this.title.strokeColor;
+
+    const curStrokeW = this.title.strokeWidth !== undefined ? this.title.strokeWidth : 10;
+    const slStroke = document.getElementById('sliderStrokeWidth');
+    const inStrokeExact = document.getElementById('inputStrokeWidthExact');
+    const valStroke = document.getElementById('strokeWidthVal');
+    if (slStroke) slStroke.value = curStrokeW;
+    if (inStrokeExact) inStrokeExact.value = curStrokeW;
+    if (valStroke) valStroke.textContent = `${curStrokeW}px`;
+
+    // Subtitle Controls
+    const curSubSize = this.title.subtitleFontSize || 28;
+    const slSubSize = document.getElementById('sliderSubtitleSize');
+    const inSubSizeExact = document.getElementById('inputSubtitleSizeExact');
+    const valSubSize = document.getElementById('subtitleSizeVal');
+    if (slSubSize) slSubSize.value = curSubSize;
+    if (inSubSizeExact) inSubSizeExact.value = curSubSize;
+    if (valSubSize) valSubSize.textContent = `${curSubSize}px`;
+
+    const inSubColor = document.getElementById('inputSubtitleColor');
+    if (inSubColor && this.title.subtitleColor) inSubColor.value = this.title.subtitleColor;
+
+    const inSubPill = document.getElementById('inputSubtitlePillColor');
+    if (inSubPill && this.title.subtitlePillColor) inSubPill.value = this.title.subtitlePillColor;
+
+    const chkSubPill = document.getElementById('checkSubtitlePillEnable');
+    if (chkSubPill) chkSubPill.checked = (this.title.showSubtitlePill !== false);
+
+    // Title to Subtitle Spacing (Gap)
+    const curGap = this.title.gap !== undefined ? this.title.gap : 40;
+    const slGap = document.getElementById('sliderTitleGap');
+    const inGapExact = document.getElementById('inputTitleGapExact');
+    const valGap = document.getElementById('titleGapVal');
+    if (slGap) slGap.value = curGap;
+    if (inGapExact) inGapExact.value = curGap;
+    if (valGap) valGap.textContent = `${curGap}px`;
+  }
+
+  syncBackgroundUI() {
+    // Zoom
+    const zoomPct = Math.round((this.bg.zoom ?? 1.0) * 100);
+    const slZoom = document.getElementById('sliderBgZoom');
+    const inZoom = document.getElementById('inputBgZoom');
+    const valZoom = document.getElementById('bgZoomVal');
+    if (slZoom) slZoom.value = zoomPct;
+    if (inZoom) inZoom.value = zoomPct;
+    if (valZoom) valZoom.textContent = `${zoomPct}%`;
+
+    // Pan X
+    const slPanX = document.getElementById('sliderBgPanX');
+    const inPanX = document.getElementById('inputBgPanX');
+    const valPanX = document.getElementById('bgPanXVal');
+    if (slPanX) slPanX.value = this.bg.panX ?? 0;
+    if (inPanX) inPanX.value = this.bg.panX ?? 0;
+    if (valPanX) valPanX.textContent = `${this.bg.panX ?? 0}px`;
+
+    // Pan Y
+    const slPanY = document.getElementById('sliderBgPanY');
+    const inPanY = document.getElementById('inputBgPanY');
+    const valPanY = document.getElementById('bgPanYVal');
+    if (slPanY) slPanY.value = this.bg.panY ?? 0;
+    if (inPanY) inPanY.value = this.bg.panY ?? 0;
+    if (valPanY) valPanY.textContent = `${this.bg.panY ?? 0}px`;
+
+    // Atmosphere
+    const slBr = document.getElementById('sliderBgBrightness');
+    const valBr = document.getElementById('bgBrightnessVal');
+    if (slBr) slBr.value = this.bg.brightness ?? 100;
+    if (valBr) valBr.textContent = `${this.bg.brightness ?? 100}%`;
+
+    const slCt = document.getElementById('sliderBgContrast');
+    const valCt = document.getElementById('bgContrastVal');
+    if (slCt) slCt.value = this.bg.contrast ?? 100;
+    if (valCt) valCt.textContent = `${this.bg.contrast ?? 100}%`;
+
+    const slSt = document.getElementById('sliderBgSaturation');
+    const valSt = document.getElementById('bgSaturationVal');
+    if (slSt) slSt.value = this.bg.saturation ?? 100;
+    if (valSt) valSt.textContent = `${this.bg.saturation ?? 100}%`;
+
+    // Active preset card
+    document.querySelectorAll('.bg-thumb-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.bg === this.bg.presetId);
+    });
+  }
+
+  syncWatermarkUI() {
+    const chkWm = document.getElementById('checkWatermarkEnable');
+    if (chkWm) chkWm.checked = !!this.watermark.enabled;
+
+    const inWm = document.getElementById('inputWatermarkText');
+    if (inWm) inWm.value = this.watermark.text || '';
+
+    const xPct = Math.round((this.watermark.nx ?? 0.5) * 100);
+    const slX = document.getElementById('sliderWatermarkX');
+    const inX = document.getElementById('inputWatermarkXExact');
+    const valX = document.getElementById('wmXVal');
+    if (slX) slX.value = xPct;
+    if (inX) inX.value = xPct;
+    if (valX) valX.textContent = `${xPct}%`;
+
+    const yPct = Math.round((this.watermark.ny ?? 0.95) * 100);
+    const slY = document.getElementById('sliderWatermarkY');
+    const inY = document.getElementById('inputWatermarkYExact');
+    const valY = document.getElementById('wmYVal');
+    if (slY) slY.value = yPct;
+    if (inY) inY.value = yPct;
+    if (valY) valY.textContent = `${yPct}%`;
+
+    const opPct = Math.round((this.watermark.opacity ?? 0.6) * 100);
+    const slOp = document.getElementById('sliderWatermarkOpacity');
+    const valOp = document.getElementById('watermarkOpacityVal');
+    if (slOp) slOp.value = opPct;
+    if (valOp) valOp.textContent = `${opPct}%`;
+  }
+
+  async restoreCustomBackgroundFromStorage() {
+    try {
+      if (window.storageManager) {
+        const allBgs = await window.storageManager.getAllItems('backgrounds');
+        const activeBg = allBgs.find(b => b.id === 'current_active_bg') || allBgs[allBgs.length - 1];
+        if (activeBg && activeBg.dataUrl) {
+          this.loadBackground(activeBg.dataUrl, 'custom_bg');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Error restoring custom backdrop:', e);
+    }
+    // Safe fallback if not found
+    this.loadBackground('assets/backgrounds/rustic_water_village.jpg', 'rustic_water_village');
+  }
+
+  // =========================================================================
+  // LOCAL STORAGE PERSISTENCE (AUTO-SAVE & RESTORE)
+  // =========================================================================
+
   saveStateToLocalStorage() {
     try {
       const state = {
-        version: 1,
+        version: 2,
         savedAt: Date.now(),
         aspectRatio: this.aspectRatio,
         resolutionPreset: this.resolutionPreset,
         bitrate: this.bitrate,
         fps: this.fps,
         videoDuration: this.videoDuration,
+        appendRevealEnding: !!this.appendRevealEnding,
         activeCharType: this.activeCharType,
         animalCount: this.animals.length,
         globalOpacity: this.globalOpacity !== undefined ? this.globalOpacity : 1.0,
@@ -4206,28 +4669,39 @@ class AnimalDanceStudio {
           baseHeight: a.baseHeight || 100
         })),
         bg: {
-          isLoaded: this.bg.isLoaded,
+          isLoaded: !!this.bg.isLoaded,
           presetId: this.bg.presetId,
-          src: (this.bg.src && !this.bg.src.startsWith('data:')) ? this.bg.src : null,
-          customUrl: (this.bg.customUrl && this.bg.customUrl.length < 2500000) ? this.bg.customUrl : null,
-          zoom: this.bg.zoom,
-          panX: this.bg.panX,
-          panY: this.bg.panY,
-          brightness: this.bg.brightness,
-          contrast: this.bg.contrast,
-          saturation: this.bg.saturation
+          hasCustomBg: this.bg.presetId === 'custom_bg',
+          zoom: this.bg.zoom ?? 1.0,
+          panX: this.bg.panX ?? 0,
+          panY: this.bg.panY ?? 0,
+          brightness: this.bg.brightness ?? 100,
+          contrast: this.bg.contrast ?? 100,
+          saturation: this.bg.saturation ?? 100
         },
         title: {
           text: this.title.text,
-          style: this.title.style,
-          size: this.title.size,
-          color: this.title.color,
-          nx: this.title.nx,
-          ny: this.title.ny,
-          autoSyncCount: this.title.autoSyncCount
+          autoSyncCount: !!this.title.autoSyncCount,
+          subtitle: this.title.subtitle,
+          showSubtitle: !!this.title.showSubtitle,
+          style: this.title.style || 'viral_bold',
+          fontFamily: this.title.fontFamily || 'Outfit',
+          fontSize: this.title.fontSize || 64,
+          textColor: this.title.textColor || '#ffffff',
+          strokeColor: this.title.strokeColor || '#000000',
+          strokeWidth: this.title.strokeWidth !== undefined ? this.title.strokeWidth : 10,
+          shadowBlur: this.title.shadowBlur !== undefined ? this.title.shadowBlur : 14,
+          shadowOffsetY: this.title.shadowOffsetY !== undefined ? this.title.shadowOffsetY : 6,
+          subtitleFontSize: this.title.subtitleFontSize || 28,
+          subtitleColor: this.title.subtitleColor || '#fde047',
+          subtitlePillColor: this.title.subtitlePillColor || '#000000',
+          showSubtitlePill: this.title.showSubtitlePill !== false,
+          gap: this.title.gap !== undefined ? this.title.gap : 40,
+          nx: this.title.nx ?? 0.5,
+          ny: this.title.ny ?? 0.11
         },
         timer: {
-          enabled: this.timer.enabled,
+          enabled: !!this.timer.enabled,
           style: this.timer.style,
           size: this.timer.size,
           nx: this.timer.nx,
@@ -4235,11 +4709,14 @@ class AnimalDanceStudio {
           duration: this.timer.duration
         },
         watermark: {
-          enabled: this.watermark.enabled,
+          enabled: !!this.watermark.enabled,
           text: this.watermark.text,
           nx: this.watermark.nx,
           ny: this.watermark.ny,
           opacity: this.watermark.opacity
+        },
+        audio: {
+          presetTrack: document.getElementById('selectPresetTrack')?.value || 'quack_hop'
         }
       };
 
@@ -4253,7 +4730,10 @@ class AnimalDanceStudio {
       console.warn('LocalStorage save error (likely quota exceeded):', e);
       try {
         const stripped = JSON.parse(localStorage.getItem('find_animal_dance_studio_saved_state_v1') || '{}');
-        if (stripped.bg) delete stripped.bg.customUrl;
+        if (stripped.bg) {
+          delete stripped.bg.customUrl;
+          delete stripped.bg.src;
+        }
         localStorage.setItem('find_animal_dance_studio_saved_state_v1', JSON.stringify(stripped));
       } catch (err2) {}
     }
@@ -4304,6 +4784,11 @@ class AnimalDanceStudio {
         const durInput = document.getElementById('inputVideoDuration');
         if (durInput) durInput.value = this.videoDuration;
       }
+      if (s.appendRevealEnding !== undefined) {
+        this.appendRevealEnding = !!s.appendRevealEnding;
+        const chkReveal = document.getElementById('checkAppendReveal');
+        if (chkReveal) chkReveal.checked = this.appendRevealEnding;
+      }
 
       // 2. Character Type & Global Opacity
       if (s.activeCharType) {
@@ -4331,6 +4816,13 @@ class AnimalDanceStudio {
       }));
       this.animalCount = this.animals.length;
 
+      const slCount = document.getElementById('sliderAnimalCount');
+      const inCount = document.getElementById('inputAnimalCountExact');
+      const valCount = document.getElementById('animalCountVal');
+      if (slCount) slCount.value = this.animals.length;
+      if (inCount) inCount.value = this.animals.length;
+      if (valCount) valCount.textContent = this.animals.length;
+
       // 4. Background
       if (s.bg) {
         this.bg.zoom = s.bg.zoom ?? 1.0;
@@ -4340,58 +4832,50 @@ class AnimalDanceStudio {
         this.bg.contrast = s.bg.contrast ?? 100;
         this.bg.saturation = s.bg.saturation ?? 100;
 
-        if (s.bg.customUrl) {
-          this.loadBackground(s.bg.customUrl, 'custom_bg');
-        } else if (s.bg.presetId) {
+        if (s.bg.presetId === 'custom_bg' || s.bg.hasCustomBg || s.bg.customUrl) {
+          if (s.bg.customUrl && s.bg.customUrl.startsWith('data:')) {
+            this.loadBackground(s.bg.customUrl, 'custom_bg');
+          } else {
+            this.restoreCustomBackgroundFromStorage();
+          }
+        } else if (s.bg.presetId && s.bg.presetId !== 'custom_bg') {
           this.loadBackground(`assets/backgrounds/${s.bg.presetId}.jpg`, s.bg.presetId);
-        } else if (s.bg.src) {
+        } else if (s.bg.src && !s.bg.src.startsWith('data:') && !s.bg.src.includes('custom_bg')) {
           this.loadBackground(s.bg.src, null);
+        } else {
+          this.loadBackground('assets/backgrounds/rustic_water_village.jpg', 'rustic_water_village');
         }
 
-        const slZoom = document.getElementById('sliderBgZoom');
-        const inZoom = document.getElementById('inputBgZoom');
-        const valZoom = document.getElementById('bgZoomVal');
-        if (slZoom) slZoom.value = Math.round(this.bg.zoom * 100);
-        if (inZoom) inZoom.value = Math.round(this.bg.zoom * 100);
-        if (valZoom) valZoom.textContent = `${Math.round(this.bg.zoom * 100)}%`;
-
-        const slPanX = document.getElementById('sliderBgPanX');
-        const inPanX = document.getElementById('inputBgPanX');
-        const valPanX = document.getElementById('bgPanXVal');
-        if (slPanX) slPanX.value = this.bg.panX;
-        if (inPanX) inPanX.value = this.bg.panX;
-        if (valPanX) valPanX.textContent = `${this.bg.panX}px`;
-
-        const slPanY = document.getElementById('sliderBgPanY');
-        const inPanY = document.getElementById('inputBgPanY');
-        const valPanY = document.getElementById('bgPanYVal');
-        if (slPanY) slPanY.value = this.bg.panY;
-        if (inPanY) inPanY.value = this.bg.panY;
-        if (valPanY) valPanY.textContent = `${this.bg.panY}px`;
+        this.syncBackgroundUI();
       }
 
       // 5. Title
       if (s.title) {
         this.title.text = s.title.text ?? this.title.text;
+        this.title.autoSyncCount = s.title.autoSyncCount !== undefined ? !!s.title.autoSyncCount : this.title.autoSyncCount;
+        this.title.subtitle = s.title.subtitle ?? this.title.subtitle;
+        this.title.showSubtitle = s.title.showSubtitle !== undefined ? !!s.title.showSubtitle : this.title.showSubtitle;
         this.title.style = s.title.style ?? this.title.style;
-        this.title.size = s.title.size ?? this.title.size;
-        this.title.color = s.title.color ?? this.title.color;
+        this.title.fontFamily = s.title.fontFamily ?? this.title.fontFamily;
+        this.title.fontSize = s.title.fontSize ?? (s.title.size ?? this.title.fontSize);
+        this.title.textColor = s.title.textColor ?? (s.title.color ?? this.title.textColor);
+        this.title.strokeColor = s.title.strokeColor ?? this.title.strokeColor;
+        this.title.strokeWidth = s.title.strokeWidth !== undefined ? s.title.strokeWidth : this.title.strokeWidth;
+        this.title.shadowBlur = s.title.shadowBlur !== undefined ? s.title.shadowBlur : this.title.shadowBlur;
+        this.title.shadowOffsetY = s.title.shadowOffsetY !== undefined ? s.title.shadowOffsetY : this.title.shadowOffsetY;
+        this.title.subtitleFontSize = s.title.subtitleFontSize ?? this.title.subtitleFontSize;
+        this.title.subtitleColor = s.title.subtitleColor ?? this.title.subtitleColor;
+        this.title.subtitlePillColor = s.title.subtitlePillColor ?? this.title.subtitlePillColor;
+        this.title.showSubtitlePill = s.title.showSubtitlePill !== undefined ? !!s.title.showSubtitlePill : this.title.showSubtitlePill;
+        this.title.gap = s.title.gap ?? this.title.gap;
         this.title.nx = s.title.nx ?? this.title.nx;
         this.title.ny = s.title.ny ?? this.title.ny;
-        this.title.autoSyncCount = !!s.title.autoSyncCount;
 
-        const inTitle = document.getElementById('inputTitleText');
-        if (inTitle) inTitle.value = this.title.text;
-        const selTitleStyle = document.getElementById('selectTitleStyle');
-        if (selTitleStyle) selTitleStyle.value = this.title.style;
-        const slTitleSize = document.getElementById('sliderTitleSize');
-        const inTitleSize = document.getElementById('inputTitleSizeExact');
-        const valTitleSize = document.getElementById('titleSizeVal');
-        if (slTitleSize) slTitleSize.value = this.title.size;
-        if (inTitleSize) inTitleSize.value = this.title.size;
-        if (valTitleSize) valTitleSize.textContent = `${this.title.size}px`;
-        const chkAuto = document.getElementById('checkTitleAutoCount');
-        if (chkAuto) chkAuto.checked = this.title.autoSyncCount;
+        if (this.title.autoSyncCount) {
+          this.updateTitleCount();
+        }
+
+        this.syncTitleUI();
       }
 
       // 6. Timer
@@ -4411,19 +4895,19 @@ class AnimalDanceStudio {
         this.watermark.nx = s.watermark.nx ?? this.watermark.nx;
         this.watermark.ny = s.watermark.ny ?? this.watermark.ny;
         this.watermark.opacity = s.watermark.opacity ?? this.watermark.opacity;
-        const inWm = document.getElementById('inputWatermarkText');
-        if (inWm) inWm.value = this.watermark.text;
-        const chkWm = document.getElementById('checkWatermarkEnable');
-        if (chkWm) chkWm.checked = this.watermark.enabled;
+        this.syncWatermarkUI();
       }
 
-      if (s.title && s.title.text && !s.title.autoSyncCount) {
-        this.title.text = s.title.text;
-        const inTitle = document.getElementById('inputTitleText');
-        if (inTitle) inTitle.value = this.title.text;
-      } else {
-        this.updateTitleCount();
+      // 8. Audio
+      if (s.audio && s.audio.presetTrack) {
+        const selAudio = document.getElementById('selectPresetTrack');
+        if (selAudio) {
+          selAudio.value = s.audio.presetTrack;
+          const badge = document.getElementById('currentTrackBadge');
+          if (badge) badge.textContent = s.audio.presetTrack.replace('_', ' ').toUpperCase();
+        }
       }
+
       this.renderLayerList();
       this.fitCanvasToScreen();
       return true;
@@ -4432,7 +4916,6 @@ class AnimalDanceStudio {
       return false;
     }
   }
-
   resetSettingsOnly() {
     // 1. Reset animal layout to clean default spread, 0.65 scale, 1.0 opacity, 0 rotation, flipX false
     // PRESERVE current active character!
