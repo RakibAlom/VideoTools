@@ -99,7 +99,7 @@ class AudioEngine {
     this.isSynthesized = isSynthesized;
     this.duration = audioBuffer.duration;
     this.trimStart = 0;
-    this.trimEnd = Math.min(this.duration, 15);
+    this.trimEnd = parseFloat(this.duration.toFixed(2)); // Default to full audio length
     this.extractWaveformData(audioBuffer);
   }
 

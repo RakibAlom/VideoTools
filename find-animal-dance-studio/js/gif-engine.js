@@ -114,9 +114,6 @@ class GifEngine {
       originalBuffer: buffer
     };
 
-    // Automatically remove solid background connected to borders (makes white/black boxes transparent!)
-    this.removeBorderConnectedColor(gifData);
-
     return gifData;
   }
 

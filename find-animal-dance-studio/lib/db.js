@@ -71,6 +71,19 @@ class StorageManager {
       req.onerror = (e) => reject(e);
     });
   }
+
+  async clearAll() {
+    if (!this.db) await this.init();
+    return new Promise((resolve, reject) => {
+      const stores = ['backgrounds', 'characters', 'audio'];
+      const tx = this.db.transaction(stores, 'readwrite');
+      stores.forEach(s => {
+        try { tx.objectStore(s).clear(); } catch (err) {}
+      });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = (e) => reject(e);
+    });
+  }
 }
 
 window.storageManager = new StorageManager();

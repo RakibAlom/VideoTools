@@ -50,19 +50,23 @@ body {
 }
 
 /* Custom scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) rgba(0, 0, 0, 0.15);
+}
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.15);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Header */
@@ -236,6 +240,7 @@ body {
   display: grid;
   grid-template-columns: 380px 1fr 280px;
   height: calc(100vh - 60px);
+  max-height: calc(100vh - 60px);
   overflow: hidden;
 }
 
@@ -253,6 +258,7 @@ body {
     display: flex;
     flex-direction: column;
     height: auto;
+    max-height: none;
     overflow-y: auto;
   }
   .center-stage-container {
@@ -260,12 +266,15 @@ body {
   }
 }
 
-/* Left Control Deck */
+/* Left Control Deck - Tab Bar Fixed, Content Smoothly Scrollable */
 .left-control-deck {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -319,10 +328,12 @@ body {
   transform: scale(1.1);
 }
 
-/* Tab Content Panels */
+/* Tab Content Panels - Scrollable */
 .deck-content-scroller {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -618,15 +629,17 @@ body {
   align-items: center;
   justify-content: flex-start;
   position: relative;
-  overflow: hidden;
-  padding: 0.4rem 1rem 0.4rem 1rem;
-  gap: 0.3rem;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 0.4rem 1rem 2.5rem 1rem;
+  gap: 0.4rem;
 }
 
-/* Stage Toolbar */
+/* Stage Toolbar (Sticky so it stays pinned at the top when scrolling downwards) */
 .stage-floating-toolbar {
-  position: static;
-  background: rgba(15, 23, 42, 0.9);
+  position: sticky;
+  top: 0.25rem;
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
@@ -634,9 +647,10 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  z-index: 20;
+  z-index: 30;
   box-shadow: var(--shadow-md);
-  margin-bottom: 0.1rem;
+  margin-bottom: 0.15rem;
+  flex-shrink: 0;
 }
 
 .stage-viewport-wrapper {
@@ -645,12 +659,14 @@ body {
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  max-height: calc(100vh - 120px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #000000;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top center;
+  flex-shrink: 0;
 }
 
 /* Interactive Master Canvas */
@@ -660,6 +676,7 @@ body {
   max-height: calc(100vh - 120px);
   object-fit: contain;
   cursor: default;
+  touch-action: none;
 }
 
 /* Stage Bottom Controls (Play / Scrubber) */
@@ -689,21 +706,32 @@ body {
   min-width: 75px;
 }
 
-/* Right Layer Dock */
+/* Right Layer Dock - Fully Scrollable with Sticky Header */
 .right-layer-dock {
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251, 191, 36, 0.45) rgba(15, 23, 42, 0.75);
 }
 
 .layer-dock-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-secondary);
   padding: 0.9rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .layer-dock-header h3 {
@@ -715,12 +743,12 @@ body {
 }
 
 .layer-list-scroller {
-  flex: 1;
-  overflow-y: auto;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  overflow: visible;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .layer-item-card {
@@ -992,12 +1020,47 @@ body {
   white-space: nowrap;
 }
 
-/* Viewport stage scroll wrapper when zoomed */
+/* Viewport stage scroll wrapper when zoomed (scales downwards from top origin) */
 .center-stage-container {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .stage-viewport-wrapper {
   transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  transform-origin: center center;
+  transform-origin: top center;
+}
+
+/* Enhanced high-visibility scrollbars for sidebars and stage */
+.deck-content-scroller::-webkit-scrollbar,
+.right-layer-dock::-webkit-scrollbar,
+.center-stage-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.deck-content-scroller::-webkit-scrollbar-track,
+.right-layer-dock::-webkit-scrollbar-track,
+.center-stage-container::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.85);
+}
+.deck-content-scroller::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.6);
+  border-radius: 4px;
+}
+.deck-content-scroller::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.9);
+}
+.right-layer-dock::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.6);
+  border-radius: 4px;
+}
+.right-layer-dock::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 191, 36, 0.95);
+}
+.center-stage-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+.center-stage-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
 }

@@ -19,6 +19,8 @@ class AnimalDanceStudio {
   constructor() {
     this.canvas = document.getElementById('masterCanvas');
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
     this.stageWrapper = document.getElementById('stageWrapper');
     this.stageMainContainer = document.getElementById('stageMainContainer');
 
@@ -34,11 +36,13 @@ class AnimalDanceStudio {
     // Video Properties
     this.videoDuration = 15; // seconds
     this.fps = 30;
-    this.bitrate = 16000000; // 16 Mbps
+    this.bitrate = 8000000; // 8 Mbps social video optimized (crisp & compact)
     this.exportFormat = 'mp4'; // 'mp4' (universal default) or 'webm'
     this.currentTime = 0;
     this.isPlaying = false;
     this.lastFrameTime = 0;
+    this.globalOpacity = 1.0;
+    this.saveStateTimeout = null;
 
     // View Modes
     this.creatorMode = true;
@@ -99,11 +103,14 @@ class AnimalDanceStudio {
       color: '#ffffff'
     };
 
-    // Countdown Timer
+    // Countdown Timer (Disabled by default, customizable clock styles, bigger size & positionable)
     this.timer = {
-      enabled: true,
-      style: 'top_bar', // 'top_bar', 'bottom_bar', 'digital_badge', 'radial_ring', 'none'
-      height: 8,
+      enabled: false,
+      style: 'radial_ring', // 'radial_ring', 'analog_clock', 'digital_badge', 'top_bar', 'bottom_bar', 'none'
+      size: 130,
+      nx: 0.88,
+      ny: 0.08,
+      height: 10,
       color: '#38bdf8'
     };
 
@@ -147,37 +154,62 @@ class AnimalDanceStudio {
 
   async init() {
     this.setupEventListeners();
-    this.setAspectRatio('9:16');
-    this.loadBackground('assets/backgrounds/rustic_water_village.jpg', 'rustic_water_village');
+    this.syncTimerUI();
 
-    // Populate initial 15 ducks immediately on frame 1
-    this.generateAnimals(15, true);
-    this.pushHistoryState('Initial setup');
-
-    // Start 60fps render loop immediately
-    requestAnimationFrame(this.renderLoop.bind(this));
-
-    // Preload built-in characters in background
-    this.preloadBuiltinCharacters();
-
-    // Initialize IndexedDB in background
+    // 1. Initialize IndexedDB and preload any custom characters in storage
     if (window.storageManager) {
-      window.storageManager.init().then(() => {
+      try {
+        await window.storageManager.init();
+        await this.loadAllCustomCharactersFromStorage();
         this.refreshSavedUploadsUI();
-      });
+      } catch (e) {
+        console.warn('StorageManager init warning:', e);
+      }
     }
 
-    // Generate initial Quack Hop BGM (20s for sub-second startup)
-    window.audioEngine.generatePresetBGM('quack_hop', 20).then(() => {
-      this.drawWaveform();
+    // 2. Preload built-in characters so GIFs are immediately decoded and ready
+    await this.preloadBuiltinCharacters();
+
+    // 3. Restore LocalStorage or set defaults
+    const restored = this.loadStateFromLocalStorage();
+    if (!restored) {
+      this.setAspectRatio('9:16');
+      this.loadBackground('assets/backgrounds/rustic_water_village.jpg', 'rustic_water_village');
+      this.generateAnimals(15, true);
+    } else {
+      this.showToast('✨ Restored your last session from local storage', 'info');
+    }
+    this.pushHistoryState('Initial setup');
+
+    // 4. Start 60fps render loop immediately
+    requestAnimationFrame(this.renderLoop.bind(this));
+
+    // 5. Generate initial Quack Hop BGM (defaults to full track length and syncs duration only if not restored)
+    window.audioEngine.generatePresetBGM('quack_hop', 15).then(() => {
+      this.onAudioTrackLoaded('Quack Hop', window.audioEngine.duration, !restored, false);
     });
 
-    this.showToast('🦆 Animal Dance Studio 2.0 Ready!', 'success');
+    this.showToast('🦆 Animal Dance Studio Ready!', 'success');
   }
 
   // =========================================================================
-  // PRELOAD CHARACTERS
+  // PRELOAD & RESTORE CHARACTERS
   // =========================================================================
+
+  async loadAllCustomCharactersFromStorage() {
+    if (!window.storageManager) return;
+    try {
+      const savedChars = await window.storageManager.getAllItems('characters');
+      for (const item of savedChars) {
+        if (item.data && !this.loadedGifs.has(item.id)) {
+          const gifData = window.gifEngine.decode(item.data, item.name);
+          this.loadedGifs.set(item.id, gifData);
+        }
+      }
+    } catch (e) {
+      console.warn('Error loading custom characters from storage:', e);
+    }
+  }
 
   async preloadBuiltinCharacters() {
     const chars = [
@@ -190,9 +222,7 @@ class AnimalDanceStudio {
       { id: 'frog_dance', url: 'assets/animals/frog_dance.gif' }
     ];
 
-    for (const c of chars) {
-      this.loadCharacterGif(c.id, c.url);
-    }
+    await Promise.all(chars.map(c => this.loadCharacterGif(c.id, c.url)));
   }
 
   async loadCharacterGif(charId, url) {
@@ -233,10 +263,18 @@ class AnimalDanceStudio {
       card.classList.toggle('active', card.dataset.char === charId);
     });
 
-    // Update existing animals to new character
-    this.animals.forEach(a => a.charId = charId);
+    // Update existing animals to new character - strictly same as GIF (flipX = false by default)
+    this.animals.forEach(a => {
+      a.charId = charId;
+      a.flipX = false;
+    });
     this.renderLayerList();
+    if (this.selectedAnimalId) {
+      const sel = this.animals.find(item => item.id === this.selectedAnimalId);
+      if (sel) this.updateInspectorUI(sel);
+    }
     this.pushHistoryState(`Changed character to ${name}`);
+    this.debouncedSaveState();
   }
 
   // =========================================================================
@@ -246,6 +284,12 @@ class AnimalDanceStudio {
   loadBackground(src, presetId = null) {
     this.bg.isLoaded = false;
     this.bg.presetId = presetId;
+    this.bg.src = src;
+    if (presetId === 'custom_bg' || (src && src.startsWith('data:'))) {
+      this.bg.customUrl = src;
+    } else {
+      this.bg.customUrl = null;
+    }
     this.bg.img = new Image();
     this.bg.img.crossOrigin = 'anonymous';
     this.bg.img.onload = () => {
@@ -256,6 +300,7 @@ class AnimalDanceStudio {
     document.querySelectorAll('.bg-thumb-card').forEach(card => {
       card.classList.toggle('active', card.dataset.bg === presetId);
     });
+    this.debouncedSaveState();
   }
 
   resetBackgroundTransform() {
@@ -277,45 +322,110 @@ class AnimalDanceStudio {
   // MULTI-ANIMAL SMART DEPTH SCATTER
   // =========================================================================
 
+  // Calculates collision-free positions so animals are never stacked on top of each other
+  findNonOverlappingPosition(existingAnimals, tier, scale, smartDepth, aspect, padding = 0.025) {
+    if (!existingAnimals || existingAnimals.length === 0) {
+      if (smartDepth) {
+        if (tier === 'foreground') return { nx: 0.15 + Math.random() * 0.70, ny: 0.65 + Math.random() * 0.22 };
+        if (tier === 'midground') return { nx: 0.12 + Math.random() * 0.76, ny: 0.40 + Math.random() * 0.22 };
+        return { nx: 0.15 + Math.random() * 0.70, ny: 0.22 + Math.random() * 0.15 };
+      }
+      return { nx: 0.12 + Math.random() * 0.76, ny: 0.25 + Math.random() * 0.60 };
+    }
+
+    let bestPos = null;
+    let bestMinDist = -1;
+
+    for (let attempt = 0; attempt < 90; attempt++) {
+      let nx, ny;
+      if (smartDepth) {
+        if (tier === 'foreground') {
+          nx = 0.10 + Math.random() * 0.80;
+          ny = 0.64 + Math.random() * 0.24;
+        } else if (tier === 'midground') {
+          nx = 0.08 + Math.random() * 0.84;
+          ny = 0.38 + Math.random() * 0.25;
+        } else {
+          nx = 0.10 + Math.random() * 0.80;
+          ny = 0.20 + Math.random() * 0.17;
+        }
+      } else {
+        nx = 0.08 + Math.random() * 0.84;
+        ny = 0.20 + Math.random() * 0.68;
+      }
+
+      let collides = false;
+      let nearestDist = Infinity;
+
+      for (let j = 0; j < existingAnimals.length; j++) {
+        const other = existingAnimals[j];
+        const dx = nx - other.nx;
+        const dy = (ny - other.ny) * aspect;
+        const dist = Math.hypot(dx, dy);
+
+        // Required center-to-center distance based on sprite sizes so they never overlap
+        const requiredDist = 0.045 * (scale + (other.scale || 0.7)) + padding;
+
+        if (dist < requiredDist) {
+          collides = true;
+        }
+        if (dist < nearestDist) {
+          nearestDist = dist;
+        }
+      }
+
+      // Found a candidate that doesn't overlap any existing animal
+      if (!collides) {
+        return { nx, ny };
+      }
+
+      // Track candidate with maximum separation
+      if (nearestDist > bestMinDist) {
+        bestMinDist = nearestDist;
+        bestPos = { nx, ny };
+      }
+    }
+
+    return bestPos || { nx: 0.15 + Math.random() * 0.70, ny: 0.30 + Math.random() * 0.50 };
+  }
+
   generateAnimals(count, smartDepth = true) {
     this.animalCount = count;
     this.animals = [];
+    const aspect = (this.canvasHeight || 1920) / (this.canvasWidth || 1080);
+    const padding = Math.max(0.012, 0.032 - (count - 15) * 0.0008);
 
     for (let i = 0; i < count; i++) {
-      let nx, ny, scale;
+      let tier = 'midground';
+      let scale = 0.65;
       if (smartDepth) {
-        const tier = Math.random();
-        if (tier < 0.25) {
-          // Foreground
-          nx = 0.12 + Math.random() * 0.76;
-          ny = 0.65 + Math.random() * 0.24;
-          scale = 1.25 + Math.random() * 0.55;
-        } else if (tier < 0.65) {
-          // Midground
-          nx = 0.10 + Math.random() * 0.80;
-          ny = 0.38 + Math.random() * 0.26;
-          scale = 0.70 + Math.random() * 0.35;
+        const r = Math.random();
+        if (r < 0.25) {
+          tier = 'foreground';
+          scale = 0.72 + Math.random() * 0.20; // 0.72 - 0.92 (moderate, not too big)
+        } else if (r < 0.65) {
+          tier = 'midground';
+          scale = 0.52 + Math.random() * 0.18; // 0.52 - 0.70
         } else {
-          // Background (Hidden)
-          nx = 0.12 + Math.random() * 0.76;
-          ny = 0.20 + Math.random() * 0.20;
-          scale = 0.30 + Math.random() * 0.30;
+          tier = 'background';
+          scale = 0.38 + Math.random() * 0.14; // 0.38 - 0.52
         }
       } else {
-        nx = 0.1 + Math.random() * 0.8;
-        ny = 0.2 + Math.random() * 0.7;
-        scale = 0.5 + Math.random() * 0.8;
+        scale = 0.48 + Math.random() * 0.24; // 0.48 - 0.72
       }
+
+      const pos = this.findNonOverlappingPosition(this.animals, tier, scale, smartDepth, aspect, padding);
 
       this.animals.push({
         id: `animal_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
         index: i + 1,
         charId: this.activeCharType,
-        nx: Math.max(0.06, Math.min(0.94, nx)),
-        ny: Math.max(0.18, Math.min(0.92, ny)),
+        nx: Math.max(0.06, Math.min(0.94, parseFloat(pos.nx.toFixed(3)))),
+        ny: Math.max(0.18, Math.min(0.92, parseFloat(pos.ny.toFixed(3)))),
         scale: parseFloat(scale.toFixed(2)),
-        rotation: Math.round((Math.random() - 0.5) * 16),
-        flipX: Math.random() > 0.5,
+        rotation: 0, // Clean 0° angle by default (user can change later)
+        flipX: false, // Same as original GIF by default (no random flip)
+        opacity: this.globalOpacity !== undefined ? this.globalOpacity : 1.0,
         baseWidth: 100,
         baseHeight: 100
       });
@@ -324,6 +434,7 @@ class AnimalDanceStudio {
     this.sortAnimalsByDepth();
     this.updateTitleCount();
     this.renderLayerList();
+    this.debouncedSaveState();
   }
 
   sortAnimalsByDepth() {
@@ -355,35 +466,99 @@ class AnimalDanceStudio {
 
   randomizeSizes() {
     this.animals.forEach(a => {
-      a.scale = parseFloat((0.3 + Math.random() * 1.3).toFixed(2));
+      a.scale = parseFloat((0.40 + Math.random() * 0.40).toFixed(2)); // Compact 0.40 to 0.80 range
     });
     this.renderLayerList();
     this.pushHistoryState('Randomize sizes');
-    this.showToast('🎲 Animal sizes randomized!', 'info');
+    this.showToast('🎲 Animal sizes randomized (compact & clear)!', 'info');
   }
 
   reshufflePositions() {
+    const aspect = (this.canvasHeight || 1920) / (this.canvasWidth || 1080);
+    const count = this.animals.length;
+    const padding = Math.max(0.012, 0.032 - (count - 15) * 0.0008);
+    const placed = [];
+
     this.animals.forEach(a => {
-      a.nx = 0.08 + Math.random() * 0.84;
-      a.ny = 0.20 + Math.random() * 0.72;
-      a.flipX = Math.random() > 0.5;
+      let bestPos = { nx: a.nx, ny: a.ny };
+      let bestMinDist = -1;
+
+      for (let attempt = 0; attempt < 80; attempt++) {
+        const nx = 0.08 + Math.random() * 0.84;
+        const ny = 0.20 + Math.random() * 0.70;
+        let collides = false;
+        let nearestDist = Infinity;
+
+        for (const other of placed) {
+          const dist = Math.hypot(nx - other.nx, (ny - other.ny) * aspect);
+          const req = 0.045 * (a.scale + other.scale) + padding;
+          if (dist < req) collides = true;
+          if (dist < nearestDist) nearestDist = dist;
+        }
+
+        if (!collides) {
+          bestPos = { nx, ny };
+          break;
+        }
+        if (nearestDist > bestMinDist) {
+          bestMinDist = nearestDist;
+          bestPos = { nx, ny };
+        }
+      }
+
+      a.nx = Math.max(0.06, Math.min(0.94, parseFloat(bestPos.nx.toFixed(3))));
+      a.ny = Math.max(0.18, Math.min(0.92, parseFloat(bestPos.ny.toFixed(3))));
+      a.flipX = a.flipX || false; // Preserve existing orientation, no random flip
+      placed.push({ nx: a.nx, ny: a.ny, scale: a.scale });
     });
+
     this.sortAnimalsByDepth();
     this.renderLayerList();
     this.pushHistoryState('Reshuffle positions');
-    this.showToast('🔀 Positions reshuffled!', 'info');
+    this.showToast('🔀 Positions reshuffled cleanly without overlap!', 'info');
   }
 
-  // FIXED: Adds animal at exact dead center (0.5, 0.5) without jumping page
+  // Adds single animal with automatic collision avoidance and 0° angle by default
   addSingleAnimal() {
+    const scale = 0.72; // Moderate, not too big
+    const aspect = (this.canvasHeight || 1920) / (this.canvasWidth || 1080);
+
+    let nx = 0.5;
+    let ny = 0.5;
+
+    const isFree = (cx, cy) => {
+      for (const a of this.animals) {
+        const dist = Math.hypot(cx - a.nx, (cy - a.ny) * aspect);
+        const req = 0.045 * (scale + a.scale) + 0.025;
+        if (dist < req) return false;
+      }
+      return true;
+    };
+
+    if (!isFree(nx, ny)) {
+      let found = false;
+      for (let r = 0.07; r <= 0.42 && !found; r += 0.035) {
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 8) {
+          const cx = Math.max(0.08, Math.min(0.92, 0.5 + Math.cos(angle) * r));
+          const cy = Math.max(0.20, Math.min(0.88, 0.5 + (Math.sin(angle) * r) / aspect));
+          if (isFree(cx, cy)) {
+            nx = cx;
+            ny = cy;
+            found = true;
+            break;
+          }
+        }
+      }
+    }
+
     const newAnimal = {
       id: `animal_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
       index: this.animals.length + 1,
       charId: this.activeCharType,
-      nx: 0.5,
-      ny: 0.5,
-      scale: 1.0,
-      rotation: 0,
+      nx: parseFloat(nx.toFixed(3)),
+      ny: parseFloat(ny.toFixed(3)),
+      scale: scale,
+      rotation: 0, // 0 degree angle by default
       flipX: false,
       baseWidth: 100,
       baseHeight: 100
@@ -395,7 +570,40 @@ class AnimalDanceStudio {
     this.renderLayerList();
     this.updateInspectorUI(newAnimal);
     this.pushHistoryState('Add animal');
-    this.showToast('Added +1 Animal at Dead Center (0.5, 0.5)', 'success');
+    this.showToast('Added +1 Animal without overlap (0° angle)', 'success');
+  }
+
+  toggleFlipAnimal(id = null) {
+    const targetId = id || this.selectedAnimalId;
+    const a = this.animals.find(item => item.id === targetId);
+    if (!a) return;
+    a.flipX = !a.flipX;
+    this.updateInspectorUI(a);
+    this.renderLayerList();
+    this.pushHistoryState(`Flip Animal #${a.index}`);
+    this.showToast(`Animal #${a.index} ${a.flipX ? 'flipped horizontally (mirrored)' : 'restored to original GIF facing'}`, 'info');
+  }
+
+  resetAllFlips() {
+    this.animals.forEach(a => a.flipX = false);
+    if (this.selectedAnimalId) {
+      const a = this.animals.find(item => item.id === this.selectedAnimalId);
+      if (a) this.updateInspectorUI(a);
+    }
+    this.renderLayerList();
+    this.pushHistoryState('Reset all flips to original GIF');
+    this.showToast('All animals restored to original GIF orientation!', 'success');
+  }
+
+  flipAllAnimals() {
+    this.animals.forEach(a => a.flipX = !a.flipX);
+    if (this.selectedAnimalId) {
+      const a = this.animals.find(item => item.id === this.selectedAnimalId);
+      if (a) this.updateInspectorUI(a);
+    }
+    this.renderLayerList();
+    this.pushHistoryState('Flip all animals');
+    this.showToast('All animals flipped horizontally!', 'info');
   }
 
   deleteAnimal(id) {
@@ -410,11 +618,42 @@ class AnimalDanceStudio {
   duplicateAnimal(id) {
     const a = this.animals.find(item => item.id === id);
     if (!a) return;
+    const aspect = (this.canvasHeight || 1920) / (this.canvasWidth || 1080);
+
+    let newNx = a.nx + 0.06;
+    let newNy = a.ny + 0.04;
+
+    const isFree = (cx, cy) => {
+      for (const other of this.animals) {
+        const dist = Math.hypot(cx - other.nx, (cy - other.ny) * aspect);
+        const req = 0.045 * (a.scale + other.scale) + 0.02;
+        if (dist < req) return false;
+      }
+      return true;
+    };
+
+    if (!isFree(newNx, newNy)) {
+      for (let r = 0.07; r <= 0.25; r += 0.035) {
+        let placed = false;
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) {
+          const cx = Math.max(0.08, Math.min(0.92, a.nx + Math.cos(angle) * r));
+          const cy = Math.max(0.20, Math.min(0.88, a.ny + (Math.sin(angle) * r) / aspect));
+          if (isFree(cx, cy)) {
+            newNx = cx;
+            newNy = cy;
+            placed = true;
+            break;
+          }
+        }
+        if (placed) break;
+      }
+    }
+
     const copy = {
       ...a,
       id: `animal_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      nx: Math.min(0.92, a.nx + 0.04),
-      ny: Math.min(0.92, a.ny + 0.04)
+      nx: Math.max(0.06, Math.min(0.94, parseFloat(newNx.toFixed(3)))),
+      ny: Math.max(0.18, Math.min(0.92, parseFloat(newNy.toFixed(3))))
     };
     this.animals.push(copy);
     this.selectedAnimalId = copy.id;
@@ -422,7 +661,7 @@ class AnimalDanceStudio {
     this.updateTitleCount();
     this.renderLayerList();
     this.pushHistoryState('Duplicate animal');
-    this.showToast('Animal duplicated', 'info');
+    this.showToast('Animal duplicated without overlap', 'info');
   }
 
   // =========================================================================
@@ -432,12 +671,20 @@ class AnimalDanceStudio {
   setViewportZoom(zoomFactor) {
     this.viewportZoom = zoomFactor;
     const label = document.getElementById('viewportZoomLabel');
+    // Always keep top edge anchored so zooming never overflows or covers top toolbar/menus!
+    this.stageWrapper.style.transformOrigin = 'top center';
+
     if (zoomFactor === 1.0) {
       label.textContent = 'Fit';
       this.stageWrapper.style.transform = 'scale(1)';
+      this.stageWrapper.style.marginBottom = '0px';
     } else {
       label.textContent = `${Math.round(zoomFactor * 100)}%`;
       this.stageWrapper.style.transform = `scale(${zoomFactor})`;
+      // Create scrollable room downwards so the user can scroll down to view bottom content
+      const baseHeight = this.canvas.clientHeight || 500;
+      const extraBottom = Math.round((zoomFactor - 1.0) * baseHeight);
+      this.stageWrapper.style.marginBottom = `${extraBottom}px`;
     }
     this.showToast(`Viewport Zoom: ${label.textContent}`, 'info');
   }
@@ -452,6 +699,80 @@ class AnimalDanceStudio {
     const steps = [3.0, 2.0, 1.5, 1.25, 1.0, 0.75, 0.5];
     const next = steps.find(s => s < this.viewportZoom) || 0.5;
     this.setViewportZoom(next);
+  }
+
+  // =========================================================================
+  // VIDEO DURATION & AUDIO AUTO-SYNC
+  // =========================================================================
+
+  setVideoDuration(val, notify = true) {
+    const dur = Math.max(3, Math.min(300, Math.round(val) || 15));
+    this.videoDuration = dur;
+
+    // Update custom input in Export tab
+    const customInput = document.getElementById('inputCustomDuration');
+    if (customInput) customInput.value = dur;
+
+    // Update scrubber on stage
+    const scrubber = document.getElementById('stageTimeScrubber');
+    if (scrubber) scrubber.max = dur;
+
+    // Highlight matching chip if available, or clear active chips
+    document.querySelectorAll('.preset-chip[data-dur]').forEach(c => {
+      c.classList.toggle('active', parseInt(c.dataset.dur) === dur);
+    });
+
+    // Update playhead readout
+    this.updatePlayheadUI();
+
+    if (notify) {
+      this.showToast(`Export length set to ${dur}s`, 'info');
+    }
+  }
+
+  onAudioTrackLoaded(name, duration, updateVideoDuration = true, showToast = true) {
+    const fullDur = parseFloat(duration.toFixed(1));
+    // 1. By default select full length of audio
+    window.audioEngine.trimStart = 0;
+    window.audioEngine.trimEnd = fullDur;
+
+    // 2. Update track badges across tabs
+    const badge = document.getElementById('currentTrackBadge');
+    if (badge) badge.textContent = name;
+
+    const trimBadge = document.getElementById('audioTrimLenBadge');
+    if (trimBadge) trimBadge.textContent = `${fullDur}s`;
+
+    const exportBadge = document.getElementById('exportAudioLenBadge');
+    if (exportBadge) exportBadge.textContent = `${Math.round(fullDur)}s`;
+
+    // 3. Update trimmer inputs & sliders with new max duration
+    const maxDur = Math.max(1, Math.ceil(fullDur));
+    const sliderS = document.getElementById('sliderTrimStart');
+    const inputS = document.getElementById('inputTrimStartExact');
+    const sliderE = document.getElementById('sliderTrimEnd');
+    const inputE = document.getElementById('inputTrimEndExact');
+    const badgeS = document.getElementById('trimStartVal');
+    const badgeE = document.getElementById('trimEndVal');
+
+    if (sliderS) { sliderS.max = maxDur; sliderS.value = 0; }
+    if (inputS) { inputS.max = maxDur; inputS.value = 0; }
+    if (badgeS) badgeS.textContent = '0.0s';
+
+    if (sliderE) { sliderE.max = maxDur; sliderE.value = fullDur; }
+    if (inputE) { inputE.max = maxDur; inputE.value = fullDur; }
+    if (badgeE) badgeE.textContent = `${fullDur}s`;
+
+    // 4. Automatically set video duration in export settings to match audio length by default!
+    if (updateVideoDuration) {
+      this.setVideoDuration(Math.round(fullDur), false);
+    }
+
+    this.drawWaveform();
+
+    if (showToast) {
+      this.showToast(`🎵 Loaded "${name}" (${fullDur}s) — Video length set to ${this.videoDuration}s`, 'success');
+    }
   }
 
   // =========================================================================
@@ -516,8 +837,8 @@ class AnimalDanceStudio {
       this.title.fontFamily = 'Outfit';
       this.title.fontSize = 64;
       this.title.subtitle = 'Can you spot all 15? 99% FAIL!';
-      this.timer.enabled = true;
-      this.timer.style = 'top_bar';
+      this.timer.enabled = false; // Disabled by default
+      this.timer.style = 'radial_ring';
       this.videoDuration = 15;
       window.audioEngine.generatePresetBGM('quack_hop', 60);
 
@@ -607,8 +928,8 @@ class AnimalDanceStudio {
     document.getElementById('sliderTitleSize').value = this.title.fontSize;
     document.getElementById('inputTitleSizeExact').value = this.title.fontSize;
     document.getElementById('titleSizeVal').textContent = `${this.title.fontSize}px`;
-    document.getElementById('inputCustomDuration').value = this.videoDuration;
-    document.getElementById('stageTimeScrubber').max = this.videoDuration;
+    this.setVideoDuration(this.videoDuration, false);
+    this.syncTimerUI();
 
     document.getElementById('demosModal').classList.remove('active');
     this.drawWaveform();
@@ -685,6 +1006,12 @@ class AnimalDanceStudio {
     const delta = (timestamp - this.lastFrameTime) / 1000;
     this.lastFrameTime = timestamp;
 
+    if (this.isExporting) {
+      // Pause drawing background canvas during video export to maximize encoder performance and prevent stutter
+      requestAnimationFrame(this.renderLoop.bind(this));
+      return;
+    }
+
     if (this.isPlaying && !this.isExporting) {
       this.currentTime += delta;
       if (this.currentTime >= this.videoDuration) {
@@ -720,7 +1047,7 @@ class AnimalDanceStudio {
 
     // 5. Countdown Timer
     if (this.timer.enabled && this.timer.style !== 'none') {
-      this.renderTimer(ctx, width, height, timeMs);
+      this.renderTimer(ctx, width, height, timeMs, cleanMode);
     }
 
     // 6. Answer Reveal Rings
@@ -732,12 +1059,17 @@ class AnimalDanceStudio {
   }
 
   renderBackground(ctx, width, height) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, width, height);
     if (!this.bg.isLoaded || !this.bg.img.width) return;
 
     ctx.save();
-    ctx.filter = `brightness(${this.bg.brightness}%) contrast(${this.bg.contrast}%) saturate(${this.bg.saturation}%)`;
+    const hasFilter = (this.bg.brightness !== 100 || this.bg.contrast !== 100 || this.bg.saturation !== 100);
+    if (hasFilter) {
+      ctx.filter = `brightness(${this.bg.brightness}%) contrast(${this.bg.contrast}%) saturate(${this.bg.saturation}%)`;
+    }
 
     const imgRatio = this.bg.img.width / this.bg.img.height;
     const canvasRatio = width / height;
@@ -761,10 +1093,18 @@ class AnimalDanceStudio {
   }
 
   renderAnimals(ctx, width, height, timeMs, cleanMode) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    const frameCache = new Map();
+
     for (let i = 0; i < this.animals.length; i++) {
       const a = this.animals[i];
       const gifData = this.loadedGifs.get(a.charId);
-      const frameCanvas = gifData ? window.gifEngine.getFrame(gifData, timeMs) : null;
+      let frameCanvas = frameCache.get(a.charId);
+      if (frameCanvas === undefined) {
+        frameCanvas = gifData ? window.gifEngine.getFrame(gifData, timeMs) : null;
+        frameCache.set(a.charId, frameCanvas);
+      }
 
       const x = a.nx * width;
       const y = a.ny * height;
@@ -780,6 +1120,7 @@ class AnimalDanceStudio {
       ctx.translate(x, y);
       ctx.rotate((a.rotation * Math.PI) / 180);
       if (a.flipX) ctx.scale(-1, 1);
+      ctx.globalAlpha = a.opacity !== undefined ? a.opacity : 1.0;
 
       if (frameCanvas) {
         ctx.drawImage(frameCanvas, -drawW / 2, -drawH / 2, drawW, drawH);
@@ -800,17 +1141,18 @@ class AnimalDanceStudio {
   renderAnimalGizmos(ctx, a, x, y, drawW, drawH) {
     const isSelected = a.id === this.selectedAnimalId;
     const resScale = this.canvasWidth / 1080;
-    const boxHalfW = Math.max(36 * resScale, drawW / 2 + 12);
-    const boxHalfH = Math.max(36 * resScale, drawH / 2 + 12);
+    // For tiny animals (even 1%), guarantee minimum 48px box so handles never overlap the center
+    const boxHalfW = Math.max(48 * resScale, drawW / 2 + 16);
+    const boxHalfH = Math.max(48 * resScale, drawH / 2 + 16);
 
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate((a.rotation * Math.PI) / 180);
 
-    // Small Number Badge (Top-Right corner of bounding box in local space)
+    // Number Badge (Placed Top-Left so all 4 corner resize handles remain unobstructed)
     const badgeR = Math.max(14, 12 * resScale);
-    const badgeX = boxHalfW;
-    const badgeY = -boxHalfH;
+    const badgeX = -boxHalfW + 16 * resScale;
+    const badgeY = -boxHalfH - 14 * resScale;
 
     ctx.fillStyle = isSelected ? '#fbbf24' : 'rgba(15, 23, 42, 0.9)';
     ctx.strokeStyle = isSelected ? '#000000' : '#fbbf24';
@@ -826,37 +1168,175 @@ class AnimalDanceStudio {
     ctx.textBaseline = 'middle';
     ctx.fillText(`${a.index}`, badgeX, badgeY);
 
+    if (!isSelected && a.scale < 0.25) {
+      // Subtle locator ring & center dot for tiny unselected animals so creators never lose track of them!
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.65)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.max(16 * resScale, drawW * 0.8), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(0, 0, 2.5 * resScale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     if (isSelected) {
-      // Bounding box
-      ctx.strokeStyle = '#fbbf24';
+      // 0. High-Precision Center Position Pointer (Glowing Crosshair, Concentric Reticle & Focal Dot)
+      const pointerR = Math.max(14 * resScale, 12);
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      // Crosshairs
+      ctx.moveTo(-pointerR - 6 * resScale, 0);
+      ctx.lineTo(pointerR + 6 * resScale, 0);
+      ctx.moveTo(0, -pointerR - 6 * resScale);
+      ctx.lineTo(0, pointerR + 6 * resScale);
+      ctx.stroke();
+
+      // Target ring
+      ctx.beginPath();
+      ctx.arc(0, 0, pointerR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center focal dot
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 3 * resScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Precision Floating Coordinates Tag (Shows exact position % live while dragging!)
+      const coordText = `X:${(a.nx * 100).toFixed(1)}% Y:${(a.ny * 100).toFixed(1)}%`;
+      ctx.font = `bold ${Math.round(10 * resScale) + 1}px monospace`;
+      const textW = ctx.measureText(coordText).width + 12 * resScale;
+      const tagY = -boxHalfH - 34 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-textW / 2, tagY - 9 * resScale, textW, 18 * resScale, 4 * resScale);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(coordText, 0, tagY);
+      ctx.restore();
+
+      // 1. High-Contrast Dashed Bounding Box
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([7, 4]);
       ctx.strokeRect(-boxHalfW, -boxHalfH, boxHalfW * 2, boxHalfH * 2);
       ctx.setLineDash([]);
 
-      // Corner Resize Handle (Bottom-Right)
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(boxHalfW, boxHalfH, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // 2. All 4 Corner Resize Handles (Prominent, High-Contrast Dual Circles)
+      const handleR = Math.max(13, 10 * resScale);
+      const corners = [
+        [-boxHalfW, -boxHalfH], // Top-Left
+        [boxHalfW, -boxHalfH],  // Top-Right
+        [-boxHalfW, boxHalfH],  // Bottom-Left
+        [boxHalfW, boxHalfH]    // Bottom-Right
+      ];
 
-      // Rotation Handle (Top-Center)
-      ctx.strokeStyle = '#fbbf24';
+      for (let c = 0; c < corners.length; c++) {
+        const [cx, cy] = corners[c];
+        // Outer dark circle
+        ctx.fillStyle = '#090d16';
+        ctx.beginPath();
+        ctx.arc(cx, cy, handleR + 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main amber/gold circle
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(cx, cy, handleR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner white dot for precision center
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, handleR * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Rotation Handle (Top-Center with vibrant stem)
+      const rotY = -boxHalfH - 30 * resScale;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, -boxHalfH);
-      ctx.lineTo(0, -boxHalfH - 24);
+      ctx.lineTo(0, rotY);
       ctx.stroke();
+
+      ctx.fillStyle = '#090d16';
+      ctx.beginPath();
+      ctx.arc(0, rotY, handleR + 2, 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
-      ctx.arc(0, -boxHalfH - 24, 8, 0, Math.PI * 2);
+      ctx.arc(0, rotY, handleR, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, rotY, handleR * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. On-Canvas Interactive Action & Scale Pill (Directly below bounding box in preview)
+      const pillY = boxHalfH + 34 * resScale;
+      const pillW = 250 * resScale;
+      const pillH = 34 * resScale;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(-pillW / 2, pillY - pillH / 2, pillW, pillH, 8 * resScale);
+      ctx.fill();
       ctx.stroke();
+
+      // Vertical section dividers
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-70 * resScale, pillY - pillH * 0.35);
+      ctx.lineTo(-70 * resScale, pillY + pillH * 0.35);
+      ctx.moveTo(-22 * resScale, pillY - pillH * 0.35);
+      ctx.lineTo(-22 * resScale, pillY + pillH * 0.35);
+      ctx.moveTo(26 * resScale, pillY - pillH * 0.35);
+      ctx.lineTo(26 * resScale, pillY + pillH * 0.35);
+      ctx.moveTo(76 * resScale, pillY - pillH * 0.35);
+      ctx.lineTo(76 * resScale, pillY + pillH * 0.35);
+      ctx.stroke();
+
+      // Minus button [-]
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = `bold ${Math.round(16 * resScale)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('−', -92 * resScale, pillY);
+
+      // Scale value text (e.g. 72%)
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `bold ${Math.round(12 * resScale)}px sans-serif`;
+      ctx.fillText(`${Math.round(a.scale * 100)}%`, -46 * resScale, pillY);
+
+      // Plus button [+]
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = `bold ${Math.round(15 * resScale)}px monospace`;
+      ctx.fillText('+', 2 * resScale, pillY);
+
+      // Opacity quick toggle [💧 100%]
+      const currentOpPct = Math.round((a.opacity !== undefined ? a.opacity : 1.0) * 100);
+      ctx.fillStyle = currentOpPct < 100 ? '#38bdf8' : '#cbd5e1';
+      ctx.font = `bold ${Math.round(11 * resScale)}px sans-serif`;
+      ctx.fillText(`💧${currentOpPct}%`, 51 * resScale, pillY);
+
+      // Flip button [↔]
+      ctx.fillStyle = a.flipX ? '#38bdf8' : '#94a3b8';
+      ctx.font = `bold ${Math.round(13 * resScale)}px sans-serif`;
+      ctx.fillText('↔', 100 * resScale, pillY);
     }
 
     ctx.restore();
@@ -1076,27 +1556,35 @@ class AnimalDanceStudio {
     ctx.restore();
   }
 
-  // --- Multiple Countdown Timer Styles ---
-  renderTimer(ctx, width, height, timeMs) {
+  // --- Multiple Countdown Timer & Clock Styles ---
+  renderTimer(ctx, width, height, timeMs, cleanMode = false) {
     const progress = Math.max(0, Math.min(1, (timeMs / 1000) / this.videoDuration));
     const remainingRatio = 1 - progress;
     const style = this.timer.style;
+    const resScale = width / 1080;
+    const posX = (this.timer.nx ?? 0.88) * width;
+    const posY = (this.timer.ny ?? 0.08) * height;
+    const diameter = (this.timer.size || 130) * resScale;
+    const r = diameter / 2;
+    const secLeft = Math.ceil(this.videoDuration * remainingRatio);
+    const accentColor = secLeft <= 3 ? '#ef4444' : (this.timer.color || '#38bdf8');
 
     ctx.save();
+
     if (style === 'top_bar') {
-      const barH = 10 * (width / 1080);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      const barH = (this.timer.height || 10) * resScale;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.fillRect(0, 0, width, barH);
       const grad = ctx.createLinearGradient(0, 0, width * remainingRatio, 0);
-      grad.addColorStop(0, '#38bdf8');
+      grad.addColorStop(0, this.timer.color || '#38bdf8');
       grad.addColorStop(0.5, '#6366f1');
       grad.addColorStop(1, '#f43f5e');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width * remainingRatio, barH);
 
     } else if (style === 'bottom_bar') {
-      const barH = 10 * (width / 1080);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      const barH = (this.timer.height || 10) * resScale;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
       ctx.fillRect(0, height - barH, width, barH);
       const grad = ctx.createLinearGradient(0, 0, width * remainingRatio, 0);
       grad.addColorStop(0, '#10b981');
@@ -1104,51 +1592,154 @@ class AnimalDanceStudio {
       ctx.fillStyle = grad;
       ctx.fillRect(0, height - barH, width * remainingRatio, barH);
 
-    } else if (style === 'digital_badge') {
-      // Digital Clock Badge in top-right
-      const secLeft = Math.ceil(this.videoDuration * remainingRatio);
-      const text = `${secLeft}s`;
-      const badgeX = width * 0.88;
-      const badgeY = height * 0.05;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    } else if (style === 'radial_ring') {
+      // 1. Dark glass circular background with soft drop shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 14 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
       ctx.beginPath();
-      ctx.roundRect(badgeX - 45, badgeY - 22, 90, 44, 12);
+      ctx.arc(posX, posY, r + 4 * resScale, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = secLeft <= 3 ? '#ef4444' : '#38bdf8';
-      ctx.lineWidth = 2.5;
+      ctx.restore();
+
+      // Outer bezel ring
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 2 * resScale;
+      ctx.beginPath();
+      ctx.arc(posX, posY, r + 4 * resScale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Background ring track
+      const trackWidth = Math.max(4 * resScale, 8 * (diameter / 130));
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = trackWidth;
+      ctx.beginPath();
+      ctx.arc(posX, posY, r - trackWidth / 2, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Vibrant progress arc
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = trackWidth;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(posX, posY, r - trackWidth / 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * remainingRatio);
+      ctx.stroke();
+
+      // Center countdown text
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(r * 0.72)}px 'Outfit', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${secLeft}`, posX, posY);
+
+      // Micro-label under number when size is large enough
+      if (diameter >= 90 * resScale) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = `700 ${Math.round(r * 0.22)}px 'Outfit', sans-serif`;
+        ctx.fillText('SEC', posX, posY + r * 0.52);
+      }
+
+    } else if (style === 'analog_clock') {
+      // 2. Analog Clock Face with Ticking Hand
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 18 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.beginPath();
+      ctx.arc(posX, posY, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Clock Outer Bezel
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = Math.max(3 * resScale, 5 * (diameter / 130));
+      ctx.beginPath();
+      ctx.arc(posX, posY, r - 3 * resScale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // 12 Clock Tick Marks
+      for (let i = 0; i < 12; i++) {
+        const angle = (i * Math.PI) / 6;
+        const isQuarter = (i % 3 === 0);
+        const innerR = r - (isQuarter ? 14 : 9) * (diameter / 130);
+        const outerR = r - 5 * (diameter / 130);
+
+        ctx.strokeStyle = isQuarter ? '#ffffff' : 'rgba(255, 255, 255, 0.35)';
+        ctx.lineWidth = (isQuarter ? 3 : 1.5) * resScale;
+        ctx.beginPath();
+        ctx.moveTo(posX + Math.cos(angle) * innerR, posY + Math.sin(angle) * innerR);
+        ctx.lineTo(posX + Math.cos(angle) * outerR, posY + Math.sin(angle) * outerR);
+        ctx.stroke();
+      }
+
+      // Rotating Clock Hand (sweeps clockwise as time counts down)
+      const handAngle = -Math.PI / 2 + (progress * Math.PI * 2);
+      const handLen = r * 0.66;
+      ctx.strokeStyle = secLeft <= 3 ? '#f87171' : '#fbbf24';
+      ctx.lineWidth = Math.max(3 * resScale, 4.5 * (diameter / 130));
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(posX, posY);
+      ctx.lineTo(posX + Math.cos(handAngle) * handLen, posY + Math.sin(handAngle) * handLen);
+      ctx.stroke();
+
+      // Center pivot point
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(posX, posY, 4.5 * resScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Seconds readout in lower half of dial
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(r * 0.32)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${secLeft}s`, posX, posY + r * 0.44);
+
+    } else if (style === 'digital_badge') {
+      // 3. Digital Stopwatch Badge
+      const baseW = diameter * 1.35;
+      const baseH = diameter * 0.62;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 14 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.beginPath();
+      ctx.roundRect(posX - baseW / 2, posY - baseH / 2, baseW, baseH, 12 * resScale);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = Math.max(2 * resScale, 3 * (diameter / 130));
+      ctx.beginPath();
+      ctx.roundRect(posX - baseW / 2, posY - baseH / 2, baseW, baseH, 12 * resScale);
       ctx.stroke();
 
       ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
-      ctx.font = 'bold 24px monospace';
+      ctx.font = `900 ${Math.round(baseH * 0.52)}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(text, badgeX, badgeY);
+      ctx.fillText(`⏱️ ${secLeft}s`, posX, posY);
+    }
 
-    } else if (style === 'radial_ring') {
-      // Circular Radial Ring in top-right
-      const ringX = width * 0.90;
-      const ringY = height * 0.05;
-      const r = 24 * (width / 1080);
-
-      // Track
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 5 * (width / 1080);
-      ctx.beginPath();
-      ctx.arc(ringX, ringY, r, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Arc
-      ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(ringX, ringY, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * remainingRatio);
-      ctx.stroke();
-
-      const secLeft = Math.ceil(this.videoDuration * remainingRatio);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${14 * (width / 1080)}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${secLeft}`, ringX, ringY);
+    // Creator Mode Draggable Gizmo outline
+    if (!cleanMode && this.creatorMode && (style === 'radial_ring' || style === 'analog_clock' || style === 'digital_badge')) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      if (style === 'digital_badge') {
+        const bw = diameter * 1.35;
+        const bh = diameter * 0.62;
+        ctx.strokeRect(posX - bw / 2 - 4, posY - bh / 2 - 4, bw + 8, bh + 8);
+      } else {
+        ctx.beginPath();
+        ctx.arc(posX, posY, r + 6 * resScale, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     ctx.restore();
@@ -1210,6 +1801,46 @@ class AnimalDanceStudio {
 
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvasWidth / rect.width;
+      const scaleY = this.canvasHeight / rect.height;
+      const clientX = (e.clientX - rect.left) * scaleX;
+      const clientY = (e.clientY - rect.top) * scaleY;
+
+      // 1. If an animal is hovered or already selected, mouse wheel resizes the animal visually in preview!
+      let targetAnimal = null;
+      if (this.selectedAnimalId) {
+        targetAnimal = this.animals.find(item => item.id === this.selectedAnimalId);
+      }
+      if (!targetAnimal) {
+        for (let i = this.animals.length - 1; i >= 0; i--) {
+          const a = this.animals[i];
+          const ax = a.nx * this.canvasWidth;
+          const ay = a.ny * this.canvasHeight;
+          const dist = Math.hypot(clientX - ax, (clientY - ay) * (this.canvasWidth / this.canvasHeight));
+          const hitRadius = Math.max(38 * (this.canvasWidth / 1080), 0.07 * this.canvasWidth * a.scale);
+          if (dist < hitRadius) {
+            targetAnimal = a;
+            this.selectedAnimalId = a.id;
+            this.updateInspectorUI(a);
+            this.renderLayerList();
+            break;
+          }
+        }
+      }
+
+      if (targetAnimal) {
+        const delta = e.deltaY < 0 ? 0.05 : -0.05;
+        targetAnimal.scale = Math.max(0.01, Math.min(5.0, parseFloat((targetAnimal.scale + delta).toFixed(2))));
+        const pct = Math.max(1, Math.round(targetAnimal.scale * 100));
+        document.getElementById('sliderInspectScale').value = pct;
+        document.getElementById('inputInspectScaleExact').value = pct;
+        document.getElementById('inspectScaleVal').textContent = `${pct}%`;
+        this.showToast(`Animal #${targetAnimal.index} Size: ${pct}%`, 'info');
+        return;
+      }
+
+      // 2. Otherwise zoom background
       const delta = e.deltaY < 0 ? 0.05 : -0.05;
       this.bg.zoom = Math.max(0.5, Math.min(3.0, this.bg.zoom + delta));
       document.getElementById('sliderBgZoom').value = Math.round(this.bg.zoom * 100);
@@ -1236,6 +1867,25 @@ class AnimalDanceStudio {
           e.preventDefault();
           this.deleteAnimal(this.selectedAnimalId);
         }
+      } else if ((e.key === '+' || e.key === '=' || e.key === ']') && this.selectedAnimalId) {
+        e.preventDefault();
+        const a = this.animals.find(item => item.id === this.selectedAnimalId);
+        if (a) {
+          a.scale = Math.min(4.0, parseFloat((a.scale + 0.05).toFixed(2)));
+          this.updateInspectorUI(a);
+          this.showToast(`Animal #${a.index} Size: ${Math.round(a.scale * 100)}%`, 'info');
+        }
+      } else if ((e.key === '-' || e.key === '_' || e.key === '[') && this.selectedAnimalId) {
+        e.preventDefault();
+        const a = this.animals.find(item => item.id === this.selectedAnimalId);
+        if (a) {
+          a.scale = Math.max(0.01, parseFloat((a.scale - 0.05).toFixed(2)));
+          this.updateInspectorUI(a);
+          this.showToast(`Animal #${a.index} Size: ${Math.max(1, Math.round(a.scale * 100))}%`, 'info');
+        }
+      } else if ((e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'h') && this.selectedAnimalId) {
+        e.preventDefault();
+        this.toggleFlipAnimal(this.selectedAnimalId);
       } else if (e.code.startsWith('Arrow') && this.selectedAnimalId) {
         e.preventDefault();
         const a = this.animals.find(item => item.id === this.selectedAnimalId);
@@ -1377,6 +2027,10 @@ class AnimalDanceStudio {
     document.getElementById('btnReshufflePos').addEventListener('click', () => this.reshufflePositions());
     document.getElementById('btnStageReshuffle').addEventListener('click', () => this.reshufflePositions());
     document.getElementById('btnAddSingleAnimal').addEventListener('click', () => this.addSingleAnimal());
+    const resetFlipsBtn = document.getElementById('btnResetAllFlips');
+    if (resetFlipsBtn) resetFlipsBtn.addEventListener('click', () => this.resetAllFlips());
+    const flipAllBtn = document.getElementById('btnFlipAllAnimals');
+    if (flipAllBtn) flipAllBtn.addEventListener('click', () => this.flipAllAnimals());
 
     // Highlight All / Answer Rings (FIXED: Clean Toggle with state feedback)
     const toggleReveal = () => {
@@ -1433,6 +2087,8 @@ class AnimalDanceStudio {
       offCanvas.width = this.canvasWidth;
       offCanvas.height = this.canvasHeight;
       const offCtx = offCanvas.getContext('2d');
+      offCtx.imageSmoothingEnabled = true;
+      offCtx.imageSmoothingQuality = 'high';
       this.drawFrame(offCtx, this.canvasWidth, this.canvasHeight, this.currentTime * 1000, true);
       const url = offCanvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -1506,16 +2162,20 @@ class AnimalDanceStudio {
     // Title Controls & 12+ Styles
     document.getElementById('inputTitleText').addEventListener('input', (e) => {
       this.title.text = e.target.value;
+      this.debouncedSaveState();
     });
     document.getElementById('checkAutoSyncCount').addEventListener('change', (e) => {
       this.title.autoSyncCount = e.target.checked;
       if (e.target.checked) this.updateTitleCount();
+      this.debouncedSaveState();
     });
     document.getElementById('inputSubtitleText').addEventListener('input', (e) => {
       this.title.subtitle = e.target.value;
+      this.debouncedSaveState();
     });
     document.getElementById('checkShowSubtitle').addEventListener('change', (e) => {
       this.title.showSubtitle = e.target.checked;
+      this.debouncedSaveState();
     });
 
     document.querySelectorAll('.title-style-card').forEach(card => {
@@ -1582,10 +2242,8 @@ class AnimalDanceStudio {
     document.getElementById('selectPresetTrack').addEventListener('change', async (e) => {
       const track = e.target.value;
       this.showToast(`Synthesizing "${track}" music...`, 'info');
-      await window.audioEngine.generatePresetBGM(track, 60);
-      document.getElementById('currentTrackBadge').textContent = track.replace('_', ' ').toUpperCase();
-      this.drawWaveform();
-      this.showToast('Music updated!', 'success');
+      await window.audioEngine.generatePresetBGM(track, 30);
+      this.onAudioTrackLoaded(track.replace('_', ' ').toUpperCase(), window.audioEngine.duration, true, true);
     });
 
     // Custom Audio Upload (Supports Multiple Files & Saves to IndexedDB!)
@@ -1610,13 +2268,12 @@ class AnimalDanceStudio {
           }
 
           if (!firstLoaded) {
-            this.showToast(`Loading audio "${file.name}"...`, 'info');
+            this.showToast(`Decoding audio "${file.name}"...`, 'info');
             await window.audioEngine.loadFromArrayBuffer(arrayBuffer, file.name);
-            document.getElementById('currentTrackBadge').textContent = file.name;
+            this.onAudioTrackLoaded(file.name, window.audioEngine.duration, true, true);
             firstLoaded = true;
           }
         }
-        this.drawWaveform();
         await this.refreshSavedUploadsUI();
         this.showToast(`Saved ${files.length} audio file(s) to library!`, 'success');
       } catch (err) {
@@ -1714,36 +2371,155 @@ class AnimalDanceStudio {
     document.getElementById('sliderWatermarkSize').addEventListener('input', (e) => syncWmSize(parseInt(e.target.value)));
     document.getElementById('inputWatermarkSizeExact').addEventListener('input', (e) => syncWmSize(parseInt(e.target.value) || 24));
 
-    // Countdown Timer Settings
-    document.getElementById('checkTimerBarEnable').addEventListener('change', (e) => this.timer.enabled = e.target.checked);
-    document.getElementById('selectTimerStyle').addEventListener('change', (e) => this.timer.style = e.target.value);
+    // Countdown Timer & Clock Settings
+    const chkTimer = document.getElementById('checkTimerBarEnable');
+    if (chkTimer) {
+      chkTimer.addEventListener('change', (e) => {
+        this.timer.enabled = e.target.checked;
+        this.syncTimerUI();
+        this.pushHistoryState('Toggle Countdown Timer');
+      });
+    }
 
-    // Duration Chips
+    const selTimerStyle = document.getElementById('selectTimerStyle');
+    if (selTimerStyle) {
+      selTimerStyle.addEventListener('change', (e) => {
+        this.timer.style = e.target.value;
+        if (e.target.value === 'none') {
+          this.timer.enabled = false;
+        } else if (!this.timer.enabled) {
+          this.timer.enabled = true;
+        }
+        this.syncTimerUI();
+        this.pushHistoryState('Change Timer Style');
+      });
+    }
+
+    const syncTimerSize = (val) => {
+      this.timer.size = Math.max(30, Math.min(400, val));
+      const sl = document.getElementById('sliderTimerSize');
+      const inExact = document.getElementById('inputTimerSizeExact');
+      const badge = document.getElementById('timerSizeVal');
+      if (sl) sl.value = this.timer.size;
+      if (inExact) inExact.value = this.timer.size;
+      if (badge) badge.textContent = `${this.timer.size}px`;
+    };
+    const slTimerSize = document.getElementById('sliderTimerSize');
+    if (slTimerSize) slTimerSize.addEventListener('input', (e) => syncTimerSize(parseInt(e.target.value)));
+    const inTimerSizeExact = document.getElementById('inputTimerSizeExact');
+    if (inTimerSizeExact) inTimerSizeExact.addEventListener('input', (e) => syncTimerSize(parseInt(e.target.value) || 130));
+
+    const syncTimerX = (val) => {
+      this.timer.nx = Math.max(0, Math.min(100, val)) / 100;
+      const sl = document.getElementById('sliderTimerX');
+      const inExact = document.getElementById('inputTimerXExact');
+      const badge = document.getElementById('timerXVal');
+      if (sl) sl.value = Math.round(this.timer.nx * 100);
+      if (inExact) inExact.value = Math.round(this.timer.nx * 100);
+      if (badge) badge.textContent = `${Math.round(this.timer.nx * 100)}%`;
+      this.updateTimerPresetChips();
+    };
+    const slTimerX = document.getElementById('sliderTimerX');
+    if (slTimerX) slTimerX.addEventListener('input', (e) => syncTimerX(parseInt(e.target.value)));
+    const inTimerXExact = document.getElementById('inputTimerXExact');
+    if (inTimerXExact) inTimerXExact.addEventListener('input', (e) => syncTimerX(parseInt(e.target.value) || 50));
+
+    const syncTimerY = (val) => {
+      this.timer.ny = Math.max(0, Math.min(100, val)) / 100;
+      const sl = document.getElementById('sliderTimerY');
+      const inExact = document.getElementById('inputTimerYExact');
+      const badge = document.getElementById('timerYVal');
+      if (sl) sl.value = Math.round(this.timer.ny * 100);
+      if (inExact) inExact.value = Math.round(this.timer.ny * 100);
+      if (badge) badge.textContent = `${Math.round(this.timer.ny * 100)}%`;
+      this.updateTimerPresetChips();
+    };
+    const slTimerY = document.getElementById('sliderTimerY');
+    if (slTimerY) slTimerY.addEventListener('input', (e) => syncTimerY(parseInt(e.target.value)));
+    const inTimerYExact = document.getElementById('inputTimerYExact');
+    if (inTimerYExact) inTimerYExact.addEventListener('input', (e) => syncTimerY(parseInt(e.target.value) || 50));
+
+    document.querySelectorAll('.timer-pos-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const x = parseInt(chip.dataset.x);
+        const y = parseInt(chip.dataset.y);
+        syncTimerX(x);
+        syncTimerY(y);
+        this.pushHistoryState('Set Timer Preset Position');
+      });
+    });
+
+    const inTimerColor = document.getElementById('inputTimerColor');
+    if (inTimerColor) {
+      inTimerColor.addEventListener('input', (e) => {
+        this.timer.color = e.target.value;
+      });
+    }
+
+    // Duration Chips (Manual override)
     document.querySelectorAll('.preset-chip[data-dur]').forEach(chip => {
       chip.addEventListener('click', () => {
-        document.querySelectorAll('.preset-chip[data-dur]').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        this.videoDuration = parseInt(chip.dataset.dur);
-        document.getElementById('inputCustomDuration').value = this.videoDuration;
-        document.getElementById('stageTimeScrubber').max = this.videoDuration;
-        this.updatePlayheadUI();
+        this.setVideoDuration(parseInt(chip.dataset.dur));
       });
     });
     document.getElementById('inputCustomDuration').addEventListener('change', (e) => {
-      const val = Math.max(3, Math.min(180, parseInt(e.target.value) || 15));
-      this.videoDuration = val;
-      document.getElementById('stageTimeScrubber').max = val;
-      this.updatePlayheadUI();
+      this.setVideoDuration(parseInt(e.target.value) || 15);
     });
+
+    // Sync Buttons: Match Video Length to Audio Length / Trim
+    const syncAudioTrimBtn = document.getElementById('btnSyncDurationToAudio');
+    if (syncAudioTrimBtn) {
+      syncAudioTrimBtn.addEventListener('click', () => {
+        const audioLen = Math.round(window.audioEngine.trimEnd - window.audioEngine.trimStart);
+        this.setVideoDuration(audioLen);
+      });
+    }
+
+    const exportMatchAudioBtn = document.getElementById('btnExportMatchAudio');
+    if (exportMatchAudioBtn) {
+      exportMatchAudioBtn.addEventListener('click', () => {
+        const audioLen = Math.round(window.audioEngine.trimEnd - window.audioEngine.trimStart);
+        this.setVideoDuration(audioLen);
+      });
+    }
 
     const formatSelect = document.getElementById('selectExportFormat');
     if (formatSelect) {
       formatSelect.addEventListener('change', (e) => this.exportFormat = e.target.value);
     }
-    document.getElementById('selectResolution').addEventListener('change', (e) => this.resolutionPreset = e.target.value);
-    document.getElementById('selectFps').addEventListener('change', (e) => this.fps = parseInt(e.target.value));
-    document.getElementById('selectBitrate').addEventListener('change', (e) => this.bitrate = parseInt(e.target.value) * 1000000);
-    document.getElementById('checkAppendReveal').addEventListener('change', (e) => this.appendRevealEnding = e.target.checked);
+    document.getElementById('selectResolution').addEventListener('change', (e) => {
+      this.resolutionPreset = e.target.value;
+      const bSelect = document.getElementById('selectBitrate');
+      if (bSelect) {
+        if (this.resolutionPreset === '4k') {
+          bSelect.value = '18';
+          this.bitrate = 18000000;
+        } else if (this.resolutionPreset === '2k') {
+          bSelect.value = '12';
+          this.bitrate = 12000000;
+        } else {
+          bSelect.value = '8';
+          this.bitrate = 8000000;
+        }
+        const bVal = document.getElementById('exportBitrateVal');
+        if (bVal) bVal.textContent = `${bSelect.value} Mbps`;
+      }
+      this.debouncedSaveState();
+    });
+    document.getElementById('selectFps').addEventListener('change', (e) => {
+      this.fps = parseInt(e.target.value) || 30;
+      this.debouncedSaveState();
+    });
+    document.getElementById('selectBitrate').addEventListener('change', (e) => {
+      this.bitrate = parseInt(e.target.value) * 1000000;
+      const bVal = document.getElementById('exportBitrateVal');
+      if (bVal) bVal.textContent = `${e.target.value} Mbps`;
+      this.debouncedSaveState();
+    });
+    document.getElementById('checkAppendReveal').addEventListener('change', (e) => {
+      this.appendRevealEnding = e.target.checked;
+      this.debouncedSaveState();
+    });
 
     // Playback buttons
     const togglePlay = () => this.togglePlayback();
@@ -1797,17 +2573,85 @@ class AnimalDanceStudio {
       this.showToast(`Switched to ${this.creatorMode ? 'Creator View (handles on)' : 'Clean Audience View'}`, 'info');
     });
 
+    // Global Character Opacity Controls (Tab 1: Animals)
+    const syncGlobalOpacity = (val, pushHistory = false) => {
+      const num = parseInt(val, 10);
+      const clamped = Math.max(0, Math.min(100, isNaN(num) ? 100 : num));
+      this.globalOpacity = clamped / 100;
+      this.animals.forEach(a => a.opacity = this.globalOpacity);
+      if (this.selectedAnimalId) {
+        const sel = this.animals.find(item => item.id === this.selectedAnimalId);
+        if (sel) this.updateInspectorUI(sel);
+      }
+      this.syncGlobalOpacityUI();
+      if (pushHistory) {
+        this.pushHistoryState(`Change opacity to ${clamped}%`);
+      }
+      this.debouncedSaveState();
+    };
+
+    const slGlobalOp = document.getElementById('sliderGlobalOpacity');
+    if (slGlobalOp) slGlobalOp.addEventListener('input', (e) => syncGlobalOpacity(e.target.value));
+    const inGlobalOp = document.getElementById('inputGlobalOpacityExact');
+    if (inGlobalOp) inGlobalOp.addEventListener('input', (e) => syncGlobalOpacity(e.target.value));
+
+    document.querySelectorAll('.opacity-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => syncGlobalOpacity(btn.dataset.opacity, true));
+    });
+
+    const btnApplyAll = document.getElementById('btnApplyOpacityAll');
+    if (btnApplyAll) {
+      btnApplyAll.addEventListener('click', () => {
+        const pct = Math.round(this.globalOpacity * 100);
+        this.animals.forEach(a => a.opacity = this.globalOpacity);
+        if (this.selectedAnimalId) {
+          const sel = this.animals.find(item => item.id === this.selectedAnimalId);
+          if (sel) this.updateInspectorUI(sel);
+        }
+        this.pushHistoryState(`Batch opacity to ${pct}%`);
+        this.debouncedSaveState();
+        this.showToast(`Applied ${pct}% opacity to all ${this.animals.length} animals!`, 'success');
+      });
+    }
+
     // Selected Animal Inspector Controls with Numeric Inputs
     const syncInspectScale = (val) => {
       const a = this.animals.find(item => item.id === this.selectedAnimalId);
       if (!a) return;
-      a.scale = parseFloat((val / 100).toFixed(2));
-      document.getElementById('sliderInspectScale').value = val;
-      document.getElementById('inputInspectScaleExact').value = val;
-      document.getElementById('inspectScaleVal').textContent = `${val}%`;
+      const num = parseInt(val, 10);
+      const clamped = Math.max(1, Math.min(500, isNaN(num) ? 100 : num));
+      a.scale = parseFloat((clamped / 100).toFixed(3));
+      document.getElementById('sliderInspectScale').value = clamped;
+      document.getElementById('inputInspectScaleExact').value = clamped;
+      document.getElementById('inspectScaleVal').textContent = `${clamped}%`;
+      this.debouncedSaveState();
     };
-    document.getElementById('sliderInspectScale').addEventListener('input', (e) => syncInspectScale(parseInt(e.target.value)));
-    document.getElementById('inputInspectScaleExact').addEventListener('input', (e) => syncInspectScale(parseInt(e.target.value) || 100));
+    document.getElementById('sliderInspectScale').addEventListener('input', (e) => syncInspectScale(e.target.value));
+    document.getElementById('inputInspectScaleExact').addEventListener('input', (e) => syncInspectScale(e.target.value));
+
+    // Opacity / Transparency Control for Selected Animal
+    const syncInspectOpacity = (val) => {
+      const a = this.animals.find(item => item.id === this.selectedAnimalId);
+      if (!a) return;
+      const num = parseInt(val, 10);
+      const clamped = Math.max(0, Math.min(100, isNaN(num) ? 100 : num));
+      a.opacity = clamped / 100;
+      const slider = document.getElementById('sliderInspectOpacity');
+      const inputExact = document.getElementById('inputInspectOpacityExact');
+      const valLabel = document.getElementById('inspectOpacityVal');
+      if (slider) slider.value = clamped;
+      if (inputExact) inputExact.value = clamped;
+      if (valLabel) valLabel.textContent = `${clamped}%`;
+      this.debouncedSaveState();
+    };
+    const slOpacity = document.getElementById('sliderInspectOpacity');
+    if (slOpacity) slOpacity.addEventListener('input', (e) => syncInspectOpacity(e.target.value));
+    const inOpacity = document.getElementById('inputInspectOpacityExact');
+    if (inOpacity) inOpacity.addEventListener('input', (e) => syncInspectOpacity(e.target.value));
+
+    document.querySelectorAll('.inspect-op-chip').forEach(btn => {
+      btn.addEventListener('click', () => syncInspectOpacity(btn.dataset.op));
+    });
 
     const syncInspectRot = (val) => {
       const a = this.animals.find(item => item.id === this.selectedAnimalId);
@@ -1816,26 +2660,60 @@ class AnimalDanceStudio {
       document.getElementById('sliderInspectRot').value = val;
       document.getElementById('inputInspectRotExact').value = val;
       document.getElementById('inspectRotVal').textContent = `${val}°`;
+      this.debouncedSaveState();
     };
     document.getElementById('sliderInspectRot').addEventListener('input', (e) => syncInspectRot(parseInt(e.target.value)));
     document.getElementById('inputInspectRotExact').addEventListener('input', (e) => syncInspectRot(parseInt(e.target.value) || 0));
 
-    document.getElementById('inputInspectXExact').addEventListener('input', (e) => {
+    const inInspectX = document.getElementById('inputInspectXExact');
+    const inInspectY = document.getElementById('inputInspectYExact');
+
+    if (inInspectX) {
+      inInspectX.addEventListener('input', (e) => {
+        const a = this.animals.find(item => item.id === this.selectedAnimalId);
+        if (!a) return;
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) {
+          a.nx = Math.max(0.005, Math.min(0.995, parseFloat((val / 100).toFixed(4))));
+          this.debouncedSaveState();
+        }
+      });
+    }
+
+    if (inInspectY) {
+      inInspectY.addEventListener('input', (e) => {
+        const a = this.animals.find(item => item.id === this.selectedAnimalId);
+        if (!a) return;
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val)) {
+          a.ny = Math.max(0.005, Math.min(0.995, parseFloat((val / 100).toFixed(4))));
+          this.debouncedSaveState();
+        }
+      });
+    }
+
+    const nudgeAnimal = (dxPct, dyPct) => {
       const a = this.animals.find(item => item.id === this.selectedAnimalId);
       if (!a) return;
-      a.nx = Math.max(0, Math.min(1, (parseFloat(e.target.value) || 50) / 100));
-    });
-    document.getElementById('inputInspectYExact').addEventListener('input', (e) => {
-      const a = this.animals.find(item => item.id === this.selectedAnimalId);
-      if (!a) return;
-      a.ny = Math.max(0, Math.min(1, (parseFloat(e.target.value) || 50) / 100));
-    });
+      a.nx = Math.max(0.005, Math.min(0.995, parseFloat((a.nx + dxPct / 100).toFixed(4))));
+      a.ny = Math.max(0.005, Math.min(0.995, parseFloat((a.ny + dyPct / 100).toFixed(4))));
+      if (inInspectX) inInspectX.value = (a.nx * 100).toFixed(1);
+      if (inInspectY) inInspectY.value = (a.ny * 100).toFixed(1);
+      this.debouncedSaveState();
+    };
+
+    const btnNudgeLeft = document.getElementById('btnNudgeLeft');
+    if (btnNudgeLeft) btnNudgeLeft.addEventListener('click', () => nudgeAnimal(-0.1, 0));
+    const btnNudgeRight = document.getElementById('btnNudgeRight');
+    if (btnNudgeRight) btnNudgeRight.addEventListener('click', () => nudgeAnimal(0.1, 0));
+    const btnNudgeUp = document.getElementById('btnNudgeUp');
+    if (btnNudgeUp) btnNudgeUp.addEventListener('click', () => nudgeAnimal(0, -0.1));
+    const btnNudgeDown = document.getElementById('btnNudgeDown');
+    if (btnNudgeDown) btnNudgeDown.addEventListener('click', () => nudgeAnimal(0, 0.1));
 
     document.getElementById('btnInspectFlipX').addEventListener('click', () => {
-      const a = this.animals.find(item => item.id === this.selectedAnimalId);
-      if (!a) return;
-      a.flipX = !a.flipX;
-      this.pushHistoryState('Flip animal');
+      this.toggleFlipAnimal();
+      this.debouncedSaveState();
     });
     document.getElementById('btnInspectDuplicate').addEventListener('click', () => {
       if (this.selectedAnimalId) this.duplicateAnimal(this.selectedAnimalId);
@@ -1849,6 +2727,7 @@ class AnimalDanceStudio {
         const item = this.animals.splice(idx, 1)[0];
         this.animals.push(item);
         this.renderLayerList();
+        this.debouncedSaveState();
       }
     });
     document.getElementById('btnInspectSendBack').addEventListener('click', () => {
@@ -1857,12 +2736,31 @@ class AnimalDanceStudio {
         const item = this.animals.splice(idx, 1)[0];
         this.animals.unshift(item);
         this.renderLayerList();
+        this.debouncedSaveState();
       }
     });
 
-    // Project Save / Load
+    // Project Save / Load & Auto-Save Session
     document.getElementById('btnSaveProjectJson').addEventListener('click', () => this.saveProjectJson());
     document.getElementById('inputLoadProject').addEventListener('change', (e) => this.loadProjectJson(e.target.files[0]));
+
+    const btnResetSettings = document.getElementById('btnResetSettingsOnly');
+    if (btnResetSettings) {
+      btnResetSettings.addEventListener('click', () => {
+        if (confirm('Reset workspace positions, styles, timer, and layout back to defaults?\n\n(Your active character and background image will be preserved!)')) {
+          this.resetSettingsOnly();
+        }
+      });
+    }
+
+    const btnClearStorage = document.getElementById('btnClearAllStorage');
+    if (btnClearStorage) {
+      btnClearStorage.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to completely wipe all saved settings, custom uploaded GIFs, and background history?\n\nThis will reset the studio to a clean fresh install.')) {
+          await this.clearAllStorage();
+        }
+      });
+    }
 
     // Export Modal Triggers
     document.getElementById('btnOpenExportModal').addEventListener('click', () => {
@@ -1909,48 +2807,112 @@ class AnimalDanceStudio {
       return;
     }
 
-    if (this.selectedAnimalId) {
+    const resScale = this.canvasWidth / 1080;
+
+    // 1. If an animal is currently selected, check its interactive handles FIRST
+    if (this.selectedAnimalId && this.creatorMode) {
       const a = this.animals.find(item => item.id === this.selectedAnimalId);
       if (a) {
         const ax = a.nx * this.canvasWidth;
         const ay = a.ny * this.canvasHeight;
         const gifData = this.loadedGifs.get(a.charId);
-        const resScale = this.canvasWidth / 1080;
         const drawW = (gifData ? gifData.width : 100) * 0.9 * resScale * a.scale;
         const drawH = (gifData ? gifData.height : 100) * 0.9 * resScale * a.scale;
-        const boxHalfW = Math.max(36 * resScale, drawW / 2 + 12);
-        const boxHalfH = Math.max(36 * resScale, drawH / 2 + 12);
+        const boxHalfW = Math.max(48 * resScale, drawW / 2 + 16);
+        const boxHalfH = Math.max(48 * resScale, drawH / 2 + 16);
 
-        // Transform mouse point into animal's local space (accounting for a.rotation!)
+        // Transform mouse point into animal's local space
         const dx = clientX - ax;
         const dy = clientY - ay;
         const rad = (-a.rotation * Math.PI) / 180;
         const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
         const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
 
-        // Rotation Handle (Top-Center in local space: 0, -boxHalfH - 24)
-        const rotDist = Math.hypot(localX, localY - (-boxHalfH - 24));
-        if (rotDist < Math.max(26, 22 * resScale)) {
+        // A. Floating Action Pill below bounding box
+        const pillY = boxHalfH + 34 * resScale;
+        const pillW = 250 * resScale;
+        const pillH = 34 * resScale;
+        if (Math.abs(localX) <= pillW / 2 + 8 * scaleX && Math.abs(localY - pillY) <= pillH / 2 + 8 * scaleX) {
+          if (localX < -70 * resScale) {
+            a.scale = Math.max(0.01, parseFloat((a.scale - 0.02).toFixed(3)));
+            this.updateInspectorUI(a);
+            this.pushHistoryState('Shrink animal size');
+            this.debouncedSaveState();
+            this.showToast(`Animal #${a.index} Size: ${Math.round(a.scale * 100)}%`, 'info');
+            return;
+          }
+          if (localX >= -70 * resScale && localX < -22 * resScale) {
+            if (a.scale < 0.65) a.scale = 0.72;
+            else if (a.scale < 0.90) a.scale = 1.0;
+            else if (a.scale < 1.20) a.scale = 1.35;
+            else a.scale = 0.52;
+            this.updateInspectorUI(a);
+            this.pushHistoryState('Cycle animal size');
+            this.debouncedSaveState();
+            this.showToast(`Animal #${a.index} Size: ${Math.round(a.scale * 100)}%`, 'info');
+            return;
+          }
+          if (localX >= -22 * resScale && localX < 26 * resScale) {
+            a.scale = Math.min(4.0, parseFloat((a.scale + 0.05).toFixed(2)));
+            this.updateInspectorUI(a);
+            this.pushHistoryState('Grow animal size');
+            this.debouncedSaveState();
+            this.showToast(`Animal #${a.index} Size: ${Math.round(a.scale * 100)}%`, 'info');
+            return;
+          }
+          if (localX >= 26 * resScale && localX < 76 * resScale) {
+            const curOp = a.opacity !== undefined ? a.opacity : 1.0;
+            const nextOp = curOp > 0.85 ? 0.75 : (curOp > 0.6 ? 0.50 : (curOp > 0.35 ? 0.25 : 1.0));
+            a.opacity = nextOp;
+            this.updateInspectorUI(a);
+            this.pushHistoryState('Toggle animal opacity');
+            this.debouncedSaveState();
+            this.showToast(`Animal #${a.index} Opacity: ${Math.round(a.opacity * 100)}%`, 'info');
+            return;
+          }
+          if (localX >= 76 * resScale) {
+            this.toggleFlipAnimal(a.id);
+            this.debouncedSaveState();
+            return;
+          }
+        }
+
+        // B. Rotation Handle (Top-Center)
+        const rotY = -boxHalfH - 30 * resScale;
+        const rotHitR = Math.max(18 * resScale, 16);
+        if (Math.hypot(localX, localY - rotY) < rotHitR) {
           this.interaction.isDragging = true;
           this.interaction.dragTarget = 'handle-rot';
           this.interaction.targetId = a.id;
           this.interaction.origRot = a.rotation;
+          try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
           return;
         }
 
-        // Corner Resize Handle (Bottom-Right in local space: boxHalfW, boxHalfH)
-        const cornerDist = Math.hypot(localX - boxHalfW, localY - boxHalfH);
-        if (cornerDist < Math.max(26, 22 * resScale)) {
-          this.interaction.isDragging = true;
-          this.interaction.dragTarget = 'handle-resize';
-          this.interaction.targetId = a.id;
-          this.interaction.origScale = a.scale;
-          this.interaction.origDist = Math.hypot(clientX - ax, clientY - ay);
-          return;
+        // C. Corner Resize Handles (All 4 Corners)
+        const handleHitR = Math.max(16 * resScale, 14);
+        const corners = [
+          [-boxHalfW, -boxHalfH],
+          [boxHalfW, -boxHalfH],
+          [-boxHalfW, boxHalfH],
+          [boxHalfW, boxHalfH]
+        ];
+        for (let c = 0; c < corners.length; c++) {
+          const [cx, cy] = corners[c];
+          if (Math.hypot(localX - cx, localY - cy) < handleHitR) {
+            this.interaction.isDragging = true;
+            this.interaction.dragTarget = 'handle-resize';
+            this.interaction.targetId = a.id;
+            this.interaction.origScale = a.scale;
+            this.interaction.origDist = Math.max(15, Math.hypot(clientX - ax, clientY - ay));
+            try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
+            return;
+          }
         }
 
-        // Central body dragging for the selected animal
-        if (Math.abs(localX) <= boxHalfW && Math.abs(localY) <= boxHalfH) {
+        // D. Center Reticle Target / Pointer
+        const centerGrabR = Math.max(22 * resScale, 18);
+        if (Math.hypot(localX, localY) < centerGrabR) {
           this.interaction.isDragging = true;
           this.interaction.dragTarget = 'animal';
           this.interaction.targetId = a.id;
@@ -1958,33 +2920,33 @@ class AnimalDanceStudio {
           this.interaction.origItemY = a.ny;
           this.updateInspectorUI(a);
           this.renderLayerList();
+          try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
           return;
         }
       }
     }
 
+    // 2. Natural Sprite Bounds Hit-Testing on ALL animals (From topmost layer down to 0)
     for (let i = this.animals.length - 1; i >= 0; i--) {
       const a = this.animals[i];
       const ax = a.nx * this.canvasWidth;
       const ay = a.ny * this.canvasHeight;
       const gifData = this.loadedGifs.get(a.charId);
-      const resScale = this.canvasWidth / 1080;
       const drawW = (gifData ? gifData.width : 100) * 0.9 * resScale * a.scale;
       const drawH = (gifData ? gifData.height : 100) * 0.9 * resScale * a.scale;
-      const boxHalfW = Math.max(45 * resScale, drawW / 2 + 16);
-      const boxHalfH = Math.max(45 * resScale, drawH / 2 + 16);
 
-      // Transform mouse point into animal's local space
+      // Tight, natural sprite bounds (with minimum 16px radius for micro 1% animals so fingers/mice hit reliably without overlapping other animals)
+      const hitHalfW = Math.max(16 * resScale, drawW / 2 + 8 * resScale);
+      const hitHalfH = Math.max(16 * resScale, drawH / 2 + 8 * resScale);
+
       const dx = clientX - ax;
       const dy = clientY - ay;
       const rad = (-a.rotation * Math.PI) / 180;
       const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
       const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
 
-      // Generous hit box: ensure minimum 45px hit area even for tiny animals!
-      const hitBody = Math.abs(localX) <= boxHalfW && Math.abs(localY) <= boxHalfH;
-      // Badge hit test in local space at (boxHalfW, -boxHalfH)
-      const hitBadge = Math.hypot(localX - boxHalfW, localY - (-boxHalfH)) <= Math.max(26, 20 * resScale);
+      const hitBody = Math.abs(localX) <= hitHalfW && Math.abs(localY) <= hitHalfH;
+      const hitBadge = Math.hypot(localX - (-hitHalfW + 16 * resScale), localY - (-hitHalfH - 14 * resScale)) <= Math.max(20, 16 * resScale);
 
       if (hitBody || hitBadge) {
         this.selectedAnimalId = a.id;
@@ -1996,10 +2958,12 @@ class AnimalDanceStudio {
 
         this.updateInspectorUI(a);
         this.renderLayerList();
+        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
         return;
       }
     }
 
+    // 3. Title Hit-Testing
     const tx = this.title.nx * this.canvasWidth;
     const ty = this.title.ny * this.canvasHeight;
     const titleH = this.title.fontSize * (this.canvasWidth / 1080) * 2;
@@ -2011,6 +2975,21 @@ class AnimalDanceStudio {
       return;
     }
 
+    // 4. Timer Hit-Testing
+    if (this.timer.enabled && this.timer.style !== 'none' && this.timer.style !== 'top_bar' && this.timer.style !== 'bottom_bar') {
+      const tmX = (this.timer.nx ?? 0.88) * this.canvasWidth;
+      const tmY = (this.timer.ny ?? 0.08) * this.canvasHeight;
+      const timerRadius = ((this.timer.size || 130) * (this.canvasWidth / 1080)) / 2 + 15;
+      if (Math.hypot(clientX - tmX, clientY - tmY) < timerRadius) {
+        this.interaction.isDragging = true;
+        this.interaction.dragTarget = 'timer';
+        this.interaction.origItemX = this.timer.nx ?? 0.88;
+        this.interaction.origItemY = this.timer.ny ?? 0.08;
+        return;
+      }
+    }
+
+    // 5. Watermark Hit-Testing
     if (this.watermark.enabled) {
       const wx = this.watermark.nx * this.canvasWidth;
       const wy = this.watermark.ny * this.canvasHeight;
@@ -2023,12 +3002,121 @@ class AnimalDanceStudio {
       }
     }
 
-    this.selectedAnimalId = null;
-    this.renderLayerList();
+    // 6. Click on empty background: deselect
+    if (this.selectedAnimalId) {
+      this.selectedAnimalId = null;
+      this.renderLayerList();
+    }
+  }
+
+  // --- Dynamic Hover Cursor for Precision Editing ---
+  updateHoverCursor(e) {
+    if (this.interaction.isDragging) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvasWidth / rect.width;
+    const scaleY = this.canvasHeight / rect.height;
+    const clientX = (e.clientX - rect.left) * scaleX;
+    const clientY = (e.clientY - rect.top) * scaleY;
+    const resScale = this.canvasWidth / 1080;
+    const hitTolerance = Math.max(34 * resScale, 20 * scaleX);
+
+    if (this.timer.enabled && this.timer.style !== 'none' && this.timer.style !== 'top_bar' && this.timer.style !== 'bottom_bar') {
+      const tmX = (this.timer.nx ?? 0.88) * this.canvasWidth;
+      const tmY = (this.timer.ny ?? 0.08) * this.canvasHeight;
+      const timerRadius = ((this.timer.size || 130) * resScale) / 2 + 10;
+      if (Math.hypot(clientX - tmX, clientY - tmY) < timerRadius) {
+        this.canvas.style.cursor = 'move';
+        return;
+      }
+    }
+
+    if (this.selectedAnimalId) {
+      const a = this.animals.find(item => item.id === this.selectedAnimalId);
+      if (a) {
+        const ax = a.nx * this.canvasWidth;
+        const ay = a.ny * this.canvasHeight;
+        const gifData = this.loadedGifs.get(a.charId);
+        const drawW = (gifData ? gifData.width : 100) * 0.9 * resScale * a.scale;
+        const drawH = (gifData ? gifData.height : 100) * 0.9 * resScale * a.scale;
+        const boxHalfW = Math.max(48 * resScale, drawW / 2 + 16);
+        const boxHalfH = Math.max(48 * resScale, drawH / 2 + 16);
+
+        const dx = clientX - ax;
+        const dy = clientY - ay;
+        const rad = (-a.rotation * Math.PI) / 180;
+        const localX = dx * Math.cos(rad) - dy * Math.sin(rad);
+        const localY = dx * Math.sin(rad) + dy * Math.cos(rad);
+
+        // Center Position Pointer Grab Zone (Always prioritizes moving animal)
+        const centerGrabR = Math.max(26 * resScale, 20);
+        if (Math.hypot(localX, localY) < centerGrabR) {
+          this.canvas.style.cursor = 'move';
+          return;
+        }
+
+        // Rotation Handle (Top-Center)
+        const rotY = -boxHalfH - 30 * resScale;
+        const rotHitR = Math.max(16 * resScale, 14);
+        if (Math.hypot(localX, localY - rotY) < rotHitR) {
+          this.canvas.style.cursor = 'grab';
+          return;
+        }
+
+        // Corner Resize Handles (Accurate precision radius so handles don't crowd the center)
+        const handleHitR = Math.max(16 * resScale, 14);
+        const hitTL = Math.hypot(localX - (-boxHalfW), localY - (-boxHalfH)) < handleHitR;
+        const hitBR = Math.hypot(localX - boxHalfW, localY - boxHalfH) < handleHitR;
+        if (hitTL || hitBR) {
+          this.canvas.style.cursor = 'nwse-resize';
+          return;
+        }
+
+        const hitTR = Math.hypot(localX - boxHalfW, localY - (-boxHalfH)) < handleHitR;
+        const hitBL = Math.hypot(localX - (-boxHalfW), localY - boxHalfH) < handleHitR;
+        if (hitTR || hitBL) {
+          this.canvas.style.cursor = 'nesw-resize';
+          return;
+        }
+
+        // Floating Action Pill below box
+        const pillY = boxHalfH + 34 * resScale;
+        const pillW = 250 * resScale;
+        const pillH = 34 * resScale;
+        if (Math.abs(localX) <= pillW / 2 + 8 * scaleX && Math.abs(localY - pillY) <= pillH / 2 + 8 * scaleX) {
+          this.canvas.style.cursor = 'pointer';
+          return;
+        }
+
+        // Central body: move
+        if (Math.abs(localX) <= boxHalfW && Math.abs(localY) <= boxHalfH) {
+          this.canvas.style.cursor = 'move';
+          return;
+        }
+      }
+    }
+
+    // Check if hovering over any other animal (minimum 38px radius so tiny 1% animals are easily clickable!)
+    for (let i = this.animals.length - 1; i >= 0; i--) {
+      const a = this.animals[i];
+      const ax = a.nx * this.canvasWidth;
+      const ay = a.ny * this.canvasHeight;
+      const dist = Math.hypot(clientX - ax, (clientY - ay) * (this.canvasWidth / this.canvasHeight));
+      const hitRadius = Math.max(38 * resScale, 0.06 * this.canvasWidth * a.scale);
+      if (dist < hitRadius) {
+        this.canvas.style.cursor = 'pointer';
+        return;
+      }
+    }
+
+    this.canvas.style.cursor = 'default';
   }
 
   onPointerMove(e) {
-    if (!this.interaction.isDragging) return;
+    if (!this.interaction.isDragging) {
+      this.updateHoverCursor(e);
+      return;
+    }
 
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvasWidth / rect.width;
@@ -2059,17 +3147,37 @@ class AnimalDanceStudio {
       document.getElementById('sliderWatermarkY').value = Math.round(this.watermark.ny * 100);
       document.getElementById('inputWatermarkYExact').value = Math.round(this.watermark.ny * 100);
 
+    } else if (this.interaction.dragTarget === 'timer') {
+      this.timer.nx = Math.max(0.04, Math.min(0.96, this.interaction.origItemX + dx / this.canvasWidth));
+      this.timer.ny = Math.max(0.04, Math.min(0.96, this.interaction.origItemY + dy / this.canvasHeight));
+      const xPct = Math.round(this.timer.nx * 100);
+      const yPct = Math.round(this.timer.ny * 100);
+      const slX = document.getElementById('sliderTimerX');
+      const inX = document.getElementById('inputTimerXExact');
+      const valX = document.getElementById('timerXVal');
+      const slY = document.getElementById('sliderTimerY');
+      const inY = document.getElementById('inputTimerYExact');
+      const valY = document.getElementById('timerYVal');
+      if (slX) slX.value = xPct;
+      if (inX) inX.value = xPct;
+      if (valX) valX.textContent = `${xPct}%`;
+      if (slY) slY.value = yPct;
+      if (inY) inY.value = yPct;
+      if (valY) valY.textContent = `${yPct}%`;
+      this.updateTimerPresetChips();
+
     } else if (this.interaction.dragTarget === 'handle-resize') {
       const a = this.animals.find(item => item.id === this.interaction.targetId);
       if (!a) return;
       const ax = a.nx * this.canvasWidth;
       const ay = a.ny * this.canvasHeight;
       const currentDist = Math.hypot(clientX - ax, clientY - ay);
-      const ratio = currentDist / Math.max(10, this.interaction.origDist);
-      a.scale = Math.max(0.1, Math.min(5.0, parseFloat((this.interaction.origScale * ratio).toFixed(2))));
-      document.getElementById('sliderInspectScale').value = Math.round(a.scale * 100);
-      document.getElementById('inputInspectScaleExact').value = Math.round(a.scale * 100);
-      document.getElementById('inspectScaleVal').textContent = `${Math.round(a.scale * 100)}%`;
+      const ratio = currentDist / Math.max(15, this.interaction.origDist);
+      a.scale = Math.max(0.01, Math.min(5.0, parseFloat((this.interaction.origScale * ratio).toFixed(3))));
+      const pct = Math.max(1, Math.round(a.scale * 100));
+      document.getElementById('sliderInspectScale').value = pct;
+      document.getElementById('inputInspectScaleExact').value = pct;
+      document.getElementById('inspectScaleVal').textContent = `${pct}%`;
 
     } else if (this.interaction.dragTarget === 'handle-rot') {
       const a = this.animals.find(item => item.id === this.interaction.targetId);
@@ -2094,13 +3202,27 @@ class AnimalDanceStudio {
     }
   }
 
-  onPointerUp() {
+  onPointerUp(e) {
     if (this.interaction.isDragging) {
-      this.pushHistoryState('Move item');
+      if (this.interaction.dragTarget === 'handle-resize') {
+        const a = this.animals.find(item => item.id === this.interaction.targetId);
+        if (a) {
+          this.renderLayerList();
+          this.showToast(`Animal #${a.index} Size: ${Math.round(a.scale * 100)}%`, 'info');
+        }
+      }
+      this.renderLayerList();
+      this.pushHistoryState('Move/Resize item');
+      this.debouncedSaveState();
     }
     this.interaction.isDragging = false;
     this.interaction.dragTarget = null;
     this.canvas.style.cursor = 'default';
+    try {
+      if (e && e.pointerId && this.canvas.hasPointerCapture && this.canvas.hasPointerCapture(e.pointerId)) {
+        this.canvas.releasePointerCapture(e.pointerId);
+      }
+    } catch (err) {}
   }
 
   // =========================================================================
@@ -2141,6 +3263,13 @@ class AnimalDanceStudio {
     if (slider) slider.value = window.audioEngine.trimStart;
     if (input) input.value = window.audioEngine.trimStart;
     if (badge) badge.textContent = `${window.audioEngine.trimStart.toFixed(1)}s`;
+
+    const trimLen = parseFloat((window.audioEngine.trimEnd - window.audioEngine.trimStart).toFixed(1));
+    const trimBadge = document.getElementById('audioTrimLenBadge');
+    if (trimBadge) trimBadge.textContent = `${trimLen}s`;
+    const exportBadge = document.getElementById('exportAudioLenBadge');
+    if (exportBadge) exportBadge.textContent = `${Math.round(trimLen)}s`;
+
     this.drawWaveform();
   }
 
@@ -2154,6 +3283,13 @@ class AnimalDanceStudio {
     if (slider) slider.value = window.audioEngine.trimEnd;
     if (input) input.value = window.audioEngine.trimEnd;
     if (badge) badge.textContent = `${window.audioEngine.trimEnd.toFixed(1)}s`;
+
+    const trimLen = parseFloat((window.audioEngine.trimEnd - window.audioEngine.trimStart).toFixed(1));
+    const trimBadge = document.getElementById('audioTrimLenBadge');
+    if (trimBadge) trimBadge.textContent = `${trimLen}s`;
+    const exportBadge = document.getElementById('exportAudioLenBadge');
+    if (exportBadge) exportBadge.textContent = `${Math.round(trimLen)}s`;
+
     this.drawWaveform();
   }
 
@@ -2517,9 +3653,7 @@ class AnimalDanceStudio {
         row.querySelector('.btn-use').addEventListener('click', async () => {
           window.audioEngine.stopPreview();
           await window.audioEngine.loadFromArrayBuffer(item.data, item.name);
-          document.getElementById('currentTrackBadge').textContent = item.name;
-          this.drawWaveform();
-          this.showToast(`Soundtrack loaded: "${item.name}"`, 'success');
+          this.onAudioTrackLoaded(item.name, window.audioEngine.duration, true, true);
         });
         row.querySelector('.btn-delete').addEventListener('click', async () => {
           window.audioEngine.stopPreview();
@@ -2555,6 +3689,9 @@ class AnimalDanceStudio {
           <span class="layer-name">Animal #${a.index} (${Math.round(a.scale * 100)}%)</span>
         </div>
         <div class="layer-actions">
+          <button class="btn btn-secondary btn-sm" title="${a.flipX ? 'Flipped Horizontally (Click to restore)' : 'Original Orientation (Click to flip)'}" style="${a.flipX ? 'color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.18);' : ''}" onclick="studio.toggleFlipAnimal('${a.id}')">
+            <i class="fa-solid fa-arrows-left-right"></i>
+          </button>
           <button class="btn btn-secondary btn-sm" title="Pinpoint" onclick="studio.locateAnimal('${a.id}')">
             <i class="fa-solid fa-crosshairs"></i>
           </button>
@@ -2577,16 +3714,35 @@ class AnimalDanceStudio {
   updateInspectorUI(animal) {
     if (!animal) return;
     document.getElementById('inspectAnimalTitle').textContent = `Selected: Animal #${animal.index}`;
-    document.getElementById('sliderInspectScale').value = Math.round(animal.scale * 100);
-    document.getElementById('inputInspectScaleExact').value = Math.round(animal.scale * 100);
-    document.getElementById('inspectScaleVal').textContent = `${Math.round(animal.scale * 100)}%`;
+    const scalePct = Math.max(1, Math.round(animal.scale * 100));
+    document.getElementById('sliderInspectScale').value = scalePct;
+    document.getElementById('inputInspectScaleExact').value = scalePct;
+    document.getElementById('inspectScaleVal').textContent = `${scalePct}%`;
+
+    const opPct = Math.round((animal.opacity !== undefined ? animal.opacity : 1.0) * 100);
+    const slOp = document.getElementById('sliderInspectOpacity');
+    const inOp = document.getElementById('inputInspectOpacityExact');
+    const valOp = document.getElementById('inspectOpacityVal');
+    if (slOp) slOp.value = opPct;
+    if (inOp) inOp.value = opPct;
+    if (valOp) valOp.textContent = `${opPct}%`;
 
     document.getElementById('sliderInspectRot').value = animal.rotation;
     document.getElementById('inputInspectRotExact').value = animal.rotation;
     document.getElementById('inspectRotVal').textContent = `${animal.rotation}°`;
 
-    document.getElementById('inputInspectXExact').value = (animal.nx * 100).toFixed(1);
-    document.getElementById('inputInspectYExact').value = (animal.ny * 100).toFixed(1);
+    const inX = document.getElementById('inputInspectXExact');
+    const inY = document.getElementById('inputInspectYExact');
+    if (inX) inX.value = (animal.nx * 100).toFixed(1);
+    if (inY) inY.value = (animal.ny * 100).toFixed(1);
+
+    const flipBtn = document.getElementById('btnInspectFlipX');
+    if (flipBtn) {
+      flipBtn.classList.toggle('active', !!animal.flipX);
+      flipBtn.style.color = animal.flipX ? '#38bdf8' : '';
+      flipBtn.style.borderColor = animal.flipX ? '#38bdf8' : '';
+      flipBtn.style.background = animal.flipX ? 'rgba(56, 189, 248, 0.22)' : '';
+    }
   }
 
   locateAnimal(id) {
@@ -2597,6 +3753,61 @@ class AnimalDanceStudio {
     this.showToast(`Selected Animal #${a ? a.index : ''}`, 'info');
   }
 
+  syncTimerUI() {
+    const chk = document.getElementById('checkTimerBarEnable');
+    if (chk) chk.checked = !!this.timer.enabled;
+
+    const sel = document.getElementById('selectTimerStyle');
+    if (sel) sel.value = this.timer.style;
+
+    const slSize = document.getElementById('sliderTimerSize');
+    const inSize = document.getElementById('inputTimerSizeExact');
+    const valSize = document.getElementById('timerSizeVal');
+    const curSize = this.timer.size || 130;
+    if (slSize) slSize.value = curSize;
+    if (inSize) inSize.value = curSize;
+    if (valSize) valSize.textContent = `${curSize}px`;
+
+    const xPct = Math.round((this.timer.nx ?? 0.88) * 100);
+    const yPct = Math.round((this.timer.ny ?? 0.08) * 100);
+
+    const slX = document.getElementById('sliderTimerX');
+    const inX = document.getElementById('inputTimerXExact');
+    const valX = document.getElementById('timerXVal');
+    if (slX) slX.value = xPct;
+    if (inX) inX.value = xPct;
+    if (valX) valX.textContent = `${xPct}%`;
+
+    const slY = document.getElementById('sliderTimerY');
+    const inY = document.getElementById('inputTimerYExact');
+    const valY = document.getElementById('timerYVal');
+    if (slY) slY.value = yPct;
+    if (inY) inY.value = yPct;
+    if (valY) valY.textContent = `${yPct}%`;
+
+    const inColor = document.getElementById('inputTimerColor');
+    if (inColor) inColor.value = this.timer.color || '#38bdf8';
+
+    // Show or hide position/size controls if bar vs clock
+    const posCont = document.getElementById('timerPositionContainer');
+    const sizeGrp = document.getElementById('timerSizeGroup');
+    const isBar = this.timer.style === 'top_bar' || this.timer.style === 'bottom_bar';
+    if (posCont) posCont.style.display = isBar ? 'none' : 'flex';
+    if (sizeGrp) sizeGrp.style.display = isBar ? 'none' : 'block';
+
+    this.updateTimerPresetChips();
+  }
+
+  updateTimerPresetChips() {
+    const curX = Math.round((this.timer.nx ?? 0.88) * 100);
+    const curY = Math.round((this.timer.ny ?? 0.08) * 100);
+    document.querySelectorAll('.timer-pos-chip').forEach(chip => {
+      const cx = parseInt(chip.dataset.x);
+      const cy = parseInt(chip.dataset.y);
+      chip.classList.toggle('active', Math.abs(cx - curX) <= 3 && Math.abs(cy - curY) <= 3);
+    });
+  }
+
   // =========================================================================
   // FLAWLESS REAL-TIME VIDEO EXPORT WITH EBML DURATION PATCHING
   // =========================================================================
@@ -2604,6 +3815,7 @@ class AnimalDanceStudio {
   async startVideoExport() {
     if (this.isExporting) return;
     this.isExporting = true;
+    this.exportChunks = [];
     if (this.isPlaying) {
       this.togglePlayback(); // ensure canvas preview is paused
     }
@@ -2644,28 +3856,68 @@ class AnimalDanceStudio {
     framesLabel.textContent = `0.0s / ${this.videoDuration}s`;
     etaLabel.textContent = 'Starting...';
 
-    // Resolution computation
-    let exportW = 1080;
-    let exportH = 1920;
-    if (this.resolutionPreset === '720p') {
-      exportW = this.aspectRatio === '9:16' ? 720 : (this.aspectRatio === '16:9' ? 1280 : 720);
-      exportH = this.aspectRatio === '9:16' ? 1280 : (this.aspectRatio === '16:9' ? 720 : 720);
-    } else if (this.resolutionPreset === '1080p') {
-      exportW = this.aspectRatio === '9:16' ? 1080 : (this.aspectRatio === '16:9' ? 1920 : 1080);
-      exportH = this.aspectRatio === '9:16' ? 1920 : (this.aspectRatio === '16:9' ? 1080 : 1080);
-    } else if (this.resolutionPreset === '2k') {
-      exportW = this.aspectRatio === '9:16' ? 1440 : (this.aspectRatio === '16:9' ? 2560 : 1440);
-      exportH = this.aspectRatio === '9:16' ? 2560 : (this.aspectRatio === '16:9' ? 1440 : 1440);
-    } else if (this.resolutionPreset === '4k') {
-      exportW = this.aspectRatio === '9:16' ? 2160 : (this.aspectRatio === '16:9' ? 3840 : 2160);
-      exportH = this.aspectRatio === '9:16' ? 3840 : (this.aspectRatio === '16:9' ? 2160 : 2160);
-    }
+    // 0. Ensure export parameters are strictly synced with user's selected UI options
+    const resSelect = document.getElementById('selectResolution');
+    if (resSelect && resSelect.value) this.resolutionPreset = resSelect.value;
 
-    // Mounted DOM Canvas: Ensures Chromium composites all 30/60 FPS frames without stalling!
+    const fpsSelect = document.getElementById('selectFps');
+    if (fpsSelect && fpsSelect.value) this.fps = parseInt(fpsSelect.value) || 30;
+
+    const bitrateSelect = document.getElementById('selectBitrate');
+    if (bitrateSelect && bitrateSelect.value) this.bitrate = parseInt(bitrateSelect.value) * 1000000;
+
+    const formatSelect = document.getElementById('selectExportFormat');
+    if (formatSelect && formatSelect.value) this.exportFormat = formatSelect.value;
+
+    const checkReveal = document.getElementById('checkAppendReveal');
+    if (checkReveal) this.appendRevealEnding = checkReveal.checked;
+
+    // 1. Precise Resolution computation for all aspect ratios & presets
+    const resolutionMap = {
+      '9:16': {
+        '720p':  { w: 720,  h: 1280 },
+        '1080p': { w: 1080, h: 1920 },
+        '2k':    { w: 1440, h: 2560 },
+        '4k':    { w: 2160, h: 3840 }
+      },
+      '16:9': {
+        '720p':  { w: 1280, h: 720 },
+        '1080p': { w: 1920, h: 1080 },
+        '2k':    { w: 2560, h: 1440 },
+        '4k':    { w: 3840, h: 2160 }
+      },
+      '1:1': {
+        '720p':  { w: 720,  h: 720 },
+        '1080p': { w: 1080, h: 1080 },
+        '2k':    { w: 1440, h: 1440 },
+        '4k':    { w: 2160, h: 2160 }
+      },
+      '4:5': {
+        '720p':  { w: 720,  h: 900 },
+        '1080p': { w: 1080, h: 1350 },
+        '2k':    { w: 1440, h: 1800 },
+        '4k':    { w: 2160, h: 2700 }
+      }
+    };
+    const aspectMap = resolutionMap[this.aspectRatio] || resolutionMap['9:16'];
+    const dims = aspectMap[this.resolutionPreset] || aspectMap['1080p'];
+    const exportW = dims.w;
+    const exportH = dims.h;
+
+    // 2. Compute target bitrate: use user's selected bitrate or optimized default (8 Mbps)
+    const targetBitrate = this.bitrate || 8000000;
+
+    // 3. Mounted DOM Live Canvas: Crisp, distortion-free rendering
     const exportCanvas = document.getElementById('exportLiveCanvas');
     exportCanvas.width = exportW;
     exportCanvas.height = exportH;
-    const exportCtx = exportCanvas.getContext('2d', { alpha: false });
+    exportCanvas.style.aspectRatio = `${exportW} / ${exportH}`;
+    const exportCtx = exportCanvas.getContext('2d', {
+      alpha: false,
+      desynchronized: false
+    });
+    exportCtx.imageSmoothingEnabled = true;
+    exportCtx.imageSmoothingQuality = 'high';
 
     // Pre-draw frame 0 so captureStream immediately receives a full-quality graphic
     this.drawFrame(exportCtx, exportW, exportH, 0, true);
@@ -2675,6 +3927,7 @@ class AnimalDanceStudio {
 
     // Stream Setup
     const stream = exportCanvas.captureStream(this.fps);
+    const videoTrack = (stream && stream.getVideoTracks) ? stream.getVideoTracks()[0] : null;
     if (hasAudio) {
       const audioTrack = window.audioEngine.getAudioTrack();
       if (audioTrack) {
@@ -2682,44 +3935,59 @@ class AnimalDanceStudio {
       }
     }
 
-    // Codec determination: MP4 (H.264 / AAC) is the universal default for all Windows & mobile players
+    // 4. Codec determination: Prioritize highest quality codecs with lossless/high-bitrate support
+    let mimeCandidates = [];
+    if (this.exportFormat === 'webm') {
+      mimeCandidates = [
+        hasAudio ? 'video/webm;codecs=vp9,opus' : 'video/webm;codecs=vp9',
+        hasAudio ? 'video/webm;codecs=vp8,opus' : 'video/webm;codecs=vp8',
+        'video/webm'
+      ];
+    } else {
+      mimeCandidates = [
+        hasAudio ? 'video/mp4;codecs=avc1.640028,mp4a.40.2' : 'video/mp4;codecs=avc1.640028',
+        hasAudio ? 'video/mp4;codecs=avc1.4d401f,mp4a.40.2' : 'video/mp4;codecs=avc1.4d401f',
+        hasAudio ? 'video/mp4;codecs=avc1,mp4a.40.2' : 'video/mp4;codecs=avc1',
+        'video/mp4',
+        hasAudio ? 'video/webm;codecs=vp9,opus' : 'video/webm;codecs=vp9',
+        hasAudio ? 'video/webm;codecs=vp8,opus' : 'video/webm;codecs=vp8',
+        'video/webm'
+      ];
+    }
+
     let mimeType = 'video/mp4';
     let fileExt = 'mp4';
+    this.exportMediaRecorder = null;
 
-    if (this.exportFormat === 'webm') {
-      mimeType = hasAudio && MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-        ? 'video/webm;codecs=vp8,opus'
-        : (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' : 'video/webm');
-      fileExt = 'webm';
-    } else {
-      // Universal MP4 (H.264 / AAC)
-      if (hasAudio && MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
-        mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
-        fileExt = 'mp4';
-      } else if (!hasAudio && MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
-        mimeType = 'video/mp4;codecs=avc1';
-        fileExt = 'mp4';
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-        fileExt = 'mp4';
-      } else {
-        // Fallback to WebM only if the browser has no MP4 recording support
-        mimeType = hasAudio && MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-          ? 'video/webm;codecs=vp8,opus'
-          : 'video/webm';
-        fileExt = 'webm';
+    for (const mime of mimeCandidates) {
+      if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(mime)) {
+        try {
+          this.exportMediaRecorder = new MediaRecorder(stream, {
+            mimeType: mime,
+            videoBitsPerSecond: targetBitrate,
+            audioBitsPerSecond: 192000
+          });
+          mimeType = mime;
+          fileExt = mime.includes('mp4') ? 'mp4' : 'webm';
+          break;
+        } catch (e) {
+          console.warn(`MediaRecorder init attempt failed with ${mime}:`, e);
+        }
       }
     }
 
-    this.exportChunks = [];
-    try {
-      this.exportMediaRecorder = new MediaRecorder(stream, {
-        mimeType: mimeType,
-        videoBitsPerSecond: this.bitrate
-      });
-    } catch (e) {
-      console.warn('Fallback to standard MediaRecorder options:', e);
-      this.exportMediaRecorder = new MediaRecorder(stream);
+    if (!this.exportMediaRecorder) {
+      try {
+        this.exportMediaRecorder = new MediaRecorder(stream, {
+          videoBitsPerSecond: targetBitrate,
+          audioBitsPerSecond: 192000
+        });
+      } catch (e) {
+        console.warn('Fallback to standard MediaRecorder options:', e);
+        this.exportMediaRecorder = new MediaRecorder(stream);
+      }
+      mimeType = this.exportMediaRecorder.mimeType || 'video/mp4';
+      fileExt = mimeType.includes('webm') ? 'webm' : 'mp4';
     }
 
     this.exportMediaRecorder.ondataavailable = (e) => {
@@ -2761,8 +4029,6 @@ class AnimalDanceStudio {
     this.exportMediaRecorder.start(100); // 100ms timeslice sends continuous chunks
 
     const startTime = performance.now();
-    const frameInterval = 1000 / this.fps; // ~33.3ms for 30fps
-    let lastRenderTime = -frameInterval;
 
     const recordTick = () => {
       if (!this.isExporting) return;
@@ -2770,17 +4036,12 @@ class AnimalDanceStudio {
       const elapsedMs = performance.now() - startTime;
       const progress = Math.min(1.0, elapsedMs / targetDurationMs);
 
-      // Paced frame rendering: only redraw when at least frameInterval has passed
-      if (elapsedMs - lastRenderTime >= frameInterval * 0.92 || elapsedMs >= targetDurationMs) {
-        lastRenderTime = elapsedMs;
+      const isRevealSection = this.appendRevealEnding && (elapsedMs >= this.videoDuration * 1000);
+      const prevReveal = this.answerRevealMode;
+      if (isRevealSection) this.answerRevealMode = true;
 
-        const isRevealSection = this.appendRevealEnding && (elapsedMs >= this.videoDuration * 1000);
-        const prevReveal = this.answerRevealMode;
-        if (isRevealSection) this.answerRevealMode = true;
-
-        this.drawFrame(exportCtx, exportW, exportH, elapsedMs, true);
-        this.answerRevealMode = prevReveal;
-      }
+      this.drawFrame(exportCtx, exportW, exportH, elapsedMs, true);
+      this.answerRevealMode = prevReveal;
 
       // Update UI progress accurately
       bar.style.width = `${Math.round(progress * 100)}%`;
@@ -2901,6 +4162,7 @@ class AnimalDanceStudio {
         if (data.timer) Object.assign(this.timer, data.timer);
         if (data.bg) Object.assign(this.bg, data.bg);
         if (data.activeCharType) this.setCharacterType(data.activeCharType);
+        this.syncTimerUI();
 
         this.updateTitleCount();
         this.renderLayerList();
@@ -2911,6 +4173,356 @@ class AnimalDanceStudio {
       }
     };
     reader.readAsText(file);
+  }
+
+  // =========================================================================
+  // LOCAL STORAGE PERSISTENCE (AUTO-SAVE & RESTORE)
+  // =========================================================================
+
+  saveStateToLocalStorage() {
+    try {
+      const state = {
+        version: 1,
+        savedAt: Date.now(),
+        aspectRatio: this.aspectRatio,
+        resolutionPreset: this.resolutionPreset,
+        bitrate: this.bitrate,
+        fps: this.fps,
+        videoDuration: this.videoDuration,
+        activeCharType: this.activeCharType,
+        animalCount: this.animals.length,
+        globalOpacity: this.globalOpacity !== undefined ? this.globalOpacity : 1.0,
+        animals: this.animals.map(a => ({
+          id: a.id,
+          index: a.index,
+          charId: a.charId,
+          nx: parseFloat(a.nx.toFixed(4)),
+          ny: parseFloat(a.ny.toFixed(4)),
+          scale: parseFloat(a.scale.toFixed(3)),
+          rotation: Math.round(a.rotation || 0),
+          flipX: !!a.flipX,
+          opacity: a.opacity !== undefined ? parseFloat(a.opacity.toFixed(2)) : 1.0,
+          baseWidth: a.baseWidth || 100,
+          baseHeight: a.baseHeight || 100
+        })),
+        bg: {
+          isLoaded: this.bg.isLoaded,
+          presetId: this.bg.presetId,
+          src: (this.bg.src && !this.bg.src.startsWith('data:')) ? this.bg.src : null,
+          customUrl: (this.bg.customUrl && this.bg.customUrl.length < 2500000) ? this.bg.customUrl : null,
+          zoom: this.bg.zoom,
+          panX: this.bg.panX,
+          panY: this.bg.panY,
+          brightness: this.bg.brightness,
+          contrast: this.bg.contrast,
+          saturation: this.bg.saturation
+        },
+        title: {
+          text: this.title.text,
+          style: this.title.style,
+          size: this.title.size,
+          color: this.title.color,
+          nx: this.title.nx,
+          ny: this.title.ny,
+          autoSyncCount: this.title.autoSyncCount
+        },
+        timer: {
+          enabled: this.timer.enabled,
+          style: this.timer.style,
+          size: this.timer.size,
+          nx: this.timer.nx,
+          ny: this.timer.ny,
+          duration: this.timer.duration
+        },
+        watermark: {
+          enabled: this.watermark.enabled,
+          text: this.watermark.text,
+          nx: this.watermark.nx,
+          ny: this.watermark.ny,
+          opacity: this.watermark.opacity
+        }
+      };
+
+      localStorage.setItem('find_animal_dance_studio_saved_state_v1', JSON.stringify(state));
+      const badge = document.getElementById('autoSaveBadge');
+      if (badge) {
+        badge.textContent = 'Auto-Saved';
+        badge.style.opacity = '1';
+      }
+    } catch (e) {
+      console.warn('LocalStorage save error (likely quota exceeded):', e);
+      try {
+        const stripped = JSON.parse(localStorage.getItem('find_animal_dance_studio_saved_state_v1') || '{}');
+        if (stripped.bg) delete stripped.bg.customUrl;
+        localStorage.setItem('find_animal_dance_studio_saved_state_v1', JSON.stringify(stripped));
+      } catch (err2) {}
+    }
+  }
+
+  debouncedSaveState() {
+    if (this.saveStateTimeout) clearTimeout(this.saveStateTimeout);
+    this.saveStateTimeout = setTimeout(() => {
+      this.saveStateToLocalStorage();
+    }, 350);
+  }
+
+  loadStateFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem('find_animal_dance_studio_saved_state_v1');
+      if (!raw) return false;
+      const s = JSON.parse(raw);
+      if (!s || !s.animals || !Array.isArray(s.animals) || s.animals.length === 0) return false;
+
+      // 1. Aspect Ratio & Resolution & Video Properties
+      if (s.aspectRatio) {
+        this.aspectRatio = s.aspectRatio;
+        this.canvasWidth = s.aspectRatio === '16:9' ? 1920 : (s.aspectRatio === '1:1' ? 1080 : 1080);
+        this.canvasHeight = s.aspectRatio === '16:9' ? 1080 : (s.aspectRatio === '1:1' ? 1080 : (s.aspectRatio === '4:5' ? 1350 : 1920));
+        document.querySelectorAll('.ratio-pill-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.ratio === this.aspectRatio);
+        });
+      }
+      if (s.resolutionPreset) {
+        this.resolutionPreset = s.resolutionPreset;
+        const resSelect = document.getElementById('selectResolution');
+        if (resSelect) resSelect.value = this.resolutionPreset;
+      }
+      if (s.bitrate) {
+        this.bitrate = s.bitrate;
+        const bitSelect = document.getElementById('selectBitrate');
+        if (bitSelect) bitSelect.value = String(Math.round(this.bitrate / 1000000));
+        const bitVal = document.getElementById('exportBitrateVal');
+        if (bitVal) bitVal.textContent = `${Math.round(this.bitrate / 1000000)} Mbps`;
+      }
+      if (s.fps) {
+        this.fps = s.fps;
+        const fpsSelect = document.getElementById('selectFps');
+        if (fpsSelect) fpsSelect.value = String(this.fps);
+      }
+      if (s.videoDuration) {
+        this.videoDuration = s.videoDuration;
+        const durInput = document.getElementById('inputVideoDuration');
+        if (durInput) durInput.value = this.videoDuration;
+      }
+
+      // 2. Character Type & Global Opacity
+      if (s.activeCharType) {
+        this.activeCharType = s.activeCharType;
+        document.querySelectorAll('.char-card').forEach(c => {
+          c.classList.toggle('active', c.dataset.char === this.activeCharType);
+        });
+      }
+      this.globalOpacity = s.globalOpacity !== undefined ? s.globalOpacity : 1.0;
+      this.syncGlobalOpacityUI();
+
+      // 3. Animals with exact saved positions, scales, rotations, flips, opacity
+      this.animals = s.animals.map((a, idx) => ({
+        id: a.id || `animal_${Date.now()}_${idx}`,
+        index: a.index || (idx + 1),
+        charId: a.charId || this.activeCharType,
+        nx: Math.max(0.005, Math.min(0.995, a.nx ?? 0.5)),
+        ny: Math.max(0.005, Math.min(0.995, a.ny ?? 0.5)),
+        scale: Math.max(0.01, a.scale ?? 0.65),
+        rotation: a.rotation || 0,
+        flipX: !!a.flipX,
+        opacity: a.opacity !== undefined ? a.opacity : this.globalOpacity,
+        baseWidth: a.baseWidth || 100,
+        baseHeight: a.baseHeight || 100
+      }));
+      this.animalCount = this.animals.length;
+
+      // 4. Background
+      if (s.bg) {
+        this.bg.zoom = s.bg.zoom ?? 1.0;
+        this.bg.panX = s.bg.panX ?? 0;
+        this.bg.panY = s.bg.panY ?? 0;
+        this.bg.brightness = s.bg.brightness ?? 100;
+        this.bg.contrast = s.bg.contrast ?? 100;
+        this.bg.saturation = s.bg.saturation ?? 100;
+
+        if (s.bg.customUrl) {
+          this.loadBackground(s.bg.customUrl, 'custom_bg');
+        } else if (s.bg.presetId) {
+          this.loadBackground(`assets/backgrounds/${s.bg.presetId}.jpg`, s.bg.presetId);
+        } else if (s.bg.src) {
+          this.loadBackground(s.bg.src, null);
+        }
+
+        const slZoom = document.getElementById('sliderBgZoom');
+        const inZoom = document.getElementById('inputBgZoom');
+        const valZoom = document.getElementById('bgZoomVal');
+        if (slZoom) slZoom.value = Math.round(this.bg.zoom * 100);
+        if (inZoom) inZoom.value = Math.round(this.bg.zoom * 100);
+        if (valZoom) valZoom.textContent = `${Math.round(this.bg.zoom * 100)}%`;
+
+        const slPanX = document.getElementById('sliderBgPanX');
+        const inPanX = document.getElementById('inputBgPanX');
+        const valPanX = document.getElementById('bgPanXVal');
+        if (slPanX) slPanX.value = this.bg.panX;
+        if (inPanX) inPanX.value = this.bg.panX;
+        if (valPanX) valPanX.textContent = `${this.bg.panX}px`;
+
+        const slPanY = document.getElementById('sliderBgPanY');
+        const inPanY = document.getElementById('inputBgPanY');
+        const valPanY = document.getElementById('bgPanYVal');
+        if (slPanY) slPanY.value = this.bg.panY;
+        if (inPanY) inPanY.value = this.bg.panY;
+        if (valPanY) valPanY.textContent = `${this.bg.panY}px`;
+      }
+
+      // 5. Title
+      if (s.title) {
+        this.title.text = s.title.text ?? this.title.text;
+        this.title.style = s.title.style ?? this.title.style;
+        this.title.size = s.title.size ?? this.title.size;
+        this.title.color = s.title.color ?? this.title.color;
+        this.title.nx = s.title.nx ?? this.title.nx;
+        this.title.ny = s.title.ny ?? this.title.ny;
+        this.title.autoSyncCount = !!s.title.autoSyncCount;
+
+        const inTitle = document.getElementById('inputTitleText');
+        if (inTitle) inTitle.value = this.title.text;
+        const selTitleStyle = document.getElementById('selectTitleStyle');
+        if (selTitleStyle) selTitleStyle.value = this.title.style;
+        const slTitleSize = document.getElementById('sliderTitleSize');
+        const inTitleSize = document.getElementById('inputTitleSizeExact');
+        const valTitleSize = document.getElementById('titleSizeVal');
+        if (slTitleSize) slTitleSize.value = this.title.size;
+        if (inTitleSize) inTitleSize.value = this.title.size;
+        if (valTitleSize) valTitleSize.textContent = `${this.title.size}px`;
+        const chkAuto = document.getElementById('checkTitleAutoCount');
+        if (chkAuto) chkAuto.checked = this.title.autoSyncCount;
+      }
+
+      // 6. Timer
+      if (s.timer) {
+        this.timer.enabled = !!s.timer.enabled;
+        this.timer.style = s.timer.style ?? this.timer.style;
+        this.timer.size = s.timer.size ?? this.timer.size;
+        this.timer.nx = s.timer.nx ?? this.timer.nx;
+        this.timer.ny = s.timer.ny ?? this.timer.ny;
+        this.syncTimerUI();
+      }
+
+      // 7. Watermark
+      if (s.watermark) {
+        this.watermark.enabled = !!s.watermark.enabled;
+        this.watermark.text = s.watermark.text ?? this.watermark.text;
+        this.watermark.nx = s.watermark.nx ?? this.watermark.nx;
+        this.watermark.ny = s.watermark.ny ?? this.watermark.ny;
+        this.watermark.opacity = s.watermark.opacity ?? this.watermark.opacity;
+        const inWm = document.getElementById('inputWatermarkText');
+        if (inWm) inWm.value = this.watermark.text;
+        const chkWm = document.getElementById('checkWatermarkEnable');
+        if (chkWm) chkWm.checked = this.watermark.enabled;
+      }
+
+      if (s.title && s.title.text && !s.title.autoSyncCount) {
+        this.title.text = s.title.text;
+        const inTitle = document.getElementById('inputTitleText');
+        if (inTitle) inTitle.value = this.title.text;
+      } else {
+        this.updateTitleCount();
+      }
+      this.renderLayerList();
+      this.fitCanvasToScreen();
+      return true;
+    } catch (e) {
+      console.warn('Failed to restore state from local storage:', e);
+      return false;
+    }
+  }
+
+  resetSettingsOnly() {
+    // 1. Reset animal layout to clean default spread, 0.65 scale, 1.0 opacity, 0 rotation, flipX false
+    // PRESERVE current active character!
+    this.globalOpacity = 1.0;
+    this.syncGlobalOpacityUI();
+    const count = this.animals.length || 15;
+    this.generateAnimals(count, true);
+
+    // 2. Reset timer to disabled and default position & style
+    this.timer.enabled = false;
+    this.timer.style = 'circle_progress';
+    this.timer.size = 130;
+    this.timer.nx = 0.88;
+    this.timer.ny = 0.08;
+    this.syncTimerUI();
+
+    // 3. Reset title styling & position
+    this.title.style = 'pill_glow';
+    this.title.size = 48;
+    this.title.nx = 0.5;
+    this.title.ny = 0.08;
+    this.title.color = '#ffffff';
+    this.title.autoSyncCount = true;
+    this.updateTitleCount();
+
+    // 4. Reset background zoom/pan/filters while keeping current image
+    this.resetBackgroundTransform();
+
+    // 5. Reset bitrate
+    this.bitrate = 8000000;
+    const bSel = document.getElementById('selectBitrate');
+    if (bSel) bSel.value = '8';
+    const bVal = document.getElementById('exportBitrateVal');
+    if (bVal) bVal.textContent = '8 Mbps';
+
+    this.saveStateToLocalStorage();
+    this.pushHistoryState('Reset settings only');
+    this.showToast('Workspace settings reset to defaults (characters & backdrop preserved)', 'info');
+  }
+
+  async clearAllStorage() {
+    try {
+      localStorage.removeItem('find_animal_dance_studio_saved_state_v1');
+    } catch (e) {}
+
+    if (window.storageManager) {
+      try {
+        await window.storageManager.clearAll();
+      } catch (e) {
+        console.warn('StorageManager clear error:', e);
+      }
+    }
+
+    // Factory reset everything
+    this.activeCharType = 'shuba_duck';
+    this.setCharacterType('shuba_duck', 'Shuba Duck');
+    this.setAspectRatio('9:16');
+    this.loadBackground('assets/backgrounds/rustic_water_village.jpg', 'rustic_water_village');
+    this.globalOpacity = 1.0;
+    this.syncGlobalOpacityUI();
+    this.generateAnimals(15, true);
+    this.timer.enabled = false;
+    this.timer.style = 'circle_progress';
+    this.timer.size = 130;
+    this.timer.nx = 0.88;
+    this.timer.ny = 0.08;
+    this.syncTimerUI();
+    this.watermark.enabled = false;
+    const chkWm = document.getElementById('checkWatermarkEnable');
+    if (chkWm) chkWm.checked = false;
+    this.bitrate = 8000000;
+    const bSel = document.getElementById('selectBitrate');
+    if (bSel) bSel.value = '8';
+    const bVal = document.getElementById('exportBitrateVal');
+    if (bVal) bVal.textContent = '8 Mbps';
+    this.refreshSavedUploadsUI();
+    this.pushHistoryState('Factory Reset');
+    this.showToast('All browser storage, cache & custom assets cleared!', 'success');
+  }
+
+  syncGlobalOpacityUI() {
+    const sl = document.getElementById('sliderGlobalOpacity');
+    const inExact = document.getElementById('inputGlobalOpacityExact');
+    const valText = document.getElementById('globalOpacityVal');
+    const badge = document.getElementById('globalOpacityBadge');
+    const pct = Math.round((this.globalOpacity !== undefined ? this.globalOpacity : 1.0) * 100);
+    if (sl) sl.value = pct;
+    if (inExact) inExact.value = pct;
+    if (valText) valText.textContent = `${pct}%`;
+    if (badge) badge.textContent = pct === 100 ? '100% Solid' : `${pct}% Ghost`;
   }
 
   // =========================================================================

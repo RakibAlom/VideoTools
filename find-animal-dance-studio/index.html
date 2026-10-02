@@ -112,7 +112,7 @@
       </nav>
 
       <!-- Scrollable Tab Content -->
-      <div class="deck-content-scroller">
+      <div class="deck-content-scroller" id="deckContentScroller">
 
         <!-- ================= TAB 1: ANIMALS ================= -->
         <div id="tab-animals" class="tab-pane active">
@@ -239,9 +239,50 @@
               </button>
             </div>
 
-            <!-- Add Single Animal (Centered) -->
+            <!-- Add Single Animal (Auto-Spaced) -->
             <button id="btnAddSingleAnimal" class="btn btn-secondary" style="width: 100%;">
-              <i class="fa-solid fa-plus"></i> Add +1 Animal (Dead Center)
+              <i class="fa-solid fa-plus"></i> Add +1 Animal (Auto-Spaced, 0° Angle)
+            </button>
+
+            <!-- Batch Flip Controls -->
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+              <button id="btnResetAllFlips" class="btn btn-secondary btn-sm" style="flex: 1;" title="Reset all animals to original GIF orientation">
+                <i class="fa-solid fa-rotate-left"></i> Original Facing
+              </button>
+              <button id="btnFlipAllAnimals" class="btn btn-secondary btn-sm" style="flex: 1;" title="Flip all animals horizontally">
+                <i class="fa-solid fa-arrows-left-right"></i> Flip All
+              </button>
+            </div>
+          </div>
+
+          <!-- GIF Opacity & Transparency (All Characters) -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>GIF Opacity / Transparency</span>
+              <span class="badge" id="globalOpacityBadge">100% Solid</span>
+            </div>
+            <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.4rem;">
+              Make GIFs semi-transparent to blend into backgrounds or create stealth hidden animals!
+            </p>
+            <div class="form-group">
+              <div class="form-label">
+                <span>Character Opacity</span>
+                <span class="val-indicator" id="globalOpacityVal">100%</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderGlobalOpacity" class="range-slider" min="5" max="100" value="100" style="flex:1;">
+                <input type="number" id="inputGlobalOpacityExact" class="form-input" min="0" max="100" value="100" style="width:75px;">
+              </div>
+            </div>
+            <!-- Quick Preset Chips -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; margin-top: 0.35rem;">
+              <button class="btn btn-secondary btn-sm opacity-preset-btn" data-opacity="100" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">100%</button>
+              <button class="btn btn-secondary btn-sm opacity-preset-btn" data-opacity="75" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">75%</button>
+              <button class="btn btn-secondary btn-sm opacity-preset-btn" data-opacity="50" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">50%</button>
+              <button class="btn btn-secondary btn-sm opacity-preset-btn" data-opacity="25" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">25%</button>
+            </div>
+            <button id="btnApplyOpacityAll" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 0.4rem;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Opacity to All Characters
             </button>
           </div>
 
@@ -669,6 +710,14 @@
               </div>
             </div>
 
+            <!-- Match Duration Quick Button -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; background:rgba(255,255,255,0.03); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+              <span style="font-size:0.75rem; color:var(--text-muted);">Audio Selected: <strong id="audioTrimLenBadge" style="color:var(--accent-duck);">15.0s</strong></span>
+              <button id="btnSyncDurationToAudio" class="btn btn-secondary btn-sm" title="Apply audio length to video export duration">
+                <i class="fa-solid fa-arrows-rotate"></i> Sync Video Length
+              </button>
+            </div>
+
             <div class="form-group">
               <div class="form-label">
                 <span>Volume</span>
@@ -763,25 +812,85 @@
             </div>
           </div>
 
-          <!-- Multiple Countdown Timer Options -->
+          <!-- Multiple Countdown Timer & Clock Options -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Countdown Timer Options</span>
+              <span>Countdown Timer & Clock</span>
               <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
-                <input type="checkbox" id="checkTimerBarEnable" checked>
-                <span style="font-size:0.75rem;">Show Timer</span>
+                <input type="checkbox" id="checkTimerBarEnable">
+                <span style="font-size:0.75rem; font-weight:700;">Show Timer</span>
               </label>
             </div>
 
             <div class="form-group">
               <div class="form-label">Timer Presentation Style</div>
               <select id="selectTimerStyle" class="form-input">
-                <option value="top_bar" selected>Top Shrinking Gradient Bar</option>
-                <option value="bottom_bar">Bottom Shrinking Gradient Bar</option>
-                <option value="digital_badge">Digital Countdown Badge (15s... 0s)</option>
-                <option value="radial_ring">Radial Circular Ring (Top Right)</option>
-                <option value="none">No Timer (Infinite Watch Time)</option>
+                <option value="radial_ring" selected>Radial Circular Ring Clock (Bold Ring)</option>
+                <option value="analog_clock">Analog Clock Face (Ticking Hand & Ticks)</option>
+                <option value="digital_badge">Digital Stopwatch Badge (Neon Countdown)</option>
+                <option value="top_bar">Top Edge Shrinking Gradient Bar</option>
+                <option value="bottom_bar">Bottom Edge Shrinking Gradient Bar</option>
+                <option value="none">Disabled (No Timer)</option>
               </select>
+            </div>
+
+            <!-- Timer Size Slider & Exact Input (Can be made much bigger!) -->
+            <div class="form-group" id="timerSizeGroup">
+              <div class="form-label">
+                <span>Timer Size (Bigger / Smaller)</span>
+                <span class="val-indicator" id="timerSizeVal">130px</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTimerSize" class="range-slider" min="50" max="350" value="130" style="flex:1;">
+                <input type="number" id="inputTimerSizeExact" class="form-input" min="40" max="400" value="130" style="width:75px;">
+              </div>
+            </div>
+
+            <!-- Timer Position Controls (Presets + Sliders) -->
+            <div id="timerPositionContainer" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <!-- Quick Position Presets -->
+              <div class="form-group">
+                <div class="form-label">Quick Position Presets</div>
+                <div class="preset-button-row" style="flex-wrap:wrap; gap:4px;">
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="12" data-y="8">Top Left</button>
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="50" data-y="8">Top Center</button>
+                  <button type="button" class="preset-chip timer-pos-chip active" data-x="88" data-y="8">Top Right</button>
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="12" data-y="92">Bottom Left</button>
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="50" data-y="92">Bottom Center</button>
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="88" data-y="92">Bottom Right</button>
+                  <button type="button" class="preset-chip timer-pos-chip" data-x="50" data-y="50">Center</button>
+                </div>
+              </div>
+
+              <!-- Horizontal Position X -->
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Horizontal Position (X)</span>
+                  <span class="val-indicator" id="timerXVal">88%</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerX" class="range-slider" min="5" max="95" value="88" style="flex:1;">
+                  <input type="number" id="inputTimerXExact" class="form-input" min="0" max="100" value="88" style="width:75px;">
+                </div>
+              </div>
+
+              <!-- Vertical Position Y -->
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Vertical Position (Y)</span>
+                  <span class="val-indicator" id="timerYVal">8%</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerY" class="range-slider" min="5" max="95" value="8" style="flex:1;">
+                  <input type="number" id="inputTimerYExact" class="form-input" min="0" max="100" value="8" style="width:75px;">
+                </div>
+              </div>
+
+              <!-- Timer Color -->
+              <div class="form-group">
+                <div class="form-label">Timer Color</div>
+                <input type="color" id="inputTimerColor" class="form-input" style="height:38px; padding:2px;" value="#38bdf8">
+              </div>
             </div>
           </div>
 
@@ -809,6 +918,9 @@
                 <input type="number" id="inputCustomDuration" class="form-input" min="3" max="180" value="15" style="width: 90px;">
                 <span style="font-size: 0.78rem; color: var(--text-muted);">custom seconds</span>
               </div>
+              <button id="btnExportMatchAudio" class="btn btn-secondary btn-sm" style="margin-top:0.4rem; width:100%;" title="Automatically set video length to current audio">
+                <i class="fa-solid fa-music"></i> Match Current Audio (<span id="exportAudioLenBadge">15s</span>)
+              </button>
             </div>
 
             <!-- Video Format -->
@@ -816,7 +928,7 @@
               <div class="form-label">Video Format</div>
               <select id="selectExportFormat" class="form-input">
                 <option value="mp4" selected>MP4 Video (H.264 - Universal Windows / Mobile / Shorts - Recommended)</option>
-                <option value="webm">WebM Video (VP8/Opus)</option>
+                <option value="webm">WebM Video (VP9/VP8 High Quality)</option>
               </select>
             </div>
 
@@ -825,7 +937,7 @@
               <div class="form-label">Export Resolution</div>
               <select id="selectResolution" class="form-input">
                 <option value="720p">720p HD (Fast export)</option>
-                <option value="1080p" selected>1080p Full HD (Recommended Crisp)</option>
+                <option value="1080p" selected>1080p Full HD (Studio Crisp 1080p - Recommended)</option>
                 <option value="2k">2K QHD (1440p High Quality)</option>
                 <option value="4k">4K Ultra HD (2160p Master Quality)</option>
               </select>
@@ -840,13 +952,17 @@
               </select>
             </div>
 
-            <!-- Bitrate Quality -->
+            <!-- Bitrate Quality (Optimized file sizes) -->
             <div class="form-group">
-              <div class="form-label">Video Bitrate</div>
+              <div class="form-label">
+                <span>Video Bitrate (File Size)</span>
+                <span class="val-indicator" id="exportBitrateVal">8 Mbps</span>
+              </div>
               <select id="selectBitrate" class="form-input">
-                <option value="8">8 Mbps (Smooth Web)</option>
-                <option value="16" selected>16 Mbps (Studio Crisp - Recommended)</option>
-                <option value="28">28 Mbps (Lossless Pro)</option>
+                <option value="4">4 Mbps (Compact & Fast - ~8 MB)</option>
+                <option value="8" selected>8 Mbps (Social Optimized - Recommended - ~15 MB)</option>
+                <option value="12">12 Mbps (High Definition - ~22 MB)</option>
+                <option value="18">18 Mbps (Ultra High Quality - ~32 MB)</option>
               </select>
             </div>
 
@@ -868,19 +984,31 @@
             </button>
           </div>
 
-          <!-- Project Save / Load -->
+          <!-- Project Save / Load & Auto-Save Session -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Project Preset File</span>
+              <span>Project & Session</span>
+              <span class="badge" id="autoSaveBadge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">Auto-Saved</span>
             </div>
+            <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.4rem;">
+              Your positions, styles, backgrounds, and settings are automatically stored in your browser!
+            </p>
             <div style="display: flex; gap: 0.5rem;">
-              <button id="btnSaveProjectJson" class="btn btn-secondary" style="flex: 1;">
-                <i class="fa-solid fa-floppy-disk"></i> Save Project
+              <button id="btnSaveProjectJson" class="btn btn-secondary btn-sm" style="flex: 1;">
+                <i class="fa-solid fa-floppy-disk"></i> Save File
               </button>
-              <button id="btnLoadProjectJson" class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('inputLoadProject').click()">
-                <i class="fa-solid fa-folder-open"></i> Load Project
+              <button id="btnLoadProjectJson" class="btn btn-secondary btn-sm" style="flex: 1;" onclick="document.getElementById('inputLoadProject').click()">
+                <i class="fa-solid fa-folder-open"></i> Load File
               </button>
               <input type="file" id="inputLoadProject" accept=".json" style="display:none">
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+              <button id="btnResetSettingsOnly" class="btn btn-secondary btn-sm" style="flex: 1;" title="Reset positions, styles, timer, and settings to default while keeping your current characters and background">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Reset Settings Only
+              </button>
+              <button id="btnClearAllStorage" class="btn btn-secondary btn-sm" style="flex: 1; color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.4);" title="Wipe all local storage cache, custom uploaded GIFs, and background history">
+                <i class="fa-solid fa-trash-can"></i> Clear Storage
+              </button>
             </div>
           </div>
 
@@ -963,8 +1091,8 @@
         <div class="inspector-header">
           <span id="inspectAnimalTitle">Selected: Duck #1</span>
           <div style="display:flex; gap:4px;">
-            <button id="btnInspectFlipX" class="btn btn-secondary btn-sm" title="Flip Horizontal">
-              <i class="fa-solid fa-arrows-left-right"></i>
+            <button id="btnInspectFlipX" class="btn btn-secondary btn-sm" title="Flip Horizontal (Mirror / Original)">
+              <i class="fa-solid fa-arrows-left-right"></i> Flip
             </button>
             <button id="btnInspectDuplicate" class="btn btn-secondary btn-sm" title="Duplicate">
               <i class="fa-solid fa-copy"></i>
@@ -975,15 +1103,33 @@
           </div>
         </div>
 
-        <!-- Scale with Numeric Input -->
+        <!-- Scale with Numeric Input (Minimum 1% for micro hiding) -->
         <div class="form-group">
           <div class="form-label">
-            <span>Size / Scale</span>
+            <span>Size / Scale (Min 1%)</span>
             <span class="val-indicator" id="inspectScaleVal">100%</span>
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center;">
-            <input type="range" id="sliderInspectScale" class="range-slider" min="15" max="350" value="100" style="flex:1;">
-            <input type="number" id="inputInspectScaleExact" class="form-input" min="10" max="500" value="100" style="width:75px;">
+            <input type="range" id="sliderInspectScale" class="range-slider" min="1" max="400" value="100" style="flex:1;">
+            <input type="number" id="inputInspectScaleExact" class="form-input" min="1" max="500" value="100" style="width:75px;">
+          </div>
+        </div>
+
+        <!-- GIF Opacity / Transparency with Numeric Input -->
+        <div class="form-group">
+          <div class="form-label">
+            <span>GIF Opacity / Transparency</span>
+            <span class="val-indicator" id="inspectOpacityVal">100%</span>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="range" id="sliderInspectOpacity" class="range-slider" min="5" max="100" value="100" style="flex:1;">
+            <input type="number" id="inputInspectOpacityExact" class="form-input" min="0" max="100" value="100" style="width:75px;">
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; margin-top: 0.35rem;">
+            <button class="btn btn-secondary btn-sm inspect-op-chip" data-op="100" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">100%</button>
+            <button class="btn btn-secondary btn-sm inspect-op-chip" data-op="75" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">75%</button>
+            <button class="btn btn-secondary btn-sm inspect-op-chip" data-op="50" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">50%</button>
+            <button class="btn btn-secondary btn-sm inspect-op-chip" data-op="25" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">25%</button>
           </div>
         </div>
 
@@ -999,15 +1145,23 @@
           </div>
         </div>
 
-        <!-- Coordinates X & Y with Numeric Inputs -->
+        <!-- Coordinates X & Y with Precision Micro-Nudge Buttons -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
           <div class="form-group">
             <div class="form-label"><span>Position X %</span></div>
-            <input type="number" id="inputInspectXExact" class="form-input" min="0" max="100" step="0.5" value="50">
+            <div style="display:flex; gap:3px; align-items:center;">
+              <button id="btnNudgeLeft" class="btn btn-secondary btn-sm" title="Nudge Left 0.1%" style="padding:0.25rem 0.45rem;">◄</button>
+              <input type="number" id="inputInspectXExact" class="form-input" min="0" max="100" step="0.1" value="50" style="flex:1; text-align:center; padding:0.25rem 0.1rem; font-size:0.8rem;">
+              <button id="btnNudgeRight" class="btn btn-secondary btn-sm" title="Nudge Right 0.1%" style="padding:0.25rem 0.45rem;">►</button>
+            </div>
           </div>
           <div class="form-group">
             <div class="form-label"><span>Position Y %</span></div>
-            <input type="number" id="inputInspectYExact" class="form-input" min="0" max="100" step="0.5" value="50">
+            <div style="display:flex; gap:3px; align-items:center;">
+              <button id="btnNudgeUp" class="btn btn-secondary btn-sm" title="Nudge Up 0.1%" style="padding:0.25rem 0.45rem;">▲</button>
+              <input type="number" id="inputInspectYExact" class="form-input" min="0" max="100" step="0.1" value="50" style="flex:1; text-align:center; padding:0.25rem 0.1rem; font-size:0.8rem;">
+              <button id="btnNudgeDown" class="btn btn-secondary btn-sm" title="Nudge Down 0.1%" style="padding:0.25rem 0.45rem;">▼</button>
+            </div>
           </div>
         </div>
 

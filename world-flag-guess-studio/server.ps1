@@ -48,15 +48,75 @@ while (Test-PortInUse $port) {
     $port++
 }
 
+function Find-FFmpeg {
+    # 1. Local bin folder inside project
+    $local = Join-Path $root "bin\ffmpeg.exe"
+    if (Test-Path $local) {
+        try {
+            $p = Start-Process -FilePath $local -ArgumentList "-version" -NoNewWindow -Wait -PassThru -ErrorAction Stop
+            if ($p.ExitCode -eq 0) { return $local }
+        } catch {}
+    }
+
+    # 2. CapCut Apps directory (user's system has CapCut with working ffmpeg)
+    $capcutDir = Join-Path $env:LOCALAPPDATA "CapCut\Apps"
+    if (Test-Path $capcutDir) {
+        $capFfmpeg = Get-ChildItem -Path $capcutDir -Filter "ffmpeg.exe" -Recurse -ErrorAction SilentlyContinue |
+            Sort-Object { $_.DirectoryName } -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+        if ($capFfmpeg -and (Test-Path $capFfmpeg)) { return $capFfmpeg }
+    }
+
+    # 3. System PATH
+    $cmd = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+    # 4. WinGet or AppData locations
+    $wingetDir = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages"
+    if (Test-Path $wingetDir) {
+        $wingetFfmpeg = Get-ChildItem -Path $wingetDir -Filter "ffmpeg.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+        if ($wingetFfmpeg -and (Test-Path $wingetFfmpeg)) { return $wingetFfmpeg }
+    }
+
+    return $null
+}
+
+function Remux-ToUniversalMp4([string]$inPath, [string]$outPath) {
+    $ffmpegPath = Find-FFmpeg
+    if (-not $ffmpegPath) {
+        Write-Host "Notice: FFmpeg not detected. Using source video container directly." -ForegroundColor Yellow
+        return $false
+    }
+
+    $ffmpegDir = Split-Path $ffmpegPath
+    $args = @("-y", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
+    try {
+        $proc = Start-Process -FilePath $ffmpegPath -ArgumentList $args -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
+        if ($proc.ExitCode -eq 0 -and (Test-Path $outPath) -and (Get-Item $outPath).Length -gt 1000) {
+            Write-Host "Universal MP4 FastStart progressive optimization complete!" -ForegroundColor Green
+            return $true
+        }
+    } catch {
+        Write-Host "FFmpeg execution error: $_" -ForegroundColor Red
+    }
+    return $false
+}
+
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
 
 try {
     $listener.Start()
+    $detectedFfmpeg = Find-FFmpeg
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "   World Flag Guess Studio Local Server Running!          " -ForegroundColor Green
     Write-Host "   URL: http://localhost:$port/index.html                 " -ForegroundColor Yellow
     Write-Host "   Root: $root                                            " -ForegroundColor Gray
+    if ($detectedFfmpeg) {
+        Write-Host "   Video Optimizer: FastStart H.264 Active ($detectedFfmpeg)" -ForegroundColor Green
+    } else {
+        Write-Host "   Video Optimizer: Client-side MP4 Fixer Active          " -ForegroundColor Yellow
+    }
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "Press Ctrl+C in this console to stop the server.`n" -ForegroundColor Gray
 
@@ -75,7 +135,7 @@ try {
             $response.AddHeader("Access-Control-Allow-Origin", "*")
             $response.AddHeader("Access-Control-Allow-Private-Network", "true")
             $response.AddHeader("Access-Control-Allow-Headers", "*")
-            $response.AddHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+            $response.AddHeader("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
 
             if ($request.HttpMethod -eq "OPTIONS") {
                 $response.StatusCode = 200
@@ -84,6 +144,45 @@ try {
             }
 
             $localPath = $request.Url.LocalPath
+
+            # Handle Universal MP4 Remux Endpoint (/api/remux-mp4)
+            # Transforms fragmented MediaRecorder MP4 into 100% universal FastStart progressive MP4 for mobile & desktop
+            if ($localPath -eq "/api/remux-mp4") {
+                $filename = $request.QueryString["filename"]
+                if (-not $filename) { $filename = "world-flag-quiz_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
+                
+                $tempIn = Join-Path $root ("temp_in_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
+                $tempOut = Join-Path $root ("temp_out_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
+                $finalDiskPath = Join-Path $root $filename
+
+                try {
+                    $fileStream = [System.IO.File]::Create($tempIn)
+                    $request.InputStream.CopyTo($fileStream)
+                    $fileStream.Close()
+
+                    $remuxOk = Remux-ToUniversalMp4 $tempIn $tempOut
+                    $outputFileToSend = if ($remuxOk -and (Test-Path $tempOut)) { $tempOut } else { $tempIn }
+
+                    # Save copy to disk in studio folder
+                    Copy-Item $outputFileToSend -Destination $finalDiskPath -Force
+
+                    $bytes = [System.IO.File]::ReadAllBytes($outputFileToSend)
+                    $response.ContentType = "video/mp4"
+                    $response.AddHeader("Content-Disposition", "attachment; filename=`"$filename`"")
+                    $response.AddHeader("X-Remux-Status", $(if ($remuxOk) { "faststart_progressive_mp4" } else { "raw_fmp4" }))
+                    $response.ContentLength64 = $bytes.Length
+                    $response.OutputStream.Write($bytes, 0, $bytes.Length)
+                } catch {
+                    $response.StatusCode = 500
+                    $errBytes = [System.Text.Encoding]::UTF8.GetBytes('{"error":"' + $_.Exception.Message + '"}')
+                    $response.OutputStream.Write($errBytes, 0, $errBytes.Length)
+                } finally {
+                    if (Test-Path $tempIn) { Remove-Item $tempIn -Force -ErrorAction SilentlyContinue }
+                    if (Test-Path $tempOut) { Remove-Item $tempOut -Force -ErrorAction SilentlyContinue }
+                    $response.Close()
+                }
+                continue
+            }
 
             # Handle File Saving Endpoint (/api/save-file) for testing and disk output
             if ($localPath -eq "/api/save-file") {
@@ -94,6 +193,18 @@ try {
                 $request.InputStream.CopyTo($ms)
                 [System.IO.File]::WriteAllBytes($outPath, $ms.ToArray())
                 $ms.Dispose()
+
+                # If this is an MP4, apply FastStart progressive optimization so disk file is mobile-ready
+                if ($filename.ToLower().EndsWith(".mp4")) {
+                    $tempOptimized = Join-Path $root ("temp_opt_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
+                    $optOk = Remux-ToUniversalMp4 $outPath $tempOptimized
+                    if ($optOk -and (Test-Path $tempOptimized)) {
+                        Move-Item $tempOptimized $outPath -Force
+                    } else {
+                        if (Test-Path $tempOptimized) { Remove-Item $tempOptimized -Force -ErrorAction SilentlyContinue }
+                    }
+                }
+
                 $response.ContentType = "application/json"
                 $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"file":"' + $filename + '"}')
                 $response.ContentLength64 = $resBytes.Length
@@ -123,64 +234,84 @@ try {
                 if (-not $voice) { $voice = "google" }
 
                 try {
-                    if ($voice -eq "google" -or $voice -like "*google*" -or $voice -like "*natural*") {
-                        # Google Voice TTS Proxy with automatic sentence/word chunking for long texts
-                        $webClient = New-Object System.Net.WebClient
-                        $webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                        
-                        $chunks = @()
-                        if ($text.Length -le 140) {
-                            $chunks += $text
-                        } else {
-                            $words = $text -split '\s+'
-                            $curr = ""
-                            foreach ($w in $words) {
-                                if (($curr.Length + $w.Length + 1) -gt 130) {
-                                    if ($curr.Length -gt 0) { $chunks += $curr }
-                                    $curr = $w
-                                } else {
-                                    if ($curr.Length -eq 0) { $curr = $w } else { $curr += " " + $w }
-                                }
-                            }
-                            if ($curr.Length -gt 0) { $chunks += $curr }
-                        }
+                    $audioBytes = $null
+                    $contentType = "audio/wav"
 
-                        $allBytes = New-Object System.Collections.Generic.List[byte]
-                        foreach ($chunk in $chunks) {
-                            $encodedChunk = [System.Uri]::EscapeDataString($chunk)
+                    $isGoogle = ($voice -eq "google" -or $voice -like "*google*" -or $voice -like "*natural*")
+                    if ($isGoogle) {
+                        try {
+                            $subText = if ($text.Length -gt 130) { $text.Substring(0, 130) } else { $text }
+                            $encodedChunk = [System.Uri]::EscapeDataString($subText)
                             $googleUrl = "https://translate.google.com/translate_tts?ie=UTF-8&q=$encodedChunk&tl=en&client=tw-ob"
-                            $chunkBytes = $webClient.DownloadData($googleUrl)
-                            if ($chunkBytes -and $chunkBytes.Length -gt 0) {
-                                $allBytes.AddRange($chunkBytes)
+                            $wc = New-Object System.Net.WebClient
+                            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                            $audioBytes = $wc.DownloadData($googleUrl)
+                            if ($audioBytes -and $audioBytes.Length -gt 0) {
+                                $contentType = "audio/mpeg"
                             }
+                        } catch {
+                            $audioBytes = $null
                         }
-                        $audioBytes = $allBytes.ToArray()
-                        $response.ContentType = "audio/mpeg"
-                        $response.ContentLength64 = $audioBytes.Length
-                        if ($request.HttpMethod -ne "HEAD") {
-                            $response.OutputStream.Write($audioBytes, 0, $audioBytes.Length)
-                        }
-                    } else {
-                        # Local Windows SAPI Speech Synthesis (Microsoft David / Zira)
+                    }
+
+                    if (-not $audioBytes -or $audioBytes.Length -eq 0) {
+                        # Local Windows SAPI Speech Synthesis - 100% Offline, Instant & High Quality
                         Add-Type -AssemblyName System.Speech
                         $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-                        if ($voice -like "*zira*" -or $voice -like "*female*") {
-                            $synth.SelectVoice("Microsoft Zira Desktop")
-                        } else {
-                            $synth.SelectVoice("Microsoft David Desktop")
+                        $installedVoices = @($synth.GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name })
+
+                        $selectedVoiceName = $null
+                        $cleanVoice = ($voice -replace '^native:', '').Trim()
+
+                        # 1. Try exact or partial match on installed voice names
+                        if ($cleanVoice) {
+                            foreach ($iv in $installedVoices) {
+                                if ($iv -eq $cleanVoice -or $iv -like "*$cleanVoice*") {
+                                    $selectedVoiceName = $iv
+                                    break
+                                }
+                            }
                         }
+
+                        # 2. Check for female / Zira intent
+                        if (-not $selectedVoiceName -and ($voice -like "*zira*" -or $voice -like "*female*")) {
+                            $selectedVoiceName = ($installedVoices | Where-Object { $_ -like "*zira*" -or $_ -like "*female*" } | Select-Object -First 1)
+                            if (-not $selectedVoiceName) { $selectedVoiceName = "Microsoft Zira Desktop" }
+                        }
+
+                        # 3. Check for male / David intent
+                        if (-not $selectedVoiceName -and ($voice -like "*david*" -or $voice -like "*male*")) {
+                            $selectedVoiceName = ($installedVoices | Where-Object { $_ -like "*david*" -or $_ -like "*male*" } | Select-Object -First 1)
+                            if (-not $selectedVoiceName) { $selectedVoiceName = "Microsoft David Desktop" }
+                        }
+
+                        # 4. Fallback to any installed voice
+                        if (-not $selectedVoiceName -and $installedVoices.Count -gt 0) {
+                            $selectedVoiceName = $installedVoices[0]
+                        }
+                        if (-not $selectedVoiceName) {
+                            $selectedVoiceName = "Microsoft David Desktop"
+                        }
+
+                        try {
+                            $synth.SelectVoice($selectedVoiceName)
+                        } catch {
+                            # If specific voice selection failed, synth uses default
+                        }
+
                         $ms = New-Object System.IO.MemoryStream
                         $synth.SetOutputToWaveStream($ms)
                         $synth.Speak($text)
                         $audioBytes = $ms.ToArray()
                         $synth.Dispose()
                         $ms.Dispose()
+                        $contentType = "audio/wav"
+                    }
 
-                        $response.ContentType = "audio/wav"
-                        $response.ContentLength64 = $audioBytes.Length
-                        if ($request.HttpMethod -ne "HEAD") {
-                            $response.OutputStream.Write($audioBytes, 0, $audioBytes.Length)
-                        }
+                    $response.ContentType = $contentType
+                    $response.ContentLength64 = $audioBytes.Length
+                    if ($request.HttpMethod -ne "HEAD") {
+                        $response.OutputStream.Write($audioBytes, 0, $audioBytes.Length)
                     }
                 } catch {
                     $response.StatusCode = 500
