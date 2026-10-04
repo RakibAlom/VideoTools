@@ -59,7 +59,7 @@ function Remux-ToUniversalMp4([string]$inPath, [string]$outPath) {
     }
 
     $ffmpegDir = Split-Path $ffmpegPath
-    $args = @("-y", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
+    $args = @("-y", "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
     try {
         $proc = Start-Process -FilePath $ffmpegPath -ArgumentList $args -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
         if ($proc.ExitCode -eq 0 -and (Test-Path $outPath) -and (Get-Item $outPath).Length -gt 1000) {
@@ -117,9 +117,8 @@ try {
                 $filename = $request.QueryString["filename"]
                 if (-not $filename) { $filename = "find-animals_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
                 
-                $tempIn = Join-Path $root ("temp_in_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                $tempOut = Join-Path $root ("temp_out_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                $finalDiskPath = Join-Path $root $filename
+                $tempIn = Join-Path $env:TEMP ("temp_in_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
+                $tempOut = Join-Path $env:TEMP ("temp_out_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
 
                 try {
                     $fileStream = [System.IO.File]::Create($tempIn)
@@ -129,9 +128,7 @@ try {
                     $remuxOk = Remux-ToUniversalMp4 $tempIn $tempOut
                     $outputFileToSend = if ($remuxOk -and (Test-Path $tempOut)) { $tempOut } else { $tempIn }
 
-                    # Save copy to disk in studio folder
-                    Copy-Item $outputFileToSend -Destination $finalDiskPath -Force
-
+                    # Pure browser stream delivery: NEVER write to local folder to save user disk space
                     $bytes = [System.IO.File]::ReadAllBytes($outputFileToSend)
                     $response.ContentType = "video/mp4"
                     $response.AddHeader("Content-Disposition", "attachment; filename=`"$filename`"")
@@ -151,33 +148,13 @@ try {
             }
 
             if ($request.HttpMethod -eq "POST" -and $request.Url.LocalPath -eq "/api/save-file") {
-                $fileName = $request.QueryString["filename"]
-                if (-not $fileName) { $fileName = "downloaded_video.mp4" }
-                $savePath = Join-Path $root $fileName
-
-                $tempRaw = Join-Path $root ("temp_raw_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                try {
-                    $fs = [System.IO.File]::Create($tempRaw)
-                    $request.InputStream.CopyTo($fs)
-                    $fs.Close()
-
-                    if ($fileName.ToLower().EndsWith(".mp4")) {
-                        $optOk = Remux-ToUniversalMp4 $tempRaw $savePath
-                        if (-not $optOk -or -not (Test-Path $savePath)) {
-                            Copy-Item $tempRaw -Destination $savePath -Force
-                        }
-                    } else {
-                        Copy-Item $tempRaw -Destination $savePath -Force
-                    }
-
-                    $response.StatusCode = 200
-                    $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"path":"' + $savePath.Replace("\", "\\") + '"}')
-                    $response.ContentType = "application/json"
-                    $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
-                } finally {
-                    if (Test-Path $tempRaw) { Remove-Item $tempRaw -Force -ErrorAction SilentlyContinue }
-                    $response.Close()
-                }
+                # Legacy endpoint disabled from saving to disk to preserve user storage
+                $response.StatusCode = 200
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"notice":"Local disk saving disabled to preserve storage. File delivered via browser download."}')
+                $response.ContentType = "application/json"
+                $response.ContentLength64 = $resBytes.Length
+                $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
+                $response.Close()
                 continue
             }
 

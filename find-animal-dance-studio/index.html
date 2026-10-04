@@ -994,15 +994,15 @@
             <div class="form-group">
               <div class="form-label">
                 <span>Video Bitrate (File Size)</span>
-                <span class="val-indicator" id="exportBitrateVal">8 Mbps</span>
+                <span class="val-indicator" id="exportBitrateVal">Smart Auto</span>
               </div>
               <select id="selectBitrate" class="form-input">
-                <option value="4">4 Mbps (Compact & Fast - ~8 MB)</option>
-                <option value="8" selected>8 Mbps (Social Optimized - Recommended - ~15 MB)</option>
-                <option value="12">12 Mbps (High Definition - ~22 MB)</option>
-                <option value="18">18 Mbps (2K QHD Quality - ~32 MB)</option>
-                <option value="25">25 Mbps (4K Ultra HD Master - ~45 MB)</option>
-                <option value="35">35 Mbps (4K Pro Broadcast - ~60 MB)</option>
+                <option value="auto" selected>✨ Smart Optimized (Crisp HD & Lightweight - Recommended)</option>
+                <option value="2500000">2.5 Mbps (Ultra-Lightweight - ~4.5 MB / 15s)</option>
+                <option value="4000000">4.0 Mbps (Compact Full HD - ~7.5 MB / 15s)</option>
+                <option value="6000000">6.0 Mbps (High Definition - ~11 MB / 15s)</option>
+                <option value="8000000">8.0 Mbps (Studio High Bitrate - ~15 MB / 15s)</option>
+                <option value="14000000">14.0 Mbps (4K Ultra HD Master - ~26 MB / 15s)</option>
               </select>
             </div>
 
@@ -1351,6 +1351,7 @@
       <!-- Active DOM Live Render Canvas: Keeps GPU rendering alive at full 30 FPS! -->
       <div id="exportLiveCanvasContainer" style="display:flex; justify-content:center; margin: 0.5rem 0;">
         <canvas id="exportLiveCanvas" width="1080" height="1920" style="max-height: 220px; width: auto; aspect-ratio: 9/16; border-radius: 8px; border: 1px solid var(--border-subtle); background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.6);"></canvas>
+        <canvas id="exportOffscreenCanvas" style="position:fixed; left:-9999px; top:-9999px; width:1080px; height:1920px; opacity:0.01; pointer-events:none; z-index:-9999;" width="1080" height="1920"></canvas>
       </div>
 
       <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
@@ -1397,6 +1398,8 @@
   <script src="lib/fix-webm-duration.js"></script>
   <!-- 2b. fix-mp4.js (Universal MP4 metadata & duration normalizer for mobile, tablet & WhatsApp) -->
   <script src="lib/fix-mp4.js"></script>
+  <!-- 2c. mp4-muxer.min.js (FastStart MP4 muxer for deterministic WebCodecs export) -->
+  <script src="lib/mp4-muxer.min.js"></script>
   <!-- 3. db.js IndexedDB storage manager -->
   <script src="lib/db.js"></script>
   <!-- 4. GifEngine with Chroma-Key Background Remover -->

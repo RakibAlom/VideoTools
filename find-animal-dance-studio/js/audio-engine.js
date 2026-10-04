@@ -57,7 +57,29 @@ class AudioEngine {
 
   getAudioTrack() {
     this.ensureContext();
-    return this.mediaStreamDest.stream.getAudioTracks()[0];
+    const existingTracks = (this.mediaStreamDest && this.mediaStreamDest.stream) ? this.mediaStreamDest.stream.getAudioTracks() : [];
+    if (!this.mediaStreamDest || existingTracks.length === 0 || existingTracks[0].readyState === 'ended') {
+      try {
+        this.mediaStreamDest = this.ctx.createMediaStreamDestination();
+        if (this.gainNode) {
+          try { this.gainNode.connect(this.mediaStreamDest); } catch (e) {}
+        }
+        if (this.ctx) {
+          try {
+            const osc = this.ctx.createOscillator();
+            const carrierGain = this.ctx.createGain();
+            carrierGain.gain.value = 0.00002;
+            osc.frequency.value = 60;
+            osc.connect(carrierGain);
+            carrierGain.connect(this.mediaStreamDest);
+            osc.start();
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.warn('Audio destination track refresh notice:', e);
+      }
+    }
+    return (this.mediaStreamDest && this.mediaStreamDest.stream) ? this.mediaStreamDest.stream.getAudioTracks()[0] : null;
   }
 
   setVolume(val) {

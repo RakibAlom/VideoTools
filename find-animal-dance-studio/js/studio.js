@@ -36,7 +36,7 @@ class AnimalDanceStudio {
     // Video Properties
     this.videoDuration = 15; // seconds
     this.fps = 30;
-    this.bitrate = 8000000; // 8 Mbps social video optimized (crisp & compact)
+    this.bitrate = 'auto'; // Smart Optimized dynamic VBR (crisp HD & lightweight)
     this.exportFormat = 'mp4'; // 'mp4' (universal default) or 'webm'
     this.currentTime = 0;
     this.isPlaying = false;
@@ -1007,8 +1007,7 @@ class AnimalDanceStudio {
     this.lastFrameTime = timestamp;
 
     if (this.isExporting) {
-      // Pause drawing background canvas during video export to maximize encoder performance and prevent stutter
-      requestAnimationFrame(this.renderLoop.bind(this));
+      // Pause preview canvas loop during video export to give 100% GPU & CPU priority to the export encoder
       return;
     }
 
@@ -1142,7 +1141,14 @@ class AnimalDanceStudio {
       ctx.globalAlpha = a.opacity !== undefined ? a.opacity : 1.0;
 
       if (frameCanvas) {
-        ctx.drawImage(frameCanvas, -drawW / 2, -drawH / 2, drawW, drawH);
+        try {
+          ctx.drawImage(frameCanvas, -drawW / 2, -drawH / 2, drawW, drawH);
+        } catch (err) {
+          const fallbackCanvas = gifData?.frames?.[0]?.canvas;
+          if (fallbackCanvas) {
+            try { ctx.drawImage(fallbackCanvas, -drawW / 2, -drawH / 2, drawW, drawH); } catch (e) {}
+          }
+        }
       } else {
         ctx.fillStyle = '#fbbf24';
         ctx.beginPath();
@@ -2651,19 +2657,14 @@ class AnimalDanceStudio {
     document.getElementById('selectResolution').addEventListener('change', (e) => {
       this.resolutionPreset = e.target.value;
       const bSelect = document.getElementById('selectBitrate');
-      if (bSelect) {
-        if (this.resolutionPreset === '4k') {
-          bSelect.value = '25';
-          this.bitrate = 25000000;
-        } else if (this.resolutionPreset === '2k') {
-          bSelect.value = '18';
-          this.bitrate = 18000000;
+      const bVal = document.getElementById('exportBitrateVal');
+      if (bSelect && bVal) {
+        if (bSelect.value === 'auto') {
+          bVal.textContent = 'Smart Auto';
         } else {
-          bSelect.value = '8';
-          this.bitrate = 8000000;
+          const mbps = (parseInt(bSelect.value) / 1000000).toFixed(1).replace('.0', '');
+          bVal.textContent = `${mbps} Mbps`;
         }
-        const bVal = document.getElementById('exportBitrateVal');
-        if (bVal) bVal.textContent = `${bSelect.value} Mbps`;
       }
       this.debouncedSaveState();
     });
@@ -2672,9 +2673,17 @@ class AnimalDanceStudio {
       this.debouncedSaveState();
     });
     document.getElementById('selectBitrate').addEventListener('change', (e) => {
-      this.bitrate = parseInt(e.target.value) * 1000000;
+      const val = e.target.value;
+      this.bitrate = val === 'auto' ? 'auto' : parseInt(val);
       const bVal = document.getElementById('exportBitrateVal');
-      if (bVal) bVal.textContent = `${e.target.value} Mbps`;
+      if (bVal) {
+        if (val === 'auto') {
+          bVal.textContent = 'Smart Auto';
+        } else {
+          const mbps = (parseInt(val) / 1000000).toFixed(1).replace('.0', '');
+          bVal.textContent = `${mbps} Mbps`;
+        }
+      }
       this.debouncedSaveState();
     });
     document.getElementById('checkAppendReveal').addEventListener('change', (e) => {
@@ -3981,6 +3990,19 @@ class AnimalDanceStudio {
     if (this.isExporting) return;
     this.isExporting = true;
     this.exportChunks = [];
+
+    // Ensure any leftover recording tracks are 100% terminated before starting
+    if (this.currentExportCleanup) {
+      try { this.currentExportCleanup(); } catch (e) {}
+      this.currentExportCleanup = null;
+    }
+    if (this.activeExportStream) {
+      try {
+        this.activeExportStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.activeExportStream = null;
+    }
+
     if (this.isPlaying) {
       this.togglePlayback(); // ensure canvas preview is paused
     }
@@ -4002,6 +4024,14 @@ class AnimalDanceStudio {
       if (window.audioEngine.ctx && window.audioEngine.ctx.state === 'running' && window.audioEngine.currentBuffer) {
         hasAudio = true;
       }
+    }
+
+    // Safety cleanup of any prior dangling export streams/recorders to prevent GPU encoder session leaks
+    if (this.currentExportCleanup) {
+      try { this.currentExportCleanup(); } catch (e) {}
+    }
+    if (this.exportMediaRecorder && this.exportMediaRecorder.state !== 'inactive') {
+      try { this.exportMediaRecorder.stop(); } catch (e) {}
     }
 
     const modal = document.getElementById('exportModal');
@@ -4029,7 +4059,9 @@ class AnimalDanceStudio {
     if (fpsSelect && fpsSelect.value) this.fps = parseInt(fpsSelect.value) || 30;
 
     const bitrateSelect = document.getElementById('selectBitrate');
-    if (bitrateSelect && bitrateSelect.value) this.bitrate = parseInt(bitrateSelect.value) * 1000000;
+    if (bitrateSelect && bitrateSelect.value) {
+      this.bitrate = bitrateSelect.value === 'auto' ? 'auto' : parseInt(bitrateSelect.value);
+    }
 
     const formatSelect = document.getElementById('selectExportFormat');
     if (formatSelect && formatSelect.value) this.exportFormat = formatSelect.value;
@@ -4069,22 +4101,23 @@ class AnimalDanceStudio {
     const exportW = dims.w;
     const exportH = dims.h;
 
-    // 2. Compute target bitrate: use user's selected bitrate or optimized default
-    let targetBitrate = this.bitrate || 8000000;
-    if (this.resolutionPreset === '4k' && targetBitrate < 25000000) {
-      targetBitrate = 25000000; // 25 Mbps optimal master bitrate for 4K
-    } else if (this.resolutionPreset === '2k' && targetBitrate < 16000000) {
-      targetBitrate = 16000000;
-    }
-
-    // 3. Pre-warm ImageBitmaps in GPU memory for all characters so 4K draws without texture stutter
-    if (window.gifEngine && typeof window.gifEngine.prepareBitmaps === 'function') {
-      for (const gifData of this.loadedGifs.values()) {
-        if (gifData) {
-          try { await window.gifEngine.prepareBitmaps(gifData); } catch (e) {}
-        }
+    // 2. Compute target bitrate: smart dynamic scaling based on resolution
+    let targetBitrate;
+    if (this.bitrate && this.bitrate !== 'auto' && !isNaN(this.bitrate)) {
+      targetBitrate = parseInt(this.bitrate);
+    } else {
+      // Smart Optimized Auto Bitrate: pristine sharpness at minimal file size
+      if (this.resolutionPreset === '4k') {
+        targetBitrate = 14000000; // 14.0 Mbps for 4K
+      } else if (this.resolutionPreset === '2k') {
+        targetBitrate = 7500000;  // 7.5 Mbps for 2K
+      } else if (this.resolutionPreset === '720p') {
+        targetBitrate = 2500000;  // 2.5 Mbps for 720p
+      } else {
+        targetBitrate = 4000000;  // 4.0 Mbps for 1080p Full HD
       }
     }
+
 
     // 4. Pre-render Static Background (Layer 1) at full export resolution once
     const bgCanvas = document.createElement('canvas');
@@ -4117,13 +4150,40 @@ class AnimalDanceStudio {
     }
     if (!staticOverlayBitmap) staticOverlayBitmap = overlayCanvas;
 
-    // 6. Dedicated Off-DOM Recording Canvas: Eliminates heavy 4K DOM compositing overhead!
-    const recordCanvas = document.createElement('canvas');
+    const totalSeconds = this.videoDuration + (this.appendRevealEnding ? 3 : 0);
+    const targetFps = this.fps || 30;
+
+    // Check if deterministic WebCodecs + Mp4Muxer export engine is available
+    if (typeof VideoEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined') {
+      try {
+        await this.startWebCodecsExport({
+          exportW,
+          exportH,
+          targetFps,
+          totalSeconds,
+          targetBitrate,
+          staticBgBitmap,
+          staticOverlayBitmap,
+          hasAudio
+        });
+        return;
+      } catch (wcErr) {
+        console.warn('WebCodecs export notice, falling back to MediaRecorder:', wcErr);
+      }
+    }
+
+    // 6. Dedicated DOM-Backed Recording Canvas: Active offscreen element ensures 100% GPU compositor execution
+    let recordCanvas = document.getElementById('exportOffscreenCanvas');
+    if (!recordCanvas) {
+      recordCanvas = document.createElement('canvas');
+      recordCanvas.id = 'exportOffscreenCanvas';
+      document.body.appendChild(recordCanvas);
+    }
+    recordCanvas.style.cssText = `position:fixed; left:-9999px; top:-9999px; width:${exportW}px; height:${exportH}px; pointer-events:none; opacity:0.01; z-index:-9999;`;
     recordCanvas.width = exportW;
     recordCanvas.height = exportH;
     const recordCtx = recordCanvas.getContext('2d', {
-      alpha: false,
-      desynchronized: true
+      alpha: false
     });
     recordCtx.imageSmoothingEnabled = true;
     recordCtx.imageSmoothingQuality = (this.resolutionPreset === '4k' || this.resolutionPreset === '2k') ? 'medium' : 'high';
@@ -4142,11 +4202,11 @@ class AnimalDanceStudio {
     livePreviewCtx.imageSmoothingQuality = 'medium';
     livePreviewCtx.drawImage(recordCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
 
-    const totalSeconds = this.videoDuration + (this.appendRevealEnding ? 3 : 0);
     const targetDurationMs = totalSeconds * 1000;
 
-    // Stream Setup from dedicated recording canvas
-    const stream = recordCanvas.captureStream(this.fps);
+    // Stream Setup from dedicated recording canvas with exact target framerate
+    const frameIntervalMs = 1000 / targetFps;
+    const stream = recordCanvas.captureStream(targetFps);
     const videoTrack = (stream && stream.getVideoTracks) ? stream.getVideoTracks()[0] : null;
     if (hasAudio) {
       const audioTrack = window.audioEngine.getAudioTrack();
@@ -4213,7 +4273,7 @@ class AnimalDanceStudio {
       fileExt = mimeType.includes('webm') ? 'webm' : 'mp4';
     }
 
-    const cleanupExportBitmaps = () => {
+    const cleanupExportResources = () => {
       if (staticBgBitmap && typeof staticBgBitmap.close === 'function') {
         try { staticBgBitmap.close(); } catch (e) {}
       }
@@ -4222,8 +4282,20 @@ class AnimalDanceStudio {
       }
       staticBgBitmap = null;
       staticOverlayBitmap = null;
+
+      // CRITICAL FIX: Stop all tracks on the capture stream so Chromium encoder frees GPU memory
+      // and never throttles frame rate or decreases video file size on subsequent exports!
+      if (this.activeExportStream) {
+        try {
+          this.activeExportStream.getTracks().forEach(track => {
+            try { track.stop(); } catch (err) {}
+          });
+        } catch (e) {}
+        this.activeExportStream = null;
+      }
     };
-    this.currentExportCleanup = cleanupExportBitmaps;
+    this.currentExportCleanup = cleanupExportResources;
+    this.activeExportStream = stream;
 
     this.exportMediaRecorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) this.exportChunks.push(e.data);
@@ -4236,7 +4308,7 @@ class AnimalDanceStudio {
 
     // ON STOP: Fix metadata using server remux or client-side fixers for seamless playback!
     this.exportMediaRecorder.onstop = () => {
-      cleanupExportBitmaps();
+      cleanupExportResources();
       if (hasAudio) {
         window.audioEngine.stop();
       }
@@ -4255,34 +4327,49 @@ class AnimalDanceStudio {
         if (eta) eta.textContent = 'Optimizing for all devices...';
 
         const exportFilename = 'find-' + this.animals.length + '-animals_' + this.resolutionPreset + '_SmartBrain.mp4';
-        const remuxUrl = '/api/remux-mp4?filename=' + encodeURIComponent(exportFilename);
+        
+        // Relative API endpoints for both Apache rewrites, PHP hosting, and local server
+        const baseUrl = window.location.pathname.replace(/\/[^/]*$/, '');
+        const remuxUrl = baseUrl + '/api/remux-mp4?filename=' + encodeURIComponent(exportFilename);
+        const phpRemuxUrl = baseUrl + '/api.php?action=remux-mp4&filename=' + encodeURIComponent(exportFilename);
 
-        // 1. Primary: Use server-side FastStart H.264/AAC pipeline (instantaneous -c copy +faststart)
-        fetch(remuxUrl, {
-          method: 'POST',
-          body: rawBlob
-        })
-        .then(async (response) => {
-          if (response.ok) {
-            const remuxBlob = await response.blob();
-            if (remuxBlob && remuxBlob.size > 1000) {
-              console.log('Universal FastStart MP4 optimized via server pipeline.');
-              this.finalizeExportDownload(remuxBlob, fileExt);
-              return;
+        const tryServerRemux = (endpoint) => {
+          const controller = new AbortController();
+          const tid = setTimeout(() => controller.abort(), 8000);
+          return fetch(endpoint, {
+            method: 'POST',
+            body: rawBlob,
+            signal: controller.signal
+          }).then(async (response) => {
+            clearTimeout(tid);
+            const remuxStatus = response.headers.get('X-Remux-Status');
+            if (response.ok && (remuxStatus === 'faststart_progressive_mp4' || remuxStatus === 'ffmpeg_faststart')) {
+              const remuxBlob = await response.blob();
+              if (remuxBlob && remuxBlob.size > 1000) {
+                return remuxBlob;
+              }
             }
-          }
-          throw new Error('Server remux returned invalid stream or status ' + response.status);
-        })
-        .catch((err) => {
-          console.warn('Server remux unavailable, applying in-browser Universal MP4 duration normalizer:', err);
-          if (typeof window.ysFixMp4Duration === 'function') {
-            window.ysFixMp4Duration(rawBlob, targetDurationMs, (fixedBlob) => {
-              this.finalizeExportDownload(fixedBlob, fileExt);
-            });
-          } else {
-            this.finalizeExportDownload(rawBlob, fileExt);
-          }
-        });
+            throw new Error('Remux returned non-progressive status: ' + remuxStatus);
+          });
+        };
+
+        // Try /api/remux-mp4 then api.php, then fall back immediately to in-browser normalizer
+        tryServerRemux(remuxUrl)
+          .catch(() => tryServerRemux(phpRemuxUrl))
+          .then((remuxBlob) => {
+            console.log('Universal FastStart MP4 optimized via server pipeline.');
+            this.finalizeExportDownload(remuxBlob, fileExt);
+          })
+          .catch(() => {
+            // Standalone in-browser universal MP4 metadata normalizer (Zero server required!)
+            if (typeof window.ysFixMp4Duration === 'function') {
+              window.ysFixMp4Duration(rawBlob, targetDurationMs, (fixedBlob) => {
+                this.finalizeExportDownload(fixedBlob, fileExt);
+              });
+            } else {
+              this.finalizeExportDownload(rawBlob, fileExt);
+            }
+          });
       } else if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
         window.ysFixWebmDuration(rawBlob, targetDurationMs, (fixedBlob) => {
           this.finalizeExportDownload(fixedBlob, fileExt);
@@ -4299,43 +4386,59 @@ class AnimalDanceStudio {
     this.exportMediaRecorder.start(100); // 100ms timeslice sends continuous chunks
 
     const startTime = performance.now();
-    let lastPreviewUpdateMs = -999;
+    const totalFrames = Math.ceil(totalSeconds * targetFps);
+    let renderedFrames = 0;
+    let lastPreviewUpdate = -999;
 
     const recordTick = () => {
       if (!this.isExporting) {
-        cleanupExportBitmaps();
+        cleanupExportResources();
         return;
       }
 
       const elapsedMs = performance.now() - startTime;
-      const progress = Math.min(1.0, elapsedMs / targetDurationMs);
+      const progress = Math.min(1.0, renderedFrames / totalFrames);
 
-      const isRevealSection = this.appendRevealEnding && (elapsedMs >= this.videoDuration * 1000);
-      const prevReveal = this.answerRevealMode;
-      if (isRevealSection) this.answerRevealMode = true;
+      // Frame-rate regulated rendering: render strictly ONE frame per tick to allow compositor capture
+      if (renderedFrames < totalFrames && (renderedFrames === 0 || elapsedMs >= (renderedFrames * frameIntervalMs) - 2)) {
+        const frameTimeMs = renderedFrames * frameIntervalMs;
+        const isRevealSection = this.appendRevealEnding && (frameTimeMs >= this.videoDuration * 1000);
+        const prevReveal = this.answerRevealMode;
+        if (isRevealSection) this.answerRevealMode = true;
 
-      // Ultra-fast 4K drawing using pre-rendered static backdrop + overlays
-      this.drawFrameWithCache(recordCtx, exportW, exportH, elapsedMs, true, staticBgBitmap, staticOverlayBitmap);
-      this.answerRevealMode = prevReveal;
+        try {
+          this.drawFrameWithCache(recordCtx, exportW, exportH, frameTimeMs, true, staticBgBitmap, staticOverlayBitmap);
+          if (videoTrack && typeof videoTrack.requestFrame === 'function') {
+            try { videoTrack.requestFrame(); } catch (e) {}
+          }
+        } catch (err) {
+          console.warn('Frame draw notice:', err);
+        }
+        this.answerRevealMode = prevReveal;
 
-      // Smooth, non-blocking live preview update (every ~100ms / 10 FPS)
-      if (elapsedMs - lastPreviewUpdateMs >= 100) {
-        lastPreviewUpdateMs = elapsedMs;
-        livePreviewCtx.drawImage(recordCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
+        renderedFrames++;
+      }
+
+      // Smooth, non-blocking live preview update without GPU pipeline stall (every 150ms)
+      if (elapsedMs - lastPreviewUpdate >= 150) {
+        lastPreviewUpdate = elapsedMs;
+        try {
+          livePreviewCtx.drawImage(recordCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
+        } catch (e) {}
       }
 
       // Update UI progress accurately
       bar.style.width = `${Math.round(progress * 100)}%`;
       pct.textContent = `${Math.round(progress * 100)}%`;
-      framesLabel.textContent = `${(elapsedMs / 1000).toFixed(1)}s / ${totalSeconds.toFixed(1)}s`;
+      framesLabel.textContent = `${(renderedFrames / targetFps).toFixed(1)}s / ${totalSeconds.toFixed(1)}s (${renderedFrames}/${totalFrames} frames)`;
 
       const eta = progress > 0 ? Math.max(0, Math.round(((elapsedMs / progress) - elapsedMs) / 1000)) : 0;
       etaLabel.textContent = `ETA: ${eta}s`;
 
-      if (elapsedMs < targetDurationMs) {
+      if (renderedFrames < totalFrames || elapsedMs < targetDurationMs) {
         requestAnimationFrame(recordTick);
       } else {
-        // Complete recording at exact millisecond, flushing final chunks!
+        // Complete recording at exact final frame, flushing final chunks cleanly!
         if (this.exportMediaRecorder && this.exportMediaRecorder.state !== 'inactive') {
           try {
             this.exportMediaRecorder.requestData();
@@ -4344,7 +4447,7 @@ class AnimalDanceStudio {
             if (this.exportMediaRecorder && this.exportMediaRecorder.state !== 'inactive') {
               this.exportMediaRecorder.stop();
             }
-          }, 150);
+          }, 120);
         }
       }
     };
@@ -4373,6 +4476,8 @@ class AnimalDanceStudio {
     document.getElementById('exportModalActions').style.display = 'flex';
     document.getElementById('btnCancelExport').style.display = 'none';
     this.isExporting = false;
+    this.lastFrameTime = performance.now();
+    requestAnimationFrame(this.renderLoop.bind(this));
     this.showToast(`🎉 Video Export Complete (${mbSize} MB)!`, 'success');
 
     // Automatically trigger instant browser download to user's device
@@ -4388,14 +4493,270 @@ class AnimalDanceStudio {
     }
   }
 
+  async startWebCodecsExport(opts) {
+    const { exportW, exportH, targetFps, totalSeconds, targetBitrate, staticBgBitmap, staticOverlayBitmap, hasAudio } = opts;
+    const totalFrames = Math.ceil(totalSeconds * targetFps);
+    const frameIntervalUs = Math.round(1000000 / targetFps);
+
+    const bar = document.getElementById('exportProgressBar');
+    const pct = document.getElementById('exportProgressPct');
+    const framesLabel = document.getElementById('exportProgressFrames');
+    const etaLabel = document.getElementById('exportEta');
+    const desc = document.getElementById('exportModalDesc');
+    if (desc) desc.textContent = 'Rendering 100% smooth frames via WebCodecs hardware engine...';
+
+    // Canvas for rendering individual frames
+    const frameCanvas = document.createElement('canvas');
+    frameCanvas.width = exportW;
+    frameCanvas.height = exportH;
+    const frameCtx = frameCanvas.getContext('2d', { alpha: false });
+    frameCtx.imageSmoothingEnabled = true;
+    frameCtx.imageSmoothingQuality = (this.resolutionPreset === '4k' || this.resolutionPreset === '2k') ? 'medium' : 'high';
+
+    // Live preview canvas inside the modal
+    const livePreviewCanvas = document.getElementById('exportLiveCanvas');
+    const previewScale = Math.min(1, 480 / Math.max(exportW, exportH));
+    livePreviewCanvas.width = Math.round(exportW * previewScale);
+    livePreviewCanvas.height = Math.round(exportH * previewScale);
+    livePreviewCanvas.style.aspectRatio = `${exportW} / ${exportH}`;
+    const livePreviewCtx = livePreviewCanvas.getContext('2d', { alpha: false });
+    livePreviewCtx.imageSmoothingEnabled = true;
+    livePreviewCtx.imageSmoothingQuality = 'low'; // Fast GPU bilinear downscaling for fluid preview
+
+    // Micro-yield helper using MessageChannel for zero-latency DOM compositor painting without setTimeout clamp
+    const yieldToUI = () => new Promise(resolve => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = () => resolve();
+      channel.port2.postMessage(null);
+    });
+
+    // Audio setup
+    const audioBuf = (hasAudio && window.audioEngine && window.audioEngine.currentBuffer) ? window.audioEngine.currentBuffer : null;
+    const sampleRate = audioBuf ? audioBuf.sampleRate : 44100;
+    const channels = audioBuf ? Math.min(2, audioBuf.numberOfChannels) : 2;
+
+    const muxerOpts = {
+      target: new Mp4Muxer.ArrayBufferTarget(),
+      video: {
+        codec: 'avc',
+        width: exportW,
+        height: exportH
+      },
+      fastStart: 'in-memory'
+    };
+
+    if (audioBuf) {
+      muxerOpts.audio = {
+        codec: 'aac',
+        numberOfChannels: channels,
+        sampleRate: sampleRate
+      };
+    }
+
+    const muxer = new Mp4Muxer.Muxer(muxerOpts);
+
+    let videoEncoderError = null;
+    const videoEncoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: (e) => {
+        console.error('VideoEncoder error:', e);
+        videoEncoderError = e;
+      }
+    });
+    this.activeVideoEncoder = videoEncoder;
+
+    // Codec determination
+    let avcCodec = 'avc1.640028';
+    if (exportW >= 3840 || exportH >= 3840) {
+      avcCodec = 'avc1.640033'; // Level 5.1 for 4K
+    } else if (exportW >= 2560 || exportH >= 2560) {
+      avcCodec = 'avc1.640032'; // Level 5.0 for 2K
+    }
+
+    // Configure encoder with Variable Bitrate (VBR) and Quality latency mode
+    const encoderConfig = {
+      codec: avcCodec,
+      width: exportW,
+      height: exportH,
+      bitrate: targetBitrate,
+      bitrateMode: 'variable',
+      latencyMode: 'quality',
+      framerate: targetFps
+    };
+
+    if (typeof VideoEncoder.isConfigSupported === 'function') {
+      try {
+        const support = await VideoEncoder.isConfigSupported(encoderConfig);
+        if (support && support.supported) {
+          videoEncoder.configure(support.config || encoderConfig);
+        } else {
+          videoEncoder.configure({
+            codec: avcCodec,
+            width: exportW,
+            height: exportH,
+            bitrate: targetBitrate,
+            framerate: targetFps
+          });
+        }
+      } catch (e) {
+        videoEncoder.configure(encoderConfig);
+      }
+    } else {
+      videoEncoder.configure(encoderConfig);
+    }
+
+    const t0 = performance.now();
+    const keyFrameInterval = Math.max(1, targetFps * 2); // 2.0-second GOP eliminates redundant heavy I-frames
+
+    // Render video frames deterministically without any real-time throttling
+    for (let f = 0; f < totalFrames; f++) {
+      if (!this.isExporting) {
+        try { videoEncoder.close(); } catch (e) {}
+        this.activeVideoEncoder = null;
+        return;
+      }
+      if (videoEncoderError) throw videoEncoderError;
+
+      const frameTimeMs = (f / targetFps) * 1000;
+      const isRevealSection = this.appendRevealEnding && (frameTimeMs >= this.videoDuration * 1000);
+      const prevReveal = this.answerRevealMode;
+      if (isRevealSection) this.answerRevealMode = true;
+
+      this.drawFrameWithCache(frameCtx, exportW, exportH, frameTimeMs, true, staticBgBitmap, staticOverlayBitmap);
+      this.answerRevealMode = prevReveal;
+
+      const timestampUs = f * frameIntervalUs;
+      const vFrame = new VideoFrame(frameCanvas, {
+        timestamp: timestampUs,
+        duration: frameIntervalUs
+      });
+
+      videoEncoder.encode(vFrame, { keyFrame: (f % keyFrameInterval === 0) });
+      vFrame.close();
+
+      // Fluid live preview rendering at ~15-20 FPS with micro-yielding to browser compositor
+      const shouldUpdatePreview = (f % 2 === 0) || (f === totalFrames - 1);
+      if (shouldUpdatePreview) {
+        livePreviewCtx.drawImage(frameCanvas, 0, 0, livePreviewCanvas.width, livePreviewCanvas.height);
+
+        const progress = (f + 1) / totalFrames;
+        const now = performance.now();
+        const elapsedMs = now - t0;
+        const eta = progress > 0 ? Math.max(0, Math.round(((elapsedMs / progress) - elapsedMs) / 1000)) : 0;
+        bar.style.width = `${Math.round(progress * 100)}%`;
+        pct.textContent = `${Math.round(progress * 100)}%`;
+        framesLabel.textContent = `${((f + 1) / targetFps).toFixed(1)}s / ${totalSeconds.toFixed(1)}s (${f + 1}/${totalFrames} frames)`;
+        etaLabel.textContent = `ETA: ${eta}s`;
+
+        await yieldToUI();
+      }
+    }
+
+    etaLabel.textContent = 'Finalizing video stream...';
+    await videoEncoder.flush();
+    videoEncoder.close();
+    this.activeVideoEncoder = null;
+
+    // Encode audio if available
+    if (audioBuf && !videoEncoderError) {
+      etaLabel.textContent = 'Encoding synchronized audio...';
+      const audioEncoder = new AudioEncoder({
+        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+        error: (e) => console.error('AudioEncoder error:', e)
+      });
+      this.activeAudioEncoder = audioEncoder;
+
+      audioEncoder.configure({
+        codec: 'mp4a.40.2',
+        sampleRate: sampleRate,
+        numberOfChannels: channels,
+        bitrate: 128000
+      });
+
+      const totalAudioSamples = Math.round(sampleRate * totalSeconds);
+      const frameChunkSize = 1024;
+      const trimStart = (window.audioEngine && typeof window.audioEngine.trimStart === 'number') ? window.audioEngine.trimStart : 0;
+      const trimEnd = (window.audioEngine && typeof window.audioEngine.trimEnd === 'number' && window.audioEngine.trimEnd > trimStart) ? window.audioEngine.trimEnd : audioBuf.duration;
+
+      const startSample = Math.max(0, Math.round(trimStart * sampleRate));
+      const endSample = Math.min(audioBuf.length, Math.round(trimEnd * sampleRate));
+      const loopLen = Math.max(1, endSample - startSample);
+
+      const ch0 = audioBuf.getChannelData(0);
+      const ch1 = (channels > 1 && audioBuf.numberOfChannels > 1) ? audioBuf.getChannelData(1) : ch0;
+
+      let samplePos = 0;
+      let audioTsUs = 0;
+      while (samplePos < totalAudioSamples) {
+        if (!this.isExporting) {
+          try { audioEncoder.close(); } catch (e) {}
+          this.activeAudioEncoder = null;
+          return;
+        }
+        const numFrames = Math.min(frameChunkSize, totalAudioSamples - samplePos);
+        const planar = new Float32Array(channels * numFrames);
+        for (let i = 0; i < numFrames; i++) {
+          const offsetInLoop = (samplePos + i) % loopLen;
+          const srcIdx = startSample + offsetInLoop;
+          planar[i] = ch0[srcIdx] || 0;
+          if (channels > 1) {
+            planar[numFrames + i] = ch1[srcIdx] || 0;
+          }
+        }
+
+        const aData = new AudioData({
+          format: 'f32-planar',
+          sampleRate: sampleRate,
+          numberOfFrames: numFrames,
+          numberOfChannels: channels,
+          timestamp: audioTsUs,
+          data: planar
+        });
+        audioEncoder.encode(aData);
+        aData.close();
+
+        audioTsUs += Math.round((numFrames / sampleRate) * 1000000);
+        samplePos += numFrames;
+      }
+
+      await audioEncoder.flush();
+      audioEncoder.close();
+      this.activeAudioEncoder = null;
+    }
+
+    etaLabel.textContent = 'Muxing FastStart MP4...';
+    muxer.finalize();
+
+    // Clean up cached bitmaps
+    if (staticBgBitmap && typeof staticBgBitmap.close === 'function') {
+      try { staticBgBitmap.close(); } catch (e) {}
+    }
+    if (staticOverlayBitmap && typeof staticOverlayBitmap.close === 'function') {
+      try { staticOverlayBitmap.close(); } catch (e) {}
+    }
+
+    const mp4Blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    this.finalizeExportDownload(mp4Blob, 'mp4');
+  }
+
   cancelVideoExport() {
     this.isExporting = false;
+    this.lastFrameTime = performance.now();
+    requestAnimationFrame(this.renderLoop.bind(this));
+    if (this.activeVideoEncoder) {
+      try { this.activeVideoEncoder.close(); } catch (e) {}
+      this.activeVideoEncoder = null;
+    }
+    if (this.activeAudioEncoder) {
+      try { this.activeAudioEncoder.close(); } catch (e) {}
+      this.activeAudioEncoder = null;
+    }
     if (this.currentExportCleanup) {
       try { this.currentExportCleanup(); } catch (e) {}
       this.currentExportCleanup = null;
     }
     if (this.exportMediaRecorder && this.exportMediaRecorder.state !== 'inactive') {
-      this.exportMediaRecorder.stop();
+      try { this.exportMediaRecorder.stop(); } catch (e) {}
     }
     window.audioEngine.stop();
     const videoPlayer = document.getElementById('exportVideoPlayer');
@@ -4768,11 +5129,28 @@ class AnimalDanceStudio {
         if (resSelect) resSelect.value = this.resolutionPreset;
       }
       if (s.bitrate) {
-        this.bitrate = s.bitrate;
+        if (s.bitrate === 'auto' || isNaN(s.bitrate) || Number(s.bitrate) <= 100) {
+          this.bitrate = 'auto';
+        } else {
+          this.bitrate = parseInt(s.bitrate);
+        }
         const bitSelect = document.getElementById('selectBitrate');
-        if (bitSelect) bitSelect.value = String(Math.round(this.bitrate / 1000000));
+        if (bitSelect) {
+          if (this.bitrate === 'auto') {
+            bitSelect.value = 'auto';
+          } else {
+            bitSelect.value = String(this.bitrate);
+          }
+        }
         const bitVal = document.getElementById('exportBitrateVal');
-        if (bitVal) bitVal.textContent = `${Math.round(this.bitrate / 1000000)} Mbps`;
+        if (bitVal) {
+          if (this.bitrate === 'auto') {
+            bitVal.textContent = 'Smart Auto';
+          } else {
+            const mbps = (parseInt(this.bitrate) / 1000000).toFixed(1).replace('.0', '');
+            bitVal.textContent = `${mbps} Mbps`;
+          }
+        }
       }
       if (s.fps) {
         this.fps = s.fps;
@@ -4945,11 +5323,11 @@ class AnimalDanceStudio {
     this.resetBackgroundTransform();
 
     // 5. Reset bitrate
-    this.bitrate = 8000000;
+    this.bitrate = 'auto';
     const bSel = document.getElementById('selectBitrate');
-    if (bSel) bSel.value = '8';
+    if (bSel) bSel.value = 'auto';
     const bVal = document.getElementById('exportBitrateVal');
-    if (bVal) bVal.textContent = '8 Mbps';
+    if (bVal) bVal.textContent = 'Smart Auto';
 
     this.saveStateToLocalStorage();
     this.pushHistoryState('Reset settings only');
@@ -4986,11 +5364,11 @@ class AnimalDanceStudio {
     this.watermark.enabled = false;
     const chkWm = document.getElementById('checkWatermarkEnable');
     if (chkWm) chkWm.checked = false;
-    this.bitrate = 8000000;
+    this.bitrate = 'auto';
     const bSel = document.getElementById('selectBitrate');
-    if (bSel) bSel.value = '8';
+    if (bSel) bSel.value = 'auto';
     const bVal = document.getElementById('exportBitrateVal');
-    if (bVal) bVal.textContent = '8 Mbps';
+    if (bVal) bVal.textContent = 'Smart Auto';
     this.refreshSavedUploadsUI();
     this.pushHistoryState('Factory Reset');
     this.showToast('All browser storage, cache & custom assets cleared!', 'success');
@@ -5034,6 +5412,13 @@ class AnimalDanceStudio {
 }
 
 // Global initialization
-window.addEventListener('DOMContentLoaded', () => {
-  window.studio = new AnimalDanceStudio();
-});
+function initStudio() {
+  if (!window.studio) {
+    window.studio = new AnimalDanceStudio();
+  }
+}
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initStudio);
+} else {
+  initStudio();
+}

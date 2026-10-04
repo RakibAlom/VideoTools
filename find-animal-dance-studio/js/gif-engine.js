@@ -147,13 +147,14 @@ class GifEngine {
   }
 
   /**
-   * Retrieves the frame canvas or hardware-accelerated ImageBitmap at a given timestamp in ms
+   * Retrieves the frame canvas at a given timestamp in ms
    */
   getFrame(gifData, timestampMs) {
     if (!gifData || !gifData.frames || gifData.frames.length === 0) return null;
     if (gifData.frames.length === 1) return gifData.frames[0].bitmap || gifData.frames[0].canvas;
 
-    const t = (timestampMs % gifData.totalDuration + gifData.totalDuration) % gifData.totalDuration;
+    const dur = gifData.totalDuration || 1000;
+    const t = ((timestampMs % dur) + dur) % dur;
     for (let i = 0; i < gifData.frames.length; i++) {
       const f = gifData.frames[i];
       if (t >= f.startTime && t < f.endTime) {
@@ -254,15 +255,6 @@ class GifEngine {
       }
 
       ctx.putImageData(imgData, 0, 0);
-
-      if (typeof createImageBitmap === 'function') {
-        createImageBitmap(f.canvas).then(bm => {
-          if (f.bitmap && typeof f.bitmap.close === 'function') {
-            try { f.bitmap.close(); } catch(e) {}
-          }
-          f.bitmap = bm;
-        }).catch(() => {});
-      }
     });
 
     return gifData;
@@ -309,15 +301,6 @@ class GifEngine {
       }
 
       ctx.putImageData(imgData, 0, 0);
-
-      if (typeof createImageBitmap === 'function') {
-        createImageBitmap(f.canvas).then(bm => {
-          if (f.bitmap && typeof f.bitmap.close === 'function') {
-            try { f.bitmap.close(); } catch(e) {}
-          }
-          f.bitmap = bm;
-        }).catch(() => {});
-      }
     });
 
     return gifData;

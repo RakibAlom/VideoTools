@@ -89,7 +89,7 @@ function Remux-ToUniversalMp4([string]$inPath, [string]$outPath) {
     }
 
     $ffmpegDir = Split-Path $ffmpegPath
-    $args = @("-y", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
+    $args = @("-y", "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
     try {
         $proc = Start-Process -FilePath $ffmpegPath -ArgumentList $args -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
         if ($proc.ExitCode -eq 0 -and (Test-Path $outPath) -and (Get-Item $outPath).Length -gt 1000) {
@@ -151,9 +151,8 @@ try {
                 $filename = $request.QueryString["filename"]
                 if (-not $filename) { $filename = "world-flag-quiz_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
                 
-                $tempIn = Join-Path $root ("temp_in_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                $tempOut = Join-Path $root ("temp_out_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                $finalDiskPath = Join-Path $root $filename
+                $tempIn = Join-Path $env:TEMP ("temp_in_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
+                $tempOut = Join-Path $env:TEMP ("temp_out_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
 
                 try {
                     $fileStream = [System.IO.File]::Create($tempIn)
@@ -163,9 +162,7 @@ try {
                     $remuxOk = Remux-ToUniversalMp4 $tempIn $tempOut
                     $outputFileToSend = if ($remuxOk -and (Test-Path $tempOut)) { $tempOut } else { $tempIn }
 
-                    # Save copy to disk in studio folder
-                    Copy-Item $outputFileToSend -Destination $finalDiskPath -Force
-
+                    # Pure browser download delivery: NEVER copy to local folder to save user disk space
                     $bytes = [System.IO.File]::ReadAllBytes($outputFileToSend)
                     $response.ContentType = "video/mp4"
                     $response.AddHeader("Content-Disposition", "attachment; filename=`"$filename`"")
@@ -186,27 +183,9 @@ try {
 
             # Handle File Saving Endpoint (/api/save-file) for testing and disk output
             if ($localPath -eq "/api/save-file") {
-                $filename = $request.QueryString["filename"]
-                if (-not $filename) { $filename = "saved_file_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
-                $outPath = Join-Path $root $filename
-                $ms = New-Object System.IO.MemoryStream
-                $request.InputStream.CopyTo($ms)
-                [System.IO.File]::WriteAllBytes($outPath, $ms.ToArray())
-                $ms.Dispose()
-
-                # If this is an MP4, apply FastStart progressive optimization so disk file is mobile-ready
-                if ($filename.ToLower().EndsWith(".mp4")) {
-                    $tempOptimized = Join-Path $root ("temp_opt_" + [System.Guid]::NewGuid().ToString("N") + ".mp4")
-                    $optOk = Remux-ToUniversalMp4 $outPath $tempOptimized
-                    if ($optOk -and (Test-Path $tempOptimized)) {
-                        Move-Item $tempOptimized $outPath -Force
-                    } else {
-                        if (Test-Path $tempOptimized) { Remove-Item $tempOptimized -Force -ErrorAction SilentlyContinue }
-                    }
-                }
-
+                # Disabled from saving to disk to preserve user storage
                 $response.ContentType = "application/json"
-                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"file":"' + $filename + '"}')
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"notice":"Local disk saving disabled to preserve storage. File delivered via browser download."}')
                 $response.ContentLength64 = $resBytes.Length
                 $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
                 $response.Close()

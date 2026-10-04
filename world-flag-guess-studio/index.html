@@ -2038,7 +2038,11 @@
 
             <div>
               <label class="block text-[10px] text-slate-400 mb-0.5">End Screen Title:</label>
-              <input type="text" id="scene-outro-title" value="Challenge Completed! Subscribe!" oninput="handleOutroTitleChange(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+              <input type="text" id="scene-outro-title" value="Challenge Completed! Subscribe!" oninput="handleOutroTitleChange(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400 mb-0.5">End Screen Subtitle / Hook:</label>
+              <input type="text" id="scene-outro-subtitle" value="You completed all countries! Subscribe for more tests!" oninput="handleOutroSubtitleChange(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
             </div>
             <div>
               <label class="block text-[10px] text-slate-400 mb-0.5">End Screen Voiceover:</label>
@@ -3036,6 +3040,28 @@
 
       getAudioStream() {
         this.init();
+        const existingTracks = (this.mediaStreamDest && this.mediaStreamDest.stream) ? this.mediaStreamDest.stream.getAudioTracks() : [];
+        if (!this.mediaStreamDest || existingTracks.length === 0 || existingTracks[0].readyState === 'ended') {
+          try {
+            this.mediaStreamDest = this.ctx.createMediaStreamDestination();
+            if (this.masterGain) {
+              try { this.masterGain.connect(this.mediaStreamDest); } catch (e) {}
+            }
+            if (this.ctx) {
+              try {
+                const osc = this.ctx.createOscillator();
+                const keepGain = this.ctx.createGain();
+                keepGain.gain.setValueAtTime(0.00002, this.ctx.currentTime);
+                osc.connect(keepGain);
+                keepGain.connect(this.mediaStreamDest);
+                osc.start();
+                this.keepAliveNode = osc;
+              } catch (e) {}
+            }
+          } catch (e) {
+            console.warn('Audio destination track refresh notice:', e);
+          }
+        }
         return this.mediaStreamDest.stream;
       }
 
@@ -3756,6 +3782,7 @@
           enabled: true,
           triggerQuestion: 20,
           title: "Checkpoint! What is your score?",
+          subtitle: "20 questions completed! Drop your score in the comments!",
           voice: "Awesome job reaching 20 countries! If you have 20 score, comment your score below right now!"
         },
         {
@@ -3763,6 +3790,7 @@
           enabled: true,
           triggerQuestion: 50,
           title: "Halfway Mark! 50 Countries Done!",
+          subtitle: "50 questions completed! Drop your score in the comments!",
           voice: "You are halfway through the challenge! Are you still making zero mistakes? Comment your score!"
         }
       ]
@@ -3794,17 +3822,28 @@
 
           <div class="grid grid-cols-3 gap-1.5 items-center">
             <label class="text-[10px] text-slate-400 col-span-1">Trigger At Question:</label>
-            <input type="number" min="1" max="100" value="${item.triggerQuestion}" onchange="updateMidrollTrigger(${item.id}, this.value)" class="col-span-2 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs text-indigo-300 font-mono font-bold focus:outline-none focus:border-indigo-500">
+            <input type="number" min="1" max="100" id="midroll-trigger-${item.id}" value="${item.triggerQuestion}" oninput="updateMidrollTrigger(${item.id}, this.value)" onchange="updateMidrollTrigger(${item.id}, this.value)" class="col-span-2 bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs text-indigo-300 font-mono font-bold focus:outline-none focus:border-indigo-500">
           </div>
 
           <div>
             <label class="block text-[10px] text-slate-400 mb-0.5">Scene Title:</label>
-            <input type="text" value="${escapeHtml(item.title)}" onchange="updateMidrollTitle(${item.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <input type="text" id="midroll-title-${item.id}" value="${escapeHtml(item.title)}" oninput="updateMidrollTitle(${item.id}, this.value)" onchange="updateMidrollTitle(${item.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-semibold">
+          </div>
+
+          <div>
+            <label class="block text-[10px] text-slate-400 mb-0.5">Subtitle / Answer / Prompt Text:</label>
+            <input type="text" id="midroll-subtitle-${item.id}" value="${escapeHtml(item.subtitle || '')}" placeholder="e.g. 50 questions completed! Drop your score below!" oninput="updateMidrollSubtitle(${item.id}, this.value)" onchange="updateMidrollSubtitle(${item.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
           </div>
 
           <div>
             <label class="block text-[10px] text-slate-400 mb-0.5">Voiceover Narration:</label>
-            <textarea rows="2" onchange="updateMidrollVoice(${item.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500">${escapeHtml(item.voice)}</textarea>
+            <textarea rows="2" id="midroll-voice-${item.id}" oninput="updateMidrollVoice(${item.id}, this.value)" onchange="updateMidrollVoice(${item.id}, this.value)" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500">${escapeHtml(item.voice)}</textarea>
+          </div>
+
+          <div class="pt-1 flex items-center">
+            <button type="button" onclick="previewSpecialScene('milestone', ${item.id})" class="w-full py-1 px-2 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-300 font-bold text-[11px] transition flex items-center justify-center gap-1">
+              <span>🔥 Preview Scene #${index + 1}</span>
+            </button>
           </div>
         </div>
       `).join('');
@@ -3819,6 +3858,7 @@
         enabled: true,
         triggerQuestion: Math.min(nextTrigger, 90),
         title: `Checkpoint! Question ${nextTrigger}`,
+        subtitle: `${nextTrigger} questions completed! Drop your score in the comments!`,
         voice: `Great job reaching question ${nextTrigger}! How is your score? Comment below and subscribe!`
       };
       AppState.midrollScenes.push(newScene);
@@ -3856,11 +3896,68 @@
       }
     }
 
+    function updateMidrollSubtitle(id, val) {
+      const item = AppState.midrollScenes.find(m => m.id === id);
+      if (item) {
+        item.subtitle = val;
+        saveStudioSettings();
+      }
+    }
+
     function updateMidrollVoice(id, val) {
       const item = AppState.midrollScenes.find(m => m.id === id);
       if (item) {
         item.voice = val;
         saveStudioSettings();
+      }
+    }
+
+    function syncAllSceneInputsFromDOM() {
+      // 1. Intro Scene
+      const introTitleEl = document.getElementById('scene-intro-title');
+      if (introTitleEl && introTitleEl.value !== undefined) {
+        AppState.customIntroTitle = introTitleEl.value;
+        AppState.introTitleCustomized = true;
+      }
+      const introSubEl = document.getElementById('scene-intro-subtitle');
+      if (introSubEl && introSubEl.value !== undefined) {
+        AppState.customIntroSubtitle = introSubEl.value;
+        AppState.introSubCustomized = true;
+      }
+      const introVoiceEl = document.getElementById('scene-intro-voice');
+      if (introVoiceEl && introVoiceEl.value !== undefined) {
+        AppState.customIntroVoice = introVoiceEl.value;
+      }
+
+      // 2. Outro Scene
+      const outroTitleEl = document.getElementById('scene-outro-title');
+      if (outroTitleEl && outroTitleEl.value !== undefined) {
+        AppState.customOutroTitle = outroTitleEl.value;
+        AppState.outroTitleCustomized = true;
+      }
+      const outroSubEl = document.getElementById('scene-outro-subtitle');
+      if (outroSubEl && outroSubEl.value !== undefined) {
+        AppState.customOutroSubtitle = outroSubEl.value;
+        AppState.outroSubCustomized = true;
+      }
+      const outroVoiceEl = document.getElementById('scene-outro-voice');
+      if (outroVoiceEl && outroVoiceEl.value !== undefined) {
+        AppState.customOutroVoice = outroVoiceEl.value;
+        AppState.outroVoiceCustomized = true;
+      }
+
+      // 3. Midroll Scenes
+      if (Array.isArray(AppState.midrollScenes)) {
+        AppState.midrollScenes.forEach(item => {
+          const trigEl = document.getElementById(`midroll-trigger-${item.id}`);
+          if (trigEl && trigEl.value) item.triggerQuestion = parseInt(trigEl.value) || item.triggerQuestion;
+          const titEl = document.getElementById(`midroll-title-${item.id}`);
+          if (titEl && titEl.value !== undefined) item.title = titEl.value;
+          const subEl = document.getElementById(`midroll-subtitle-${item.id}`);
+          if (subEl && subEl.value !== undefined) item.subtitle = subEl.value;
+          const vEl = document.getElementById(`midroll-voice-${item.id}`);
+          if (vEl && vEl.value !== undefined) item.voice = vEl.value;
+        });
       }
     }
 
@@ -5179,17 +5276,8 @@
         }
       }
 
-      // 6. Midroll Scenes Checkpoints
-      if (Array.isArray(AppState.midrollScenes)) {
-        AppState.midrollScenes.forEach(m => {
-          if (m && m.voice) {
-            m.voice = m.voice.replace(/\b\d+ countries challenge\b/gi, count + ' countries challenge');
-          }
-          if (m && m.title) {
-            m.title = m.title.replace(/\b\d+ countries\b/gi, count + ' countries');
-          }
-        });
-      }
+      // 6. Midroll Scenes Checkpoints - Strictly preserve user's custom titles, subtitles, and numbers without regex alteration
+      // (Dynamic placeholders like {count} and {total} are resolved cleanly at scene display time)
 
       // 7. Random/Serial Order Indicators
       if (typeof updateRandomOrderBadge === 'function') updateRandomOrderBadge();
@@ -6426,6 +6514,13 @@
         spokenText = (voiceInput && voiceInput.value.trim())
           ? voiceInput.value.trim()
           : (AppState.customIntroVoice || "Can you guess all flags with zero mistakes? Question 1 starts now!");
+
+        AppState.sceneText = {
+          title: introTitleVal,
+          subtitle: introSubVal,
+          badge: bText,
+          icon: (iconEl && iconEl.textContent) ? iconEl.textContent : '🔥'
+        };
       } else if (type === 'milestone') {
         const totalQ = getTotalSelectedQuestions();
 
@@ -6461,15 +6556,25 @@
           if (embersEl) embersEl.classList.remove('hidden');
         }
 
-        let mTitle = midrollData ? midrollData.title : `Checkpoint! Question ${currentCount}`;
-        let mVoice = midrollData ? midrollData.voice : `Great job reaching question ${currentCount}! Comment your current score below!`;
+        let mTitle = (midrollData && midrollData.title) ? midrollData.title : `Checkpoint! Question ${currentCount}`;
+        let mSubtitle = (midrollData && midrollData.subtitle) ? midrollData.subtitle : `${currentCount} questions completed! Drop your score in the comments!`;
+        let mVoice = (midrollData && midrollData.voice) ? midrollData.voice : `Great job reaching question ${currentCount}! Comment your current score below!`;
         mTitle = mTitle.replace(/\{count\}/gi, currentCount).replace(/\{total\}/gi, totalQ);
+        mSubtitle = mSubtitle.replace(/\{count\}/gi, currentCount).replace(/\{total\}/gi, totalQ);
         mVoice = mVoice.replace(/\{count\}/gi, currentCount).replace(/\{total\}/gi, totalQ);
         titleEl.textContent = mTitle;
-        subtitleEl.textContent = `${currentCount} questions completed! Drop your score in the comments!`;
+        subtitleEl.textContent = mSubtitle;
         const bText = `CHECKPOINT: Q ${currentCount} / ${totalQ}`;
         if (badgeTextEl) badgeTextEl.textContent = bText; else if (badgeEl) badgeEl.textContent = bText;
         spokenText = mVoice;
+
+        AppState.activeMidrollData = midrollData || null;
+        AppState.sceneText = {
+          title: mTitle,
+          subtitle: mSubtitle,
+          badge: bText,
+          icon: AppState.middleSceneIcon || '🔥'
+        };
       } else if (type === 'outro') {
         const totalQ = getTotalSelectedQuestions();
 
@@ -6498,16 +6603,28 @@
         }
 
         const outroTitleInput = document.getElementById('scene-outro-title');
-        let oTitle = (outroTitleInput && outroTitleInput.value.trim()) ? outroTitleInput.value.trim() : "Challenge Completed! Subscribe!";
+        let oTitle = (outroTitleInput && outroTitleInput.value.trim()) ? outroTitleInput.value.trim() : (AppState.customOutroTitle || "Challenge Completed! Subscribe!");
         oTitle = oTitle.replace(/\{total\}/gi, totalQ);
         titleEl.textContent = oTitle;
-        subtitleEl.textContent = `You completed all ${totalQ} countries! Subscribe for more tests!`;
+
+        const outroSubInput = document.getElementById('scene-outro-subtitle');
+        let oSubtitle = (outroSubInput && outroSubInput.value.trim()) ? outroSubInput.value.trim() : (AppState.customOutroSubtitle || `You completed all ${totalQ} countries! Subscribe for more tests!`);
+        oSubtitle = oSubtitle.replace(/\{total\}/gi, totalQ);
+        subtitleEl.textContent = oSubtitle;
+
         const bText = `CHALLENGE COMPLETE (${totalQ} FLAGS)`;
         if (badgeTextEl) badgeTextEl.textContent = bText; else if (badgeEl) badgeEl.textContent = bText;
         const outroVoiceInput = document.getElementById('scene-outro-voice');
-        let oVoice = (outroVoiceInput && outroVoiceInput.value.trim()) ? outroVoiceInput.value.trim() : `That's all ${totalQ} countries! How many did you guess correctly? Comment your score below and subscribe for more!`;
+        let oVoice = (outroVoiceInput && outroVoiceInput.value.trim()) ? outroVoiceInput.value.trim() : (AppState.customOutroVoice || `That's all ${totalQ} countries! How many did you guess correctly? Comment your score below and subscribe for more!`);
         oVoice = oVoice.replace(/\{total\}/gi, totalQ);
         spokenText = oVoice;
+
+        AppState.sceneText = {
+          title: oTitle,
+          subtitle: oSubtitle,
+          badge: bText,
+          icon: AppState.outroSceneIcon || '🎉'
+        };
         if (confettiEngine && typeof confettiEngine.burst === 'function') confettiEngine.burst();
       }
 
@@ -7158,6 +7275,12 @@
           if (delta >= frameInterval - 0.5) {
             lastTime = currentTime - (delta % frameInterval);
             this.drawFrame();
+            if (this.activeCanvasStream) {
+              const vt = this.activeCanvasStream.getVideoTracks()[0];
+              if (vt && typeof vt.requestFrame === 'function') {
+                try { vt.requestFrame(); } catch (e) {}
+              }
+            }
           }
           this.rafId = requestAnimationFrame(render);
         };
@@ -7743,19 +7866,29 @@
         const introSubFromDOM = document.getElementById('scene-intro-subtitle')?.value?.trim();
         const outroSubFromDOM = document.getElementById('scene-outro-subtitle')?.value?.trim();
 
+        let milestoneTitle = (AppState.activeMidrollData && AppState.activeMidrollData.title) 
+          ? AppState.activeMidrollData.title 
+          : `Checkpoint! Question ${AppState.currentIndex}`;
+        milestoneTitle = milestoneTitle.replace(/\{count\}/gi, AppState.currentIndex).replace(/\{total\}/gi, totalQ);
+
+        let milestoneSubtitle = (AppState.activeMidrollData && AppState.activeMidrollData.subtitle) 
+          ? AppState.activeMidrollData.subtitle 
+          : `${AppState.currentIndex} questions completed! Drop your score in the comments!`;
+        milestoneSubtitle = milestoneSubtitle.replace(/\{count\}/gi, AppState.currentIndex).replace(/\{total\}/gi, totalQ);
+
         const defTitle = isMilestone 
-          ? `Checkpoint! Question ${AppState.currentIndex}` 
+          ? milestoneTitle 
           : (isOutro 
               ? (outroTitleFromDOM || AppState.customOutroTitle || 'Challenge Completed! Subscribe!') 
               : (introTitleFromDOM || AppState.customIntroTitle || `Can You Guess All ${totalQ} Flags?`));
 
         const defSubtitle = isMilestone 
-          ? `${AppState.currentIndex} questions completed! Drop your score in the comments!` 
+          ? milestoneSubtitle 
           : (isOutro 
               ? (outroSubFromDOM || AppState.customOutroSubtitle || `You completed all ${totalQ} countries! Subscribe for more tests!`) 
               : (introSubFromDOM || AppState.customIntroSubtitle || "99% fail before Level 10! Question 1 starts in 3... 2... 1... 🚀"));
 
-        const defIcon = isMilestone ? '🔥' : (isOutro ? '🎉' : '🔥');
+        const defIcon = isMilestone ? (AppState.middleSceneIcon || '🔥') : (isOutro ? (AppState.outroSceneIcon || '🎉') : '🔥');
 
         const textInfo = {
           title: (AppState.sceneText?.title || defTitle).trim(),
@@ -7765,11 +7898,12 @@
         };
         
         ctx.save();
+        const activeTheme = theme || STAGE_THEMES[AppState.theme] || STAGE_THEMES['studio'] || {};
         const isCustom = AppState.customColors && AppState.customColors.enabled;
-        const bgColor = isCustom ? AppState.customColors.bg : (theme.bgGradient ? theme.bgGradient[0] : '#070b14');
+        const bgColor = isCustom ? AppState.customColors.bg : (activeTheme.bgGradient ? activeTheme.bgGradient[0] : '#070b14');
         const cardBgColor = isCustom ? AppState.customColors.card : 'rgba(15, 23, 42, 0.98)';
         const textColor = isCustom ? AppState.customColors.text : '#ffffff';
-        const accentColor = isCustom ? AppState.customColors.accent : (theme.accentText || '#818cf8');
+        const accentColor = isCustom ? AppState.customColors.accent : (activeTheme.accentText || '#818cf8');
 
         // 1. Studio Background Fill + Radial Ambient Glow
         ctx.fillStyle = bgColor;
@@ -9086,11 +9220,14 @@
       AppState.isRecording = true;
 
       // 1. Capture and lock in all user-customized text fields before anything else
+      syncAllSceneInputsFromDOM();
+
       const introTitleInput = document.getElementById('scene-intro-title');
       const introSubInput = document.getElementById('scene-intro-subtitle');
       const introVoiceInput = document.getElementById('scene-intro-voice');
       const globalPromptInput = document.getElementById('global-question-prompt-input');
       const outroTitleInput = document.getElementById('scene-outro-title');
+      const outroSubInput = document.getElementById('scene-outro-subtitle');
       const outroVoiceInput = document.getElementById('scene-outro-voice');
 
       if (introTitleInput && introTitleInput.value.trim()) {
@@ -9114,6 +9251,11 @@
         outroTitleInput.dataset.customized = 'true';
         AppState.outroTitleCustomized = true;
         AppState.customOutroTitle = outroTitleInput.value.trim();
+      }
+      if (outroSubInput && outroSubInput.value.trim()) {
+        outroSubInput.dataset.customized = 'true';
+        AppState.outroSubCustomized = true;
+        AppState.customOutroSubtitle = outroSubInput.value.trim();
       }
       if (outroVoiceInput && outroVoiceInput.value.trim()) {
         outroVoiceInput.dataset.customized = 'true';
@@ -9168,6 +9310,10 @@
       if (AppState.customOutroTitle && outroTitleInput) {
         outroTitleInput.value = AppState.customOutroTitle;
         outroTitleInput.dataset.customized = 'true';
+      }
+      if (AppState.customOutroSubtitle && outroSubInput) {
+        outroSubInput.value = AppState.customOutroSubtitle;
+        outroSubInput.dataset.customized = 'true';
       }
       if (AppState.customOutroVoice && outroVoiceInput) {
         outroVoiceInput.value = AppState.customOutroVoice;
@@ -9320,6 +9466,16 @@
         }
       }
 
+      // Clean up any lingering streams or tracks from previous exports to prevent GPU encoder throttling
+      if (canvasRecorderEngine.activeCombinedStream) {
+        try { canvasRecorderEngine.activeCombinedStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCombinedStream = null;
+      }
+      if (canvasRecorderEngine.activeCanvasStream) {
+        try { canvasRecorderEngine.activeCanvasStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCanvasStream = null;
+      }
+
       // Pre-draw initial frame
       canvasRecorderEngine.drawFrame();
 
@@ -9334,6 +9490,8 @@
         ...synthAudioStream.getAudioTracks()
       ];
       const combinedStream = new MediaStream(combinedTracks);
+      canvasRecorderEngine.activeCanvasStream = canvasStream;
+      canvasRecorderEngine.activeCombinedStream = combinedStream;
 
       // Codec & MIME determination: Universal MP4 (H.264 / AAC) default
       let mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
@@ -9379,12 +9537,19 @@
         canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream, {
           mimeType: mimeType,
           videoBitsPerSecond: videoBitrate,
-          audioBitsPerSecond: 128000
+          audioBitsPerSecond: 128000,
+          videoKeyFrameIntervalCount: 30,
+          keyFrameIntervalDuration: 1000
         });
       } catch (e) {
         console.warn('Fallback to standard MediaRecorder options:', e);
         try {
-          canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeType });
+          canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: videoBitrate,
+            videoKeyFrameIntervalCount: 30,
+            keyFrameIntervalDuration: 1000
+          });
         } catch (e2) {
           canvasRecorderEngine.mediaRecorder = new MediaRecorder(combinedStream);
         }
@@ -9545,6 +9710,16 @@
         } catch (e) {}
       }
 
+      if (canvasRecorderEngine.activeCombinedStream) {
+        try { canvasRecorderEngine.activeCombinedStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCombinedStream = null;
+      }
+      if (canvasRecorderEngine.activeCanvasStream) {
+        try { canvasRecorderEngine.activeCanvasStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCanvasStream = null;
+      }
+      canvasRecorderEngine.mediaRecorder = null;
+
       if (canvasRecorderEngine.micStream) {
         canvasRecorderEngine.micStream.getTracks().forEach(t => t.stop());
         canvasRecorderEngine.micStream = null;
@@ -9582,6 +9757,16 @@
       canvasRecorderEngine.stopRenderingLoop();
       stopAndResetQuiz();
 
+      // Free GPU encoder resources so subsequent exports maintain 100% full quality & bitrate
+      if (canvasRecorderEngine.activeCombinedStream) {
+        try { canvasRecorderEngine.activeCombinedStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCombinedStream = null;
+      }
+      if (canvasRecorderEngine.activeCanvasStream) {
+        try { canvasRecorderEngine.activeCanvasStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        canvasRecorderEngine.activeCanvasStream = null;
+      }
+
       const mimeType = canvasRecorderEngine.mediaRecorder?.mimeType || (fileExt === 'mp4' ? 'video/mp4' : 'video/webm');
       const rawBlob = new Blob(canvasRecorderEngine.recordedChunks, { type: mimeType });
 
@@ -9616,37 +9801,38 @@
           body: rawBlob
         })
         .then(async (response) => {
-          if (response.ok) {
+          const remuxStatus = response.headers.get('X-Remux-Status');
+          if (response.ok && (remuxStatus === 'faststart_progressive_mp4' || remuxStatus === 'ffmpeg_faststart')) {
             const remuxBlob = await response.blob();
             if (remuxBlob && remuxBlob.size > 1000) {
               console.log('Universal FastStart MP4 optimized via server pipeline.');
-              finalizeExportDownload(remuxBlob, fileExt, filename, true);
+              finalizeExportDownload(remuxBlob, fileExt, filename);
               return;
             }
           }
-          throw new Error('Server remux returned invalid stream or status ' + response.status);
+          throw new Error('Server remux returned non-progressive status: ' + remuxStatus);
         })
         .catch((err) => {
           console.warn('Server remux unavailable, applying in-browser Universal MP4 duration normalizer:', err);
           if (typeof window.ysFixMp4Duration === 'function') {
             window.ysFixMp4Duration(rawBlob, totalDurationMs, (fixedBlob) => {
-              finalizeExportDownload(fixedBlob, fileExt, filename, false);
+              finalizeExportDownload(fixedBlob, fileExt, filename);
             });
           } else {
-            finalizeExportDownload(rawBlob, fileExt, filename, false);
+            finalizeExportDownload(rawBlob, fileExt, filename);
           }
         });
       } else if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
         if (desc) desc.textContent = 'Fixing WebM seekable duration metadata...';
         window.ysFixWebmDuration(rawBlob, totalDurationMs, (fixedBlob) => {
-          finalizeExportDownload(fixedBlob, fileExt, filename, false);
+          finalizeExportDownload(fixedBlob, fileExt, filename);
         });
       } else {
-        finalizeExportDownload(rawBlob, fileExt, filename, false);
+        finalizeExportDownload(rawBlob, fileExt, filename);
       }
     }
 
-    function finalizeExportDownload(blob, fileExt = 'mp4', passedFilename = null, alreadySavedOnServer = false) {
+    function finalizeExportDownload(blob, fileExt = 'mp4', passedFilename = null) {
       // Ensure background stage preview is stopped and reset to idle
       stopAndResetQuiz();
 
@@ -9710,7 +9896,7 @@
         btnCancel.style.display = 'none';
       }
 
-      // Automatically trigger browser download to user's device
+      // Automatically trigger browser download to user's device (pure in-browser download only, zero disk file creation)
       try {
         const a = document.createElement('a');
         a.href = url;
@@ -9720,16 +9906,6 @@
         setTimeout(() => a.remove(), 120);
       } catch (e) {
         console.warn('Auto download error:', e);
-      }
-
-      // Asynchronously save to server for validation and disk backup if not already saved
-      if (!alreadySavedOnServer) {
-        try {
-          fetch(`/api/save-file?filename=${encodeURIComponent(filename)}`, {
-            method: 'POST',
-            body: blob
-          }).catch(() => {});
-        } catch (e) {}
       }
 
       // Burst celebratory confetti
