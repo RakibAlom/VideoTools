@@ -1,18 +1,29 @@
 # Apache / LiteSpeed Web Server Configuration for World Flag Guess Studio
+# Compatible with Hostinger, cPanel, Plesk, LiteSpeed, Apache 2.4+ in Root or Subdirectories
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
 
-  # Route /api/* requests to api.php
-  RewriteRule ^api/tts$ api.php?action=tts [L,QSA]
-  RewriteRule ^api/remux-mp4$ api.php?action=remux-mp4 [L,QSA]
-  RewriteRule ^api/save-file$ api.php?action=save-file [L,QSA]
-  RewriteRule ^api/status$ api.php?action=status [L,QSA]
+  # Route /api/* requests to api.php (relative to current directory)
+  RewriteRule ^api/tts/?$ api.php?action=tts [L,QSA]
+  RewriteRule ^api/remux-mp4/?$ api.php?action=remux-mp4 [L,QSA]
+  RewriteRule ^api/save-file/?$ api.php?action=save-file [L,QSA]
+  RewriteRule ^api/status/?$ api.php?action=status [L,QSA]
+  RewriteRule ^api/(.*)$ api.php?action=$1 [L,QSA]
 </IfModule>
 
 <IfModule mod_headers.c>
-  # Enable CORS for fonts, flags, and audio
+  # Enable CORS for fonts, flags, and audio streaming
   Header set Access-Control-Allow-Origin "*"
+  Header set Access-Control-Allow-Private-Network "true"
   Header set Access-Control-Allow-Methods "GET, POST, OPTIONS, HEAD"
   Header set Access-Control-Allow-Headers "*"
+  Header set Access-Control-Expose-Headers "Content-Length, Content-Type, X-TTS-Source, X-Remux-Status"
+</IfModule>
+
+# Ensure audio MIME types are served correctly
+<IfModule mod_mime.c>
+  AddType audio/mpeg .mp3
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
 </IfModule>

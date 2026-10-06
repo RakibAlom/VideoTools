@@ -144,10 +144,17 @@ try {
             }
 
             $localPath = $request.Url.LocalPath
+            $action = $request.QueryString["action"]
+            if (-not $action) {
+                if ($localPath -like "*/api/tts*") { $action = "tts" }
+                elseif ($localPath -like "*/api/remux-mp4*") { $action = "remux-mp4" }
+                elseif ($localPath -like "*/api/save-file*") { $action = "save-file" }
+                elseif ($localPath -like "*/api/status*") { $action = "status" }
+            }
 
-            # Handle Universal MP4 Remux Endpoint (/api/remux-mp4)
+            # Handle Universal MP4 Remux Endpoint
             # Transforms fragmented MediaRecorder MP4 into 100% universal FastStart progressive MP4 for mobile & desktop
-            if ($localPath -eq "/api/remux-mp4") {
+            if ($action -eq "remux-mp4") {
                 $filename = $request.QueryString["filename"]
                 if (-not $filename) { $filename = "world-flag-quiz_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".mp4" }
                 
@@ -181,8 +188,8 @@ try {
                 continue
             }
 
-            # Handle File Saving Endpoint (/api/save-file) for testing and disk output
-            if ($localPath -eq "/api/save-file") {
+            # Handle File Saving Endpoint for testing and disk output
+            if ($action -eq "save-file") {
                 # Disabled from saving to disk to preserve user storage
                 $response.ContentType = "application/json"
                 $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"notice":"Local disk saving disabled to preserve storage. File delivered via browser download."}')
@@ -193,9 +200,9 @@ try {
             }
 
             # Quick status/ping check
-            if ($localPath -eq "/api/status") {
+            if ($action -eq "status" -or $request.QueryString["ping"] -or ($request.QueryString["test"] -and $action -ne "tts")) {
                 $response.ContentType = "application/json"
-                $statusJson = '{"status":"ok","server":"world-flag-guess-studio","port":' + $port + ',"ffmpeg":' + $(if ($detectedFfmpeg) { 'true' } else { 'false' }) + '}'
+                $statusJson = '{"status":"ok","server":"world-flag-guess-studio","port":' + $port + ',"ffmpeg":' + $(if ($detectedFfmpeg) { 'true' } else { 'false' }) + ',"tts":true,"voices":["google","david","zira"]}'
                 $sBytes = [System.Text.Encoding]::UTF8.GetBytes($statusJson)
                 $response.ContentLength64 = $sBytes.Length
                 $response.OutputStream.Write($sBytes, 0, $sBytes.Length)
@@ -203,8 +210,8 @@ try {
                 continue
             }
 
-            # Handle TTS Audio Generation Endpoint (/api/tts)
-            if ($localPath -eq "/api/tts") {
+            # Handle TTS Audio Generation Endpoint
+            if ($action -eq "tts") {
                 # Quick healthcheck / ping support
                 if ($request.QueryString["test"] -or $request.QueryString["ping"] -or $request.QueryString["status"]) {
                     $response.ContentType = "application/json"
@@ -229,18 +236,35 @@ try {
 
                     $isGoogle = ($voice -eq "google" -or $voice -like "*google*" -or $voice -like "*natural*")
                     if ($isGoogle) {
+                        $subText = if ($text.Length -gt 130) { $text.Substring(0, 130) } else { $text }
+                        $encodedChunk = [System.Uri]::EscapeDataString($subText)
+                        
+                        # 1. Try Google Translate GTX
                         try {
-                            $subText = if ($text.Length -gt 130) { $text.Substring(0, 130) } else { $text }
-                            $encodedChunk = [System.Uri]::EscapeDataString($subText)
-                            $googleUrl = "https://translate.google.com/translate_tts?ie=UTF-8&q=$encodedChunk&tl=en&client=tw-ob"
                             $wc = New-Object System.Net.WebClient
-                            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                            $audioBytes = $wc.DownloadData($googleUrl)
-                            if ($audioBytes -and $audioBytes.Length -gt 0) {
-                                $contentType = "audio/mpeg"
-                            }
-                        } catch {
-                            $audioBytes = $null
+                            $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                            $audioBytes = $wc.DownloadData("https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=en&q=$encodedChunk")
+                            if ($audioBytes -and $audioBytes.Length -gt 150) { $contentType = "audio/mpeg" } else { $audioBytes = $null }
+                        } catch { $audioBytes = $null }
+
+                        # 2. Try Youdao Natural Voice
+                        if (-not $audioBytes) {
+                            try {
+                                $wc = New-Object System.Net.WebClient
+                                $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                                $audioBytes = $wc.DownloadData("https://dict.youdao.com/dictvoice?audio=$encodedChunk&type=1")
+                                if ($audioBytes -and $audioBytes.Length -gt 150) { $contentType = "audio/mpeg" } else { $audioBytes = $null }
+                            } catch { $audioBytes = $null }
+                        }
+
+                        # 3. Try Google tw-ob
+                        if (-not $audioBytes) {
+                            try {
+                                $wc = New-Object System.Net.WebClient
+                                $wc.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                                $audioBytes = $wc.DownloadData("https://translate.google.com/translate_tts?ie=UTF-8&q=$encodedChunk&tl=en&client=tw-ob")
+                                if ($audioBytes -and $audioBytes.Length -gt 150) { $contentType = "audio/mpeg" } else { $audioBytes = $null }
+                            } catch { $audioBytes = $null }
                         }
                     }
 

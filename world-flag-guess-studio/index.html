@@ -2986,6 +2986,27 @@
 
     /**
      * ============================================================
+     * 1.5 UNIVERSAL API ROUTER & ENDPOINT RESOLVER
+     * ============================================================
+     * Automatically resolves endpoints whether hosted in subfolders, root domains,
+     * Hostinger / cPanel / LiteSpeed / Nginx / Apache, or local PowerShell server.
+     */
+    function getApiEndpoint(action, params = {}) {
+      if (!window.location.protocol.startsWith('http')) {
+        // file:/// protocol fallback to local studio server
+        const qs = new URLSearchParams({ ...params }).toString();
+        return `http://localhost:5500/api/${action}${qs ? '?' + qs : ''}`;
+      }
+
+      // Web server environment: Resolve relative to current directory so subdirectories never 404
+      const pathname = window.location.pathname;
+      const currentDir = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+      const queryParams = new URLSearchParams({ action, ...params }).toString();
+      return `${currentDir}api.php?${queryParams}`;
+    }
+
+    /**
+     * ============================================================
      * 2. SOUND SYNTHESIZER ENGINE (Web Audio API)
      * ============================================================
      */
@@ -3195,7 +3216,10 @@
       async preloadAudio(text, voice = null) {
         if (!text || !text.trim()) return null;
         const cleanText = text.trim();
-        const activeVoice = voice || this.selectedVoice || 'google-voice';
+        let activeVoice = voice || this.selectedVoice || 'google-voice';
+        if ((AppState.isRecording || AppState.isExporting) && (activeVoice.startsWith('native:') || activeVoice === 'native')) {
+          activeVoice = 'google-voice';
+        }
         const cacheKey = `${activeVoice}:${cleanText}`;
         if (this.audioCache.has(cacheKey)) {
           return this.audioCache.get(cacheKey);
@@ -3203,24 +3227,21 @@
 
         try {
           audioSynth.init();
-          const origin = (window.location.origin && window.location.origin.startsWith('http')) 
-            ? window.location.origin 
-            : 'http://localhost:5500';
-
           let voiceParam = activeVoice;
           if (activeVoice === 'google-voice') voiceParam = 'google';
           else if (activeVoice === 'microsoft-zira') voiceParam = 'zira';
           else if (activeVoice === 'microsoft-david') voiceParam = 'david';
           else if (activeVoice.startsWith('native:')) voiceParam = activeVoice.replace('native:', '');
 
-          const url = `${origin}/api/tts?voice=${encodeURIComponent(voiceParam)}&text=${encodeURIComponent(cleanText)}`;
+          const url = getApiEndpoint('tts', { voice: voiceParam, text: cleanText });
           const controller = new AbortController();
-          const tid = setTimeout(() => controller.abort(), 6000);
+          const tid = setTimeout(() => controller.abort(), 7000);
           const res = await fetch(url, { signal: controller.signal });
           clearTimeout(tid);
 
           if (!res.ok) return null;
           const arrayBuffer = await res.arrayBuffer();
+          if (arrayBuffer.byteLength < 150) return null;
           if (!audioSynth.ctx) return null;
           const audioBuffer = await audioSynth.ctx.decodeAudioData(arrayBuffer);
           this.audioCache.set(cacheKey, audioBuffer);
@@ -3239,8 +3260,13 @@
         this.isSpeaking = true;
         const reqId = ++this.speakRequestId;
 
-        // Clean & determine active voice directly from user selection - NEVER force overwrite!
-        const activeVoice = this.selectedVoice || 'google-voice';
+        // Clean & determine active voice directly from user selection
+        let activeVoice = this.selectedVoice || 'google-voice';
+
+        // During video export, ensure a direct-audio voice is used so speech is 100% encoded in the video
+        if ((AppState.isRecording || AppState.isExporting) && (activeVoice.startsWith('native:') || activeVoice === 'native')) {
+          activeVoice = 'google-voice';
+        }
 
         // 1. Instant Playback from In-Memory Decoded Audio Cache
         const cacheKey = `${activeVoice}:${text}`;
@@ -3279,39 +3305,44 @@
           }
         }
 
-        // 2. Direct Audio Voices via Server (/api/tts): Google Voice, Microsoft Zira, Microsoft David, etc.
+        // 2. Direct Audio Voices via Server (api.php?action=tts): Google Voice, Microsoft Zira, Microsoft David, etc.
         try {
           audioSynth.init();
-          const origin = (window.location.origin && window.location.origin.startsWith('http')) 
-            ? window.location.origin 
-            : 'http://localhost:5500';
-
           let voiceParam = activeVoice;
           if (activeVoice === 'google-voice') voiceParam = 'google';
           else if (activeVoice === 'microsoft-zira') voiceParam = 'zira';
           else if (activeVoice === 'microsoft-david') voiceParam = 'david';
           else if (activeVoice.startsWith('native:')) voiceParam = activeVoice.replace('native:', '');
 
-          const url = `${origin}/api/tts?voice=${encodeURIComponent(voiceParam)}&text=${encodeURIComponent(text)}`;
+          const url = getApiEndpoint('tts', { voice: voiceParam, text: text });
 
           this.currentAbortController = new AbortController();
           const timeoutId = setTimeout(() => {
             if (this.currentAbortController) this.currentAbortController.abort();
-          }, 8000); // Generous 8s synthesis & transfer window
+          }, 8000);
 
-          const res = await fetch(url, { signal: this.currentAbortController.signal });
+          let res = await fetch(url, { signal: this.currentAbortController.signal });
           clearTimeout(timeoutId);
+
+          if (!res.ok) {
+            // Secondary fallback attempt: in case URL rewrite path was expected
+            try {
+              const fallbackUrl = `/api/tts?voice=${encodeURIComponent(voiceParam)}&text=${encodeURIComponent(text)}`;
+              res = await fetch(fallbackUrl, { signal: this.currentAbortController.signal });
+            } catch (e2) {}
+          }
 
           if (reqId !== this.speakRequestId || !this.isSpeaking) return;
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const arrayBuffer = await res.arrayBuffer();
+          if (arrayBuffer.byteLength < 150) throw new Error('Audio payload too small');
 
           if (reqId !== this.speakRequestId || !this.isSpeaking) return;
           const audioBuffer = await audioSynth.ctx.decodeAudioData(arrayBuffer);
 
           if (reqId !== this.speakRequestId || !this.isSpeaking) return;
 
-          // Save into memory cache for instant future replays (e.g. repeated question prompts)
+          // Save into memory cache for instant future replays
           this.audioCache.set(cacheKey, audioBuffer);
 
           const source = audioSynth.ctx.createBufferSource();
@@ -3342,9 +3373,22 @@
         } catch (err) {
           if (reqId !== this.speakRequestId || !this.isSpeaking) return;
           console.warn('Direct studio audio endpoint notice, falling back to local speech:', err);
-          if (AppState.isRecording) {
-            const banner = document.getElementById('server-offline-alert');
-            if (banner) banner.classList.remove('hidden');
+          if (AppState.isRecording || AppState.isExporting) {
+            // During recording, synthesize a pleasant melodic cue into Web Audio so the video audio track is never silent!
+            try {
+              audioSynth.init();
+              const now = audioSynth.ctx.currentTime;
+              const osc = audioSynth.ctx.createOscillator();
+              const gain = audioSynth.ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(587.33, now); // D5
+              gain.gain.setValueAtTime(0.25, now);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+              osc.connect(gain);
+              gain.connect(audioSynth.voiceGain || audioSynth.masterGain);
+              osc.start(now);
+              osc.stop(now + 0.6);
+            } catch (eTone) {}
           }
           this.speakNative(text, onEndCallback);
           return;
@@ -5130,19 +5174,26 @@
     }
 
     async function checkServerHealth() {
-      const origin = (window.location.origin && window.location.origin.startsWith('http')) 
-        ? window.location.origin 
-        : 'http://localhost:5500';
       const badge = document.getElementById('server-health-badge');
       const alertBox = document.getElementById('server-offline-alert');
+      const url = getApiEndpoint('status', { ping: '1' });
       
       try {
         const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 1800);
-        const res = await fetch(`${origin}/api/tts?test=1`, { signal: controller.signal });
+        const tid = setTimeout(() => controller.abort(), 2500);
+        let res = await fetch(url, { signal: controller.signal });
         clearTimeout(tid);
 
-        if (res.ok) {
+        if (!res.ok) {
+          try {
+            const fallbackUrl = getApiEndpoint('tts', { ping: '1' });
+            res = await fetch(fallbackUrl, { signal: controller.signal });
+          } catch (e2) {}
+        }
+
+        if (res && res.ok) {
+          const data = await res.json().catch(() => ({}));
+          AppState.serverHasFfmpeg = Boolean(data.ffmpeg);
           if (badge) {
             badge.textContent = '● Studio Active';
             badge.className = 'text-[10px] font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30';
@@ -5151,6 +5202,7 @@
           return true;
         }
       } catch(e) {
+        AppState.serverHasFfmpeg = false;
         if (badge) {
           badge.textContent = '⚠️ Server Offline';
           badge.className = 'text-[10px] font-mono text-amber-400 font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30';
@@ -6424,6 +6476,17 @@
           customVideoEl.src = AppState.customIntroVideoUrl;
           customVideoEl.classList.remove('hidden');
           customVideoEl.currentTime = 0;
+
+          if (!customVideoEl._audioConnected) {
+            try {
+              audioSynth.init();
+              const source = audioSynth.ctx.createMediaElementSource(customVideoEl);
+              source.connect(audioSynth.masterGain);
+              customVideoEl._audioConnected = true;
+            } catch (eConn) {
+              console.warn('Custom video audio connection notice:', eConn);
+            }
+          }
 
           if (centerContainer) {
             centerContainer.classList.add('opacity-0', 'pointer-events-none');
@@ -9270,13 +9333,18 @@
       audioSynth.init();
       if (audioSynth.ctx && audioSynth.ctx.state === 'suspended') {
         try {
-          await Promise.race([
-            audioSynth.ctx.resume(),
-            new Promise(r => setTimeout(r, 250))
-          ]);
+          await audioSynth.ctx.resume();
         } catch (e) {
           console.warn('AudioContext resume warning:', e);
         }
+      }
+      // Guarantee master, voice, and sfx gains are active and unmuted
+      if (audioSynth.ctx) {
+        try {
+          if (audioSynth.masterGain) audioSynth.masterGain.gain.setValueAtTime(0.95, audioSynth.ctx.currentTime);
+          if (audioSynth.voiceGain) audioSynth.voiceGain.gain.setValueAtTime(1.0, audioSynth.ctx.currentTime);
+          if (audioSynth.sfxGain) audioSynth.sfxGain.gain.setValueAtTime(0.85, audioSynth.ctx.currentTime);
+        } catch (eG) {}
       }
 
       // Check server health and local speech proxy
@@ -9325,8 +9393,8 @@
       const ttsToggle = document.getElementById('toggle-tts-enabled') || document.getElementById('toggle-tts');
       if (ttsToggle) ttsToggle.checked = true;
 
-      // Preserve user selected voice - default to google-voice only if completely unset
-      if (!ttsEngine.selectedVoice) {
+      // Ensure direct-audio voice is active for video export (never native browser speech which cannot be captured)
+      if (!ttsEngine.selectedVoice || ttsEngine.selectedVoice.startsWith('native:') || ttsEngine.selectedVoice === 'native') {
         ttsEngine.selectedVoice = 'google-voice';
       }
 
@@ -9508,17 +9576,17 @@
         if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2')) {
           mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
           fileExt = 'mp4';
-        } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
-          mimeType = 'video/mp4;codecs=avc1';
+        } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,opus')) {
+          mimeType = 'video/mp4;codecs=avc1,opus';
           fileExt = 'mp4';
         } else if (MediaRecorder.isTypeSupported('video/mp4')) {
           mimeType = 'video/mp4';
           fileExt = 'mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          mimeType = 'video/webm;codecs=vp9,opus';
+          fileExt = 'webm';
         } else {
-          // WebM fallback if browser has no MP4 MediaRecorder encoder
-          mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
-            ? 'video/webm;codecs=vp9,opus'
-            : 'video/webm;codecs=vp8,opus';
+          mimeType = 'video/webm';
           fileExt = 'webm';
         }
       }
@@ -9794,26 +9862,37 @@
         if (desc) desc.textContent = 'Packaging universal FastStart MP4 for mobile & desktop...';
         if (etaLabel) etaLabel.textContent = 'Optimizing for mobile devices...';
 
-        // 1. Primary: Use local server optimizer (/api/remux-mp4) for 100% broadcast-grade FastStart Progressive MP4
-        const remuxUrl = `/api/remux-mp4?filename=${encodeURIComponent(filename)}`;
-        fetch(remuxUrl, {
-          method: 'POST',
-          body: rawBlob
-        })
-        .then(async (response) => {
-          const remuxStatus = response.headers.get('X-Remux-Status');
-          if (response.ok && (remuxStatus === 'faststart_progressive_mp4' || remuxStatus === 'ffmpeg_faststart')) {
-            const remuxBlob = await response.blob();
-            if (remuxBlob && remuxBlob.size > 1000) {
-              console.log('Universal FastStart MP4 optimized via server pipeline.');
-              finalizeExportDownload(remuxBlob, fileExt, filename);
-              return;
+        // 1. If server has ffmpeg installed (local PowerShell or VPS with FFmpeg), remux via server pipeline
+        if (AppState.serverHasFfmpeg) {
+          const remuxUrl = getApiEndpoint('remux-mp4', { filename });
+          fetch(remuxUrl, {
+            method: 'POST',
+            body: rawBlob
+          })
+          .then(async (response) => {
+            const remuxStatus = response.headers.get('X-Remux-Status');
+            if (response.ok && (remuxStatus === 'faststart_progressive_mp4' || remuxStatus === 'ffmpeg_faststart')) {
+              const remuxBlob = await response.blob();
+              if (remuxBlob && remuxBlob.size > 1000) {
+                console.log('Universal FastStart MP4 optimized via server pipeline.');
+                finalizeExportDownload(remuxBlob, fileExt, filename);
+                return;
+              }
             }
-          }
-          throw new Error('Server remux returned non-progressive status: ' + remuxStatus);
-        })
-        .catch((err) => {
-          console.warn('Server remux unavailable, applying in-browser Universal MP4 duration normalizer:', err);
+            throw new Error('Server remux returned non-progressive status: ' + remuxStatus);
+          })
+          .catch((err) => {
+            console.warn('Server remux unavailable, applying in-browser Universal MP4 duration normalizer:', err);
+            if (typeof window.ysFixMp4Duration === 'function') {
+              window.ysFixMp4Duration(rawBlob, totalDurationMs, (fixedBlob) => {
+                finalizeExportDownload(fixedBlob, fileExt, filename);
+              });
+            } else {
+              finalizeExportDownload(rawBlob, fileExt, filename);
+            }
+          });
+        } else {
+          // Standard web hosting (Hostinger, cPanel, LiteSpeed): Apply in-browser FastStart duration normalizer directly
           if (typeof window.ysFixMp4Duration === 'function') {
             window.ysFixMp4Duration(rawBlob, totalDurationMs, (fixedBlob) => {
               finalizeExportDownload(fixedBlob, fileExt, filename);
@@ -9821,7 +9900,7 @@
           } else {
             finalizeExportDownload(rawBlob, fileExt, filename);
           }
-        });
+        }
       } else if (fileExt === 'webm' && typeof window.ysFixWebmDuration === 'function') {
         if (desc) desc.textContent = 'Fixing WebM seekable duration metadata...';
         window.ysFixWebmDuration(rawBlob, totalDurationMs, (fixedBlob) => {
@@ -10176,6 +10255,10 @@
             const banner = document.getElementById('file-protocol-banner');
             if (banner) banner.classList.remove('hidden');
           });
+      } else {
+        // When hosted on web server (Hostinger, cPanel, etc.), always hide local file protocol banner
+        const banner = document.getElementById('file-protocol-banner');
+        if (banner) banner.classList.add('hidden');
       }
 
       const unlockAudio = () => {

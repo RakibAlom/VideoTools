@@ -2,9 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Animal Dance Studio - Viral Hidden Animal Video Maker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Animal Dance Studio - Viral Hidden Animal Video Maker | EasyPro Tools</title>
   
+  <!-- SEO & Search Engine Optimization Tags -->
+  <meta name="description" content="Create viral 'Find the Dancing Animal' videos for TikTok, YouTube Shorts & Instagram Reels with Animal Dance Studio by EasyPro Tools. Featuring transparent animated characters, custom countdown timers, dynamic audio, backdrops, and high-speed MP4 export.">
+  <meta name="keywords" content="animal dance studio, find the duck, viral reels maker, tiktok puzzle generator, youtube shorts creator, easypro tools, dancing duck, dancing cat, find the animal, viral shorts studio">
+  <meta name="author" content="EasyPro Tools">
+  <meta name="owner" content="EasyPro Tools">
+  <meta name="copyright" content="Copyright © EasyPro Tools. All Rights Reserved.">
+  <link rel="canonical" href="https://easyprotools.com/animal-dance-studio/">
+  <meta name="robots" content="index, follow">
+  
+  <!-- Open Graph / Facebook Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://easyprotools.com/animal-dance-studio/">
+  <meta property="og:title" content="Animal Dance Studio - Viral Hidden Animal Video Maker | EasyPro Tools">
+  <meta property="og:description" content="Create viral 'Find the Dancing Animal' videos for TikTok, YouTube Shorts & Instagram Reels. Made by EasyPro Tools.">
+  <meta property="og:image" content="assets/backgrounds/rustic_water_village.jpg">
+  <meta property="og:site_name" content="EasyPro Tools">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Animal Dance Studio - Viral Hidden Animal Video Maker | EasyPro Tools">
+  <meta name="twitter:description" content="Create viral 'Find the Dancing Animal' videos for TikTok, YouTube Shorts & Instagram Reels. Made by EasyPro Tools.">
+  <meta name="twitter:image" content="assets/backgrounds/rustic_water_village.jpg">
+  <meta name="twitter:creator" content="@EasyProTools">
+
+  <!-- Mobile & PWA Optimization -->
+  <meta name="theme-color" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AnimalDance">
+  <meta name="format-detection" content="telephone=no">
+
   <!-- 15+ Modern Google Fonts for Viral Titles -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,6 +51,12 @@
 
   <!-- Top Studio Header -->
   <header class="studio-header">
+    <!-- Mobile Left Drawer Toggle (Tools) - Visible only on mobile -->
+    <button id="btnToggleLeftDrawer" class="btn btn-secondary btn-sm mobile-only-btn mobile-left-toggle" title="Open Studio Controls & Tools" aria-label="Toggle Controls Menu">
+      <i class="fa-solid fa-sliders"></i>
+      <span class="mobile-toggle-text">Tools</span>
+    </button>
+
     <div class="brand-wrapper">
       <span class="brand-logo-icon">🦆</span>
       <div>
@@ -29,10 +66,10 @@
     </div>
 
     <!-- Header Center: Ratio Switcher & Undo/Redo & Demos -->
-    <div class="header-center-tools">
+    <div class="header-center-tools" id="headerCenterTools">
       <!-- 6 Demo Templates Button -->
       <button id="btnOpenDemosModal" class="btn btn-secondary btn-sm" style="background: rgba(251, 191, 36, 0.15); border-color: rgba(251, 191, 36, 0.4); color: #fbbf24;">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> 6 Ready Demos
+        <i class="fa-solid fa-wand-magic-sparkles"></i> <span class="demo-text">6 Ready Demos</span>
       </button>
 
       <!-- History Undo / Redo -->
@@ -48,22 +85,27 @@
       <!-- Ratio Selector -->
       <div class="ratio-selector-bar">
         <button class="ratio-pill-btn active" data-ratio="9:16" title="9:16 Shorts / Reels / TikTok (1080x1920)">
-          <i class="fa-solid fa-mobile-screen"></i> 9:16 Shorts
+          <i class="fa-solid fa-mobile-screen"></i> <span class="ratio-text">9:16 Shorts</span>
         </button>
         <button class="ratio-pill-btn" data-ratio="16:9" title="16:9 Landscape YouTube (1920x1080)">
-          <i class="fa-solid fa-desktop"></i> 16:9 Wide
+          <i class="fa-solid fa-desktop"></i> <span class="ratio-text">16:9 Wide</span>
         </button>
         <button class="ratio-pill-btn" data-ratio="1:1" title="1:1 Square Instagram (1080x1080)">
-          <i class="fa-regular fa-square"></i> 1:1 Square
+          <i class="fa-regular fa-square"></i> <span class="ratio-text">1:1 Square</span>
         </button>
         <button class="ratio-pill-btn" data-ratio="4:5" title="4:5 Social Feed (1080x1350)">
-          <i class="fa-solid fa-crop-simple"></i> 4:5 Feed
+          <i class="fa-solid fa-crop-simple"></i> <span class="ratio-text">4:5 Feed</span>
         </button>
       </div>
     </div>
 
     <!-- Header Right Actions -->
     <div class="header-right-actions">
+      <!-- Mobile Quick Settings Toggle Button (Ratio, Demos, Undo/Redo) - Visible only on mobile -->
+      <button id="btnToggleQuickSettings" class="btn btn-secondary btn-sm mobile-only-btn" title="Project & Aspect Ratio Settings" aria-label="Toggle Project Settings">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+
       <button id="btnResetProject" class="btn btn-secondary btn-sm" title="Reset All Settings to Factory Default">
         <i class="fa-solid fa-arrow-rotate-left"></i> Reset
       </button>
@@ -73,7 +115,13 @@
       </button>
 
       <button id="btnOpenExportModal" class="btn btn-viral-export">
-        <i class="fa-solid fa-video"></i> Export Video
+        <i class="fa-solid fa-video"></i> <span class="export-btn-text">Export Video</span>
+      </button>
+
+      <!-- Mobile Right Drawer Toggle (Layers) - Visible only on mobile -->
+      <button id="btnToggleRightDrawer" class="btn btn-secondary btn-sm mobile-only-btn mobile-right-toggle" title="Open Layers & Animals Panel" aria-label="Toggle Layers Menu">
+        <i class="fa-solid fa-layer-group"></i>
+        <span id="mobileLayerCountBadge" class="mobile-count-pill">15</span>
       </button>
     </div>
   </header>
@@ -83,6 +131,16 @@
 
     <!-- Left Control Deck -->
     <aside class="left-control-deck">
+      <!-- Mobile Drawer Top Bar (Hidden on Desktop) -->
+      <div class="mobile-drawer-header mobile-only">
+        <div class="mobile-drawer-title">
+          <span style="font-size:1.1rem;">🦆</span>
+          <span>Studio Controls</span>
+        </div>
+        <button class="btn btn-secondary btn-sm btn-icon-only btn-close-drawer" id="btnCloseLeftDrawer" title="Close Controls" aria-label="Close Controls">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
       <!-- Tabs -->
       <nav class="deck-tab-bar">
         <button class="deck-tab-btn active" data-tab="tab-animals">
@@ -126,11 +184,26 @@
 
             <!-- Sub Category Tabs: Ducks, Cats, Dogs, Other Animals, Uploads -->
             <div class="char-category-bar">
-              <button class="char-cat-btn active" data-cat="ducks">🦆 Ducks</button>
-              <button class="char-cat-btn" data-cat="dogs">🐶 Dogs</button>
-              <button class="char-cat-btn" data-cat="cats">🐱 Cats</button>
-              <button class="char-cat-btn" data-cat="others">🐾 Others</button>
-              <button class="char-cat-btn" data-cat="custom">📁 Uploads</button>
+              <button class="char-cat-btn active" data-cat="ducks" title="Dancing Ducks">
+                <span class="cat-icon">🦆</span>
+                <span class="cat-name">Ducks</span>
+              </button>
+              <button class="char-cat-btn" data-cat="dogs" title="Dancing Dogs">
+                <span class="cat-icon">🐶</span>
+                <span class="cat-name">Dogs</span>
+              </button>
+              <button class="char-cat-btn" data-cat="cats" title="Dancing Cats">
+                <span class="cat-icon">🐱</span>
+                <span class="cat-name">Cats</span>
+              </button>
+              <button class="char-cat-btn" data-cat="others" title="Other Dancing Animals">
+                <span class="cat-icon">🐾</span>
+                <span class="cat-name">Others</span>
+              </button>
+              <button class="char-cat-btn" data-cat="custom" title="My Uploaded GIFs">
+                <span class="cat-icon">📁</span>
+                <span class="cat-name">Uploads</span>
+              </button>
             </div>
             
             <!-- Category: Ducks -->
@@ -179,22 +252,42 @@
 
             <!-- Category: My Uploads -->
             <div class="char-grid" id="charGridCustom" style="display:none;">
-              <div id="customCharsList" style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.4rem;">
-                <p style="font-size:0.75rem; color:var(--text-muted); text-align:center;">No custom characters saved yet. Upload below!</p>
+              <div id="customCharsList" class="custom-chars-grid" style="grid-column: 1 / -1;">
+                <p style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:1.2rem 0; width:100%;">
+                  <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.5rem; display:block; margin-bottom:0.4rem; opacity:0.4;"></i>
+                  No custom characters uploaded yet.<br>Click below to upload GIFs from your PC!
+                </p>
               </div>
             </div>
 
             <!-- Upload Custom GIF & Chroma-Key Remover -->
             <div style="display:flex; flex-direction:column; gap:0.4rem; margin-top:0.4rem;">
-              <input type="file" id="customGifUpload" accept="image/gif" style="display:none">
+              <input type="file" id="customGifUpload" accept="image/gif" multiple style="display:none">
               <div style="display:flex; gap:0.5rem;">
-                <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customGifUpload').click()">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload Custom GIF
+                <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customGifUpload').click()" title="Select one or multiple GIF files from your computer">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload Custom GIFs
                 </button>
-                <button id="btnOpenChromaKeyModal" class="btn btn-secondary" style="flex:1;" title="Remove solid background from any GIF">
-                  <i class="fa-solid fa-wand-magic"></i> Remove BG
+                <button id="btnOpenChromaKeyModal" class="btn btn-secondary" style="flex:1;" title="Remove solid background from active or custom GIF">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Remove BG
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- Character Dance Pace & Speed -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Character Dance Pace</span>
+              <span class="badge" id="danceSpeedBadge">1.25x Lively ⚡</span>
+            </div>
+            <p style="font-size: 0.73rem; color: var(--text-muted); margin-bottom: 0.45rem;">
+              Sync dancing tempo with viral music rhythms for butter-smooth playback:
+            </p>
+            <div class="preset-button-row" id="danceSpeedChips">
+              <button class="preset-chip" data-speed="1.0">1.0x Normal</button>
+              <button class="preset-chip active" data-speed="1.25">1.25x Lively ⚡</button>
+              <button class="preset-chip" data-speed="1.5">1.5x Fast 🚀</button>
+              <button class="preset-chip" data-speed="2.0">2.0x Turbo 🔥</button>
             </div>
           </div>
 
@@ -314,7 +407,7 @@
           <div class="ui-section">
             <div class="ui-section-title">
               <span>Scene Presets</span>
-              <span class="badge">Ultra HD</span>
+              <span class="badge" id="bgTypeBadge">Image / Video</span>
             </div>
 
             <div class="bg-preset-grid">
@@ -332,12 +425,32 @@
               </div>
             </div>
 
-            <!-- Upload Custom Background -->
-            <div style="margin-top: 0.5rem;">
-              <input type="file" id="customBgUpload" accept="image/*" style="display:none">
-              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customBgUpload').click()">
-                <i class="fa-solid fa-upload"></i> Upload Custom Backdrop Image
+            <!-- Upload Custom Background (Image or Video) -->
+            <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+              <input type="file" id="customBgUpload" accept="image/*,video/mp4,video/webm,video/quicktime,video/*" style="display:none">
+              <button class="btn btn-secondary" style="width: 100%;" onclick="document.getElementById('customBgUpload').click()" title="Upload Image (JPG, PNG, WebP) or Video (MP4, WebM)">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Backdrop (Image or Video)
               </button>
+            </div>
+
+            <!-- Video Backdrop Active Controls Card -->
+            <div id="videoBgControlsCard" style="display:none; margin-top:0.5rem; padding:0.6rem; background:rgba(6, 182, 212, 0.08); border:1px solid rgba(6, 182, 212, 0.3); border-radius:var(--radius-sm);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <span style="font-size:0.75rem; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:4px;">
+                  <i class="fa-solid fa-film"></i> Video Backdrop Active
+                </span>
+                <span id="videoBgDurationBadge" class="badge" style="background:rgba(6, 182, 212, 0.2); color:#38bdf8; font-family:monospace;">0.0s</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.74rem; cursor:pointer;">
+                  <input type="checkbox" id="checkMuteVideoBg" checked> Mute Video Audio (Play only music)
+                </label>
+                <div style="display:flex; gap:0.4rem; align-items:center;">
+                  <button id="btnSyncVideoDuration" class="btn btn-secondary btn-sm" style="flex:1; font-size:0.72rem; padding:0.25rem 0.4rem;" title="Match video export length to backdrop video duration">
+                    <i class="fa-solid fa-arrows-rotate"></i> Match Video Length
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Saved Backdrops Gallery -->
@@ -627,10 +740,210 @@
             </div>
           </div>
 
+          <!-- Main Title Background Box & Border Customization -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Main Title Background Box</span>
+              <label style="display:flex; align-items:center; gap:5px; font-size:0.74rem; cursor:pointer;">
+                <input type="checkbox" id="checkTitleBgEnable"> Enable Box
+              </label>
+            </div>
+
+            <div id="titleBgControlsGroup">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div class="form-group">
+                  <div class="form-label">Box Color</div>
+                  <input type="color" id="inputTitleBgColor" class="form-input" style="height:38px; padding:2px;" value="#0f172a">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Opacity</span>
+                    <span class="val-indicator" id="titleBgOpacityVal">85%</span>
+                  </div>
+                  <input type="range" id="sliderTitleBgOpacity" class="range-slider" min="0" max="100" value="85">
+                </div>
+              </div>
+
+              <!-- Corner Radius (Pill vs Sharp Box) -->
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Corner Radius (Pill vs Box)</span>
+                  <span class="val-indicator" id="titleBgRadiusVal">16px</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTitleBgRadius" class="range-slider" min="0" max="60" value="16" style="flex:1;">
+                  <input type="number" id="inputTitleBgRadiusExact" class="form-input" min="0" max="100" value="16" style="width:75px;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Padding X</span>
+                    <span class="val-indicator" id="titleBgPaddingXVal">36px</span>
+                  </div>
+                  <input type="range" id="sliderTitleBgPaddingX" class="range-slider" min="0" max="100" value="36">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Padding Y</span>
+                    <span class="val-indicator" id="titleBgPaddingYVal">16px</span>
+                  </div>
+                  <input type="range" id="sliderTitleBgPaddingY" class="range-slider" min="0" max="60" value="16">
+                </div>
+              </div>
+
+              <!-- Border / Rim -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div class="form-group">
+                  <div class="form-label">Border Color</div>
+                  <input type="color" id="inputTitleBorderColor" class="form-input" style="height:38px; padding:2px;" value="#6366f1">
+                </div>
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Border Width</span>
+                    <span class="val-indicator" id="titleBorderWidthVal">0px</span>
+                  </div>
+                  <input type="range" id="sliderTitleBorderWidth" class="range-slider" min="0" max="15" value="0">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Border Opacity</span>
+                  <span class="val-indicator" id="titleBorderOpacityVal">100%</span>
+                </div>
+                <input type="range" id="sliderTitleBorderOpacity" class="range-slider" min="0" max="100" value="100">
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Title Advanced Effects (Glow, Gradient, Shadow) -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Main Title Advanced Effects</span>
+            </div>
+
+            <!-- Gradient Text Fill -->
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
+                <input type="checkbox" id="checkTitleGradientEnable"> Enable Dual-Color Gradient Fill
+              </label>
+              <div id="titleGradientControls" style="display:none; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top:0.4rem;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label" style="font-size:0.7rem;">Top Gradient Color</div>
+                  <input type="color" id="inputTitleGradColor1" class="form-input" style="height:34px; padding:2px;" value="#ff7a00">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label" style="font-size:0.7rem;">Bottom Gradient Color</div>
+                  <input type="color" id="inputTitleGradColor2" class="form-input" style="height:34px; padding:2px;" value="#f43f5e">
+                </div>
+              </div>
+            </div>
+
+            <!-- Neon Halo Glow -->
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
+                <input type="checkbox" id="checkTitleGlowEnable"> Enable Neon Halo Glow Bloom
+              </label>
+              <div id="titleGlowControls" style="display:none; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top:0.4rem;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label" style="font-size:0.7rem;">Glow Color</div>
+                  <input type="color" id="inputTitleGlowColor" class="form-input" style="height:34px; padding:2px;" value="#06b6d4">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <div class="form-label" style="font-size:0.7rem;">
+                    <span>Bloom Radius</span>
+                    <span class="val-indicator" id="titleGlowIntensityVal">20px</span>
+                  </div>
+                  <input type="range" id="sliderTitleGlowIntensity" class="range-slider" min="5" max="50" value="20">
+                </div>
+              </div>
+            </div>
+
+            <!-- 3D Shadow controls -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <div class="form-label">Drop Shadow Color</div>
+                <input type="color" id="inputTitleShadowColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+              </div>
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Shadow Blur</span>
+                  <span class="val-indicator" id="titleShadowBlurVal">14px</span>
+                </div>
+                <input type="range" id="sliderTitleShadowBlur" class="range-slider" min="0" max="40" value="14">
+              </div>
+            </div>
+          </div>
+
           <!-- Subtitle Styling Deck -->
           <div class="ui-section">
             <div class="ui-section-title">
               <span>Subtitle / Hook Styling</span>
+            </div>
+
+            <!-- Subtitle Design Presets -->
+            <div class="form-group">
+              <div class="form-label">Subtitle Design Preset</div>
+              <div class="subtitle-style-grid">
+                <div class="subtitle-style-card active" data-substyle="pill_glass">
+                  <span style="color:#fde047; text-shadow:0 0 4px rgba(0,0,0,0.8);">
+                    <i class="fa-solid fa-square-full"></i> Frosted Glass
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="tiktok_yellow">
+                  <span style="color:#facc15; text-shadow:2px 2px 0 #000;">
+                    <i class="fa-solid fa-bolt"></i> Viral 3D Yellow
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="cyber_neon">
+                  <span style="color:#67e8f9; text-shadow:0 0 8px #06b6d4;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Cyber Neon
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="danger_alert">
+                  <span style="color:#fef08a; background:#dc2626; padding:2px 6px; border-radius:4px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Danger Red
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="clean_outline">
+                  <span style="color:#ffffff; text-shadow:1px 1px 0 #000, -1px -1px 0 #000;">
+                    <i class="fa-solid fa-font"></i> Clean Outline
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="gold_ribbon">
+                  <span style="color:#fef08a; text-shadow:1px 1px 0 #854d0e;">
+                    <i class="fa-solid fa-crown"></i> Royal Gold
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="arcade_pixel">
+                  <span style="color:#a3e635; text-shadow:2px 2px 0 #052e16;">
+                    <i class="fa-solid fa-gamepad"></i> 8-Bit Arcade
+                  </span>
+                </div>
+                <div class="subtitle-style-card" data-substyle="minimal_pill">
+                  <span style="color:#f8fafc; background:#1e293b; padding:2px 6px; border-radius:4px;">
+                    <i class="fa-solid fa-shield"></i> Minimal Dark
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subtitle Font Family & Size -->
+            <div class="form-group">
+              <div class="form-label">Subtitle Font</div>
+              <select id="selectSubtitleFontFamily" class="form-input">
+                <option value="inherit" selected>Inherit Main Title Font</option>
+                <option value="Outfit">Outfit</option>
+                <option value="Poppins">Poppins</option>
+                <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Rubik">Rubik</option>
+                <option value="Fredoka">Fredoka</option>
+                <option value="Anton">Anton</option>
+                <option value="Press Start 2P">Press Start 2P (Pixel)</option>
+              </select>
             </div>
 
             <div class="form-group">
@@ -646,23 +959,121 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
               <div class="form-group">
-                <div class="form-label">Subtitle Color</div>
+                <div class="form-label">Subtitle Text Color</div>
                 <input type="color" id="inputSubtitleColor" class="form-input" style="height:38px; padding:2px;" value="#fde047">
               </div>
               <div class="form-group">
-                <div class="form-label">Pill Background</div>
-                <input type="color" id="inputSubtitlePillColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+                <div class="form-label">Outline Color</div>
+                <input type="color" id="inputSubtitleStrokeColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
               </div>
             </div>
 
-            <div class="form-group">
-              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
-                <input type="checkbox" id="checkSubtitlePillEnable" checked> Show Dark Backplate Pill
-              </label>
+            <!-- Subtitle Background Box / Pill Customization -->
+            <div class="form-group" style="margin-top:0.4rem; padding-top:0.5rem; border-top: 1px solid var(--border-subtle);">
+              <div class="form-label">
+                <span>Subtitle Background Box / Pill</span>
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.74rem; cursor:pointer;">
+                  <input type="checkbox" id="checkSubtitleBgEnable" checked> Enable Box
+                </label>
+              </div>
+
+              <div id="subBgControlsGroup">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <div class="form-group">
+                    <div class="form-label">Background Color</div>
+                    <input type="color" id="inputSubtitlePillColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+                  </div>
+                  <div class="form-group">
+                    <div class="form-label">
+                      <span>Opacity</span>
+                      <span class="val-indicator" id="subBgOpacityVal">75%</span>
+                    </div>
+                    <input type="range" id="sliderSubtitleBgOpacity" class="range-slider" min="0" max="100" value="75">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Corner Radius (Pill vs Box)</span>
+                    <span class="val-indicator" id="subBgRadiusVal">10px</span>
+                  </div>
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <input type="range" id="sliderSubtitleBgRadius" class="range-slider" min="0" max="40" value="10" style="flex:1;">
+                    <input type="number" id="inputSubtitleBgRadiusExact" class="form-input" min="0" max="50" value="10" style="width:75px;">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <div class="form-group">
+                    <div class="form-label">
+                      <span>Padding X</span>
+                      <span class="val-indicator" id="subBgPaddingXVal">20px</span>
+                    </div>
+                    <input type="range" id="sliderSubtitleBgPaddingX" class="range-slider" min="0" max="60" value="20">
+                  </div>
+                  <div class="form-group">
+                    <div class="form-label">
+                      <span>Padding Y</span>
+                      <span class="val-indicator" id="subBgPaddingYVal">8px</span>
+                    </div>
+                    <input type="range" id="sliderSubtitleBgPaddingY" class="range-slider" min="0" max="30" value="8">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <div class="form-group">
+                    <div class="form-label">Border Rim Color</div>
+                    <input type="color" id="inputSubtitleBorderColor" class="form-input" style="height:38px; padding:2px;" value="#ffffff">
+                  </div>
+                  <div class="form-group">
+                    <div class="form-label">
+                      <span>Border Width</span>
+                      <span class="val-indicator" id="subBorderWidthVal">1.5px</span>
+                    </div>
+                    <input type="range" id="sliderSubtitleBorderWidth" class="range-slider" min="0" max="10" step="0.5" value="1.5">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="form-label">
+                    <span>Border Opacity</span>
+                    <span class="val-indicator" id="subBorderOpacityVal">30%</span>
+                  </div>
+                  <input type="range" id="sliderSubtitleBorderOpacity" class="range-slider" min="0" max="100" value="30">
+                </div>
+              </div>
+            </div>
+
+            <!-- Subtitle Advanced Text Effects -->
+            <div class="form-group" style="margin-top:0.4rem; padding-top:0.5rem; border-top: 1px solid var(--border-subtle);">
+              <div class="form-label">
+                <span>Subtitle Effects</span>
+                <label style="display:flex; align-items:center; gap:5px; font-size:0.74rem; cursor:pointer;">
+                  <input type="checkbox" id="checkSubtitleAllCaps"> ALL CAPS
+                </label>
+              </div>
+
+              <div class="form-group">
+                <div class="form-label">
+                  <span>Outline Stroke Width</span>
+                  <span class="val-indicator" id="subStrokeWidthVal">4px</span>
+                </div>
+                <input type="range" id="sliderSubtitleStrokeWidth" class="range-slider" min="0" max="15" value="4">
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
+                  <input type="checkbox" id="checkSubtitleGlowEnable"> Enable Subtitle Glow Bloom
+                </label>
+                <div id="subGlowControls" style="display:none; margin-top:0.4rem;">
+                  <div class="form-label" style="font-size:0.7rem;">Glow Color</div>
+                  <input type="color" id="inputSubtitleGlowColor" class="form-input" style="height:34px; padding:2px;" value="#fde047">
+                </div>
+              </div>
             </div>
 
             <!-- Title & Subtitle Spacing (Gap) Control -->
-            <div class="form-group">
+            <div class="form-group" style="margin-top:0.5rem; padding-top:0.5rem; border-top: 1px solid var(--border-subtle);">
               <div class="form-label">
                 <span>Spacing / Margin (Title to Subtitle)</span>
                 <span class="val-indicator" id="titleGapVal">40px</span>
@@ -797,6 +1208,69 @@
               <input type="text" id="inputWatermarkText" class="form-input" value="SmartBrain Game">
             </div>
 
+            <!-- Watermark Style Presets -->
+            <div class="form-group">
+              <div class="form-label">Watermark Design Preset</div>
+              <div class="watermark-style-grid">
+                <div class="watermark-style-card active" data-wmstyle="clean_glow">
+                  <span style="color:#ffffff; text-shadow:0 0 6px rgba(0,0,0,0.85);">
+                    <i class="fa-solid fa-sparkles"></i> Subtle Glow
+                  </span>
+                </div>
+                <div class="watermark-style-card" data-wmstyle="frosted_pill">
+                  <span style="color:#38bdf8; background:rgba(15,23,42,0.7); padding:2px 6px; border-radius:4px;">
+                    <i class="fa-solid fa-square-full"></i> Frosted Glass
+                  </span>
+                </div>
+                <div class="watermark-style-card" data-wmstyle="shadow_stroke">
+                  <span style="color:#ffffff; text-shadow:1px 1px 0 #000, -1px -1px 0 #000;">
+                    <i class="fa-solid fa-font"></i> 3D Outline
+                  </span>
+                </div>
+                <div class="watermark-style-card" data-wmstyle="neon_brand">
+                  <span style="color:#22d3ee; text-shadow:0 0 8px #06b6d4;">
+                    <i class="fa-solid fa-bolt"></i> Cyber Neon
+                  </span>
+                </div>
+                <div class="watermark-style-card" data-wmstyle="gold_brand">
+                  <span style="color:#fde047; text-shadow:1px 1px 0 #854d0e;">
+                    <i class="fa-solid fa-crown"></i> Royal Gold
+                  </span>
+                </div>
+                <div class="watermark-style-card" data-wmstyle="dark_pill">
+                  <span style="color:#f8fafc; background:#000000; padding:2px 6px; border-radius:4px;">
+                    <i class="fa-solid fa-shield"></i> Solid Dark Pill
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Font Family</div>
+              <select id="selectWatermarkFont" class="form-input">
+                <option value="Outfit" selected>Outfit (Modern Clean Bold)</option>
+                <option value="Poppins">Poppins (Geometric)</option>
+                <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                <option value="Bebas Neue">Bebas Neue (Tall Condensed)</option>
+                <option value="Montserrat">Montserrat (Impact Heavy)</option>
+                <option value="Luckiest Guy">Luckiest Guy (Fun & Chunky)</option>
+                <option value="Inter">Inter (Minimalist)</option>
+                <option value="Righteous">Righteous (Futuristic)</option>
+                <option value="Permanent Marker">Permanent Marker</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div class="form-group">
+                <div class="form-label">Text Color</div>
+                <input type="color" id="inputWatermarkColor" class="form-input" style="height:38px; padding:2px;" value="#ffffff">
+              </div>
+              <div class="form-group">
+                <div class="form-label">Pill / Backplate</div>
+                <input type="color" id="inputWatermarkPillColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+              </div>
+            </div>
+
             <div class="form-group">
               <div class="form-label">Quick Snap Preset</div>
               <div class="preset-button-row">
@@ -847,6 +1321,12 @@
                 <input type="range" id="sliderWatermarkSize" class="range-slider" min="10" max="100" value="24" style="flex:1;">
                 <input type="number" id="inputWatermarkSizeExact" class="form-input" min="5" max="100" value="24" style="width:75px;">
               </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.75rem;">
+              <button id="btnSaveWatermarkDefault" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                <i class="fa-solid fa-bookmark" style="color:var(--accent-cyan);"></i> Remember My Branding (Auto-Apply Always)
+              </button>
             </div>
           </div>
 
@@ -974,10 +1454,10 @@
             <div class="form-group">
               <div class="form-label">Export Resolution</div>
               <select id="selectResolution" class="form-input">
-                <option value="720p">720p HD (Fast export)</option>
-                <option value="1080p" selected>1080p Full HD (Studio Crisp 1080p - Recommended)</option>
-                <option value="2k">2K QHD (1440p High Quality)</option>
-                <option value="4k">4K Ultra HD (2160p Master Quality)</option>
+                <option value="4k" selected>🌟 4K Ultra HD (2160p Master Quality - Recommended)</option>
+                <option value="2k">⚡ 2K QHD (1440p High Definition)</option>
+                <option value="1080p">💎 1080p Full HD (Crisp Studio)</option>
+                <option value="720p">🚀 720p HD (Fast Draft)</option>
               </select>
             </div>
 
@@ -1055,6 +1535,10 @@
         </div>
 
       </div>
+      <!-- Deck Branding Attribution Footer -->
+      <div class="deck-branding-footer">
+        <span>Animal Dance Studio • by <strong>EasyPro Tools</strong></span>
+      </div>
     </aside>
 
     <!-- Center Stage Container -->
@@ -1117,7 +1601,12 @@
     <!-- Right Layer Dock (Layer Inspector & Animal List) -->
     <aside class="right-layer-dock">
       <div class="layer-dock-header">
-        <h3>Layers (<span id="totalAnimalLayerCount">15</span>)</h3>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-secondary btn-sm btn-icon-only btn-close-drawer mobile-only" id="btnCloseRightDrawer" title="Close Panel" aria-label="Close Layers Panel">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <h3>Layers (<span id="totalAnimalLayerCount">15</span>)</h3>
+        </div>
         <button id="btnPingAllAnimals" class="btn btn-secondary btn-sm" title="Toggle Highlight Rings">
           <i class="fa-solid fa-crosshairs"></i> <span id="dockHighlightText">Highlight</span>
         </button>
@@ -1182,6 +1671,20 @@
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <input type="range" id="sliderInspectRot" class="range-slider" min="-180" max="180" value="0" style="flex:1;">
             <input type="number" id="inputInspectRotExact" class="form-input" min="-180" max="180" value="0" style="width:75px;">
+          </div>
+        </div>
+
+        <!-- Individual Dance Speed Pace -->
+        <div class="form-group">
+          <div class="form-label">
+            <span>Dance Speed Override</span>
+            <span class="val-indicator" id="inspectSpeedVal">Default</span>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem;">
+            <button class="btn btn-secondary btn-sm inspect-speed-chip" data-speed="1.0" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">1.0x</button>
+            <button class="btn btn-secondary btn-sm inspect-speed-chip active" data-speed="1.25" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">1.25x ⚡</button>
+            <button class="btn btn-secondary btn-sm inspect-speed-chip" data-speed="1.5" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">1.5x 🚀</button>
+            <button class="btn btn-secondary btn-sm inspect-speed-chip" data-speed="2.0" style="padding: 0.25rem 0.15rem; font-size: 0.72rem;">2.0x 🔥</button>
           </div>
         </div>
 
@@ -1290,27 +1793,31 @@
   </div>
 
   <!-- 2. Chroma-Key GIF Background Remover Modal -->
+  <!-- 2. Chroma-Key GIF Background Remover Modal -->
   <div class="modal-overlay" id="chromaKeyModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card" style="max-width: 540px;">
       <div class="modal-header">
         <h3 class="modal-title">
-          <i class="fa-solid fa-wand-magic" style="color:var(--accent-cyan);"></i>
-          GIF Background Remover (Chroma-Key)
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-cyan);"></i>
+          <span id="chromaModalCharName">GIF Background Remover</span>
         </h3>
         <button id="btnCloseChromaModal" class="btn btn-secondary btn-sm btn-icon-only">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <p style="font-size: 0.8rem; color: var(--text-muted);">
-        Click on the preview to sample the background color to erase, or pick a color below:
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+        Click anywhere on the preview to sample the background color to erase, or pick a color below. Transparent areas show the checkerboard.
       </p>
 
-      <div style="display:flex; justify-content:center; background:#1e293b; padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
-        <canvas id="chromaPreviewCanvas" width="200" height="200" style="cursor:crosshair; max-width:100%; height:auto;"></canvas>
+      <div id="chromaPreviewStage" class="checkerboard-bg" style="display:flex; justify-content:center; align-items:center; min-height:220px; max-height:280px; padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle); position:relative; overflow:hidden;">
+        <canvas id="chromaPreviewCanvas" width="200" height="200" style="cursor:crosshair; max-width:100%; max-height:250px; height:auto; object-fit:contain;"></canvas>
+        <button id="btnChromaToggleAnimate" class="btn btn-secondary btn-xs" style="position:absolute; bottom:8px; right:8px; backdrop-filter:blur(4px); background:rgba(0,0,0,0.65);">
+          <i class="fa-solid fa-play"></i> Animate Preview
+        </button>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
         <div class="form-group">
           <div class="form-label">Color to Remove</div>
           <div style="display:flex; gap:0.4rem; align-items:center;">
@@ -1328,9 +1835,77 @@
         </div>
       </div>
 
-      <button id="btnApplyChromaKey" class="btn btn-primary" style="width:100%;">
-        <i class="fa-solid fa-scissors"></i> Make Transparent & Save to Library
-      </button>
+      <div style="display:flex; gap:0.5rem; margin-top:0.8rem;">
+        <button id="btnApplyChromaKey" class="btn btn-primary" style="flex:1;">
+          <i class="fa-solid fa-scissors"></i> Make Transparent &amp; Use
+        </button>
+        <button id="btnDownloadTransparentGif" class="btn btn-viral-export" style="flex:1;">
+          <i class="fa-solid fa-download"></i> Download Transparent GIF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2b. Interactive GIF Preview Modal -->
+  <div class="modal-overlay" id="gifPreviewModal">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fa-solid fa-film" style="color:var(--accent-cyan);"></i>
+          <span id="gifPreviewModalTitle">Character GIF Preview</span>
+        </h3>
+        <button id="btnCloseGifPreviewModal" class="btn btn-secondary btn-sm btn-icon-only">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Stage with Checkerboard / Background Toggle -->
+      <div id="gifPreviewStageWrapper" class="checkerboard-bg" style="display:flex; justify-content:center; align-items:center; min-height:220px; max-height:280px; padding:1.2rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle); overflow:hidden; position:relative;">
+        <canvas id="gifPreviewStageCanvas" style="max-width:100%; max-height:250px; object-fit:contain;"></canvas>
+      </div>
+
+      <!-- Stats Bar -->
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.4rem; padding:0 0.2rem;">
+        <span id="gifPreviewDimensions">Size: --</span>
+        <span id="gifPreviewFrameInfo">Frame: 0 / 0</span>
+        <span id="gifPreviewDuration">Duration: --</span>
+      </div>
+
+      <!-- Preview Controls (Play/Pause, Speed, Background switcher) -->
+      <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.5rem; margin-top:0.6rem; padding:0.5rem; background:rgba(15,23,42,0.6); border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+        <div style="display:flex; gap:0.3rem; align-items:center;">
+          <button id="btnGifPreviewPlayPause" class="btn btn-secondary btn-sm" title="Play / Pause">
+            <i class="fa-solid fa-pause"></i>
+          </button>
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.3rem;">Speed:</span>
+          <button class="btn btn-secondary btn-xs gif-speed-btn" data-speed="0.5">0.5x</button>
+          <button class="btn btn-secondary btn-xs gif-speed-btn active" data-speed="1.0">1x</button>
+          <button class="btn btn-secondary btn-xs gif-speed-btn" data-speed="1.5">1.5x</button>
+          <button class="btn btn-secondary btn-xs gif-speed-btn" data-speed="2.0">2x</button>
+        </div>
+
+        <!-- Background switcher -->
+        <div style="display:flex; gap:0.25rem; align-items:center;">
+          <span style="font-size:0.72rem; color:var(--text-muted);">Backdrop:</span>
+          <button class="btn btn-secondary btn-xs gif-bg-btn active" data-bg="checker" title="Checkerboard">🏁</button>
+          <button class="btn btn-secondary btn-xs gif-bg-btn" data-bg="dark" title="Dark Slate">⬛</button>
+          <button class="btn btn-secondary btn-xs gif-bg-btn" data-bg="light" title="Pure White">⬜</button>
+          <button class="btn btn-secondary btn-xs gif-bg-btn" data-bg="green" title="Green Screen">🟩</button>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+        <button id="btnGifPreviewUse" class="btn btn-primary" style="flex:1;">
+          <i class="fa-solid fa-check"></i> Use as Character
+        </button>
+        <button id="btnGifPreviewChroma" class="btn btn-secondary" style="flex:1;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Remove BG
+        </button>
+        <button id="btnGifPreviewDownload" class="btn btn-secondary" title="Download this GIF">
+          <i class="fa-solid fa-download"></i> Download
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1342,54 +1917,62 @@
           <i class="fa-solid fa-video" style="color:var(--accent-emerald);"></i> 
           <span id="exportModalTitle">Exporting High-Definition Video...</span>
         </h3>
-      </div>
-
-      <p id="exportModalDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-        Recording full-motion video with synchronized audio and fixing EBML metadata for flawless playback...
-      </p>
-
-      <!-- Active DOM Live Render Canvas: Keeps GPU rendering alive at full 30 FPS! -->
-      <div id="exportLiveCanvasContainer" style="display:flex; justify-content:center; margin: 0.5rem 0;">
-        <canvas id="exportLiveCanvas" width="1080" height="1920" style="max-height: 220px; width: auto; aspect-ratio: 9/16; border-radius: 8px; border: 1px solid var(--border-subtle); background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.6);"></canvas>
-        <canvas id="exportOffscreenCanvas" style="position:fixed; left:-9999px; top:-9999px; width:1080px; height:1920px; opacity:0.01; pointer-events:none; z-index:-9999;" width="1080" height="1920"></canvas>
-      </div>
-
-      <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
-      <div id="exportPlaybackContainer" style="display:none; flex-direction:column; align-items:center; margin: 0.5rem 0; width: 100%;">
-        <video id="exportVideoPlayer" controls autoplay loop playsinline style="max-height: 240px; width: 100%; border-radius: 8px; border: 1px solid var(--accent-emerald); background: #000;"></video>
-        <p style="font-size:0.75rem; color:var(--accent-emerald); margin-top:0.4rem; text-align:center;">
-          <i class="fa-solid fa-circle-check"></i> Export Complete! Video is playing above. Test playback or download below.
-        </p>
-      </div>
-
-      <div class="progress-bar-container" id="exportProgressBarContainer">
-        <div class="progress-bar-fill" id="exportProgressBar"></div>
-      </div>
-
-      <div id="exportProgressStats" style="display:flex; justify-content:space-between; font-size:0.8rem; font-family:monospace; margin-bottom: 0.5rem;">
-        <span id="exportProgressPct">0%</span>
-        <span id="exportProgressFrames">00.0s / 15.0s</span>
-        <span id="exportEta">ETA: calculating...</span>
-      </div>
-
-      <!-- Action buttons when finished -->
-      <div id="exportModalActions" style="display:none; gap:0.75rem; margin-top:0.5rem;">
-        <a id="btnDownloadExportedVideo" class="btn btn-viral-export" style="flex:1; text-decoration:none;" download="find-15-ducks.mp4">
-          <i class="fa-solid fa-download"></i> Download Video (.mp4)
-        </a>
-        <button id="btnCloseExportModal" class="btn btn-secondary">
-          Close
+        <button class="btn btn-secondary btn-sm btn-icon-only btn-close-modal" id="btnCloseExportModalHeader" title="Close" aria-label="Close Export Modal">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <button id="btnCancelExport" class="btn btn-secondary" style="margin-top: 0.25rem;">
-        Cancel Export
-      </button>
+      <div class="modal-body export-modal-body">
+        <p id="exportModalDesc" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          Recording full-motion video with synchronized audio and fixing EBML metadata for flawless playback...
+        </p>
+
+        <!-- Active DOM Live Render Canvas: Keeps GPU rendering alive at full 30 FPS! -->
+        <div id="exportLiveCanvasContainer" style="display:flex; justify-content:center; margin: 0.5rem 0;">
+          <canvas id="exportLiveCanvas" width="1080" height="1920" style="max-height: 200px; width: auto; aspect-ratio: 9/16; border-radius: 8px; border: 1px solid var(--border-subtle); background: #000; box-shadow: 0 4px 16px rgba(0,0,0,0.6);"></canvas>
+          <canvas id="exportOffscreenCanvas" style="position:fixed; left:-9999px; top:-9999px; width:1080px; height:1920px; opacity:0.01; pointer-events:none; z-index:-9999;" width="1080" height="1920"></canvas>
+        </div>
+
+        <!-- In-Modal Playback Video Player: Pops up as soon as export finishes! -->
+        <div id="exportPlaybackContainer" style="display:none; flex-direction:column; align-items:center; margin: 0.5rem 0; width: 100%;">
+          <video id="exportVideoPlayer" controls autoplay loop playsinline style="max-height: 220px; width: 100%; border-radius: 8px; border: 1px solid var(--accent-emerald); background: #000;"></video>
+          <p style="font-size:0.75rem; color:var(--accent-emerald); margin-top:0.4rem; text-align:center;">
+            <i class="fa-solid fa-circle-check"></i> Export Complete! Video is playing above. Test playback or download below.
+          </p>
+        </div>
+
+        <div class="progress-bar-container" id="exportProgressBarContainer">
+          <div class="progress-bar-fill" id="exportProgressBar"></div>
+        </div>
+
+        <div id="exportProgressStats" style="display:flex; justify-content:space-between; font-size:0.8rem; font-family:monospace; margin-bottom: 0.5rem;">
+          <span id="exportProgressPct">0%</span>
+          <span id="exportProgressFrames">00.0s / 15.0s</span>
+          <span id="exportEta">ETA: calculating...</span>
+        </div>
+
+        <!-- Action buttons when finished -->
+        <div id="exportModalActions" style="display:none; gap:0.75rem; margin-top:0.5rem;">
+          <a id="btnDownloadExportedVideo" class="btn btn-viral-export" style="flex:1; text-decoration:none;" download="find-15-ducks.mp4">
+            <i class="fa-solid fa-download"></i> Download Video (.mp4)
+          </a>
+          <button id="btnCloseExportModal" class="btn btn-secondary">
+            Close
+          </button>
+        </div>
+
+        <button id="btnCancelExport" class="btn btn-secondary" style="margin-top: 0.25rem;">
+          Cancel Export
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Mobile Drawer Backdrop Overlay -->
+  <div id="mobileDrawerBackdrop" class="mobile-drawer-backdrop"></div>
 
   <!-- Scripts -->
   <!-- 1. omggif.js GIF decoder -->

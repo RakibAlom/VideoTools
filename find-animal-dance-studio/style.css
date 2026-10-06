@@ -244,25 +244,9 @@ body {
   overflow: hidden;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1200px) and (min-width: 993px) {
   .studio-workspace {
-    grid-template-columns: 340px 1fr;
-  }
-  .right-layer-dock {
-    display: none;
-  }
-}
-
-@media (max-width: 860px) {
-  .studio-workspace {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    max-height: none;
-    overflow-y: auto;
-  }
-  .center-stage-container {
-    min-height: 520px;
+    grid-template-columns: 330px 1fr 250px;
   }
 }
 
@@ -529,6 +513,13 @@ body {
   border-color: var(--accent-primary);
 }
 
+.inspect-speed-chip.active,
+.inspect-op-chip.active {
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--accent-primary) !important;
+}
+
 /* Background Preset Thumbs */
 .bg-preset-grid {
   display: grid;
@@ -599,6 +590,33 @@ body {
 }
 
 .title-style-card.active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+.subtitle-style-grid, .watermark-style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+}
+
+.subtitle-style-card, .watermark-style-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.4rem;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+  transition: var(--transition-fast);
+}
+
+.subtitle-style-card:hover, .watermark-style-card:hover {
+  background: var(--bg-surface-hover);
+}
+
+.subtitle-style-card.active, .watermark-style-card.active {
   border-color: var(--accent-cyan);
   box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
 }
@@ -914,40 +932,70 @@ body {
   transition: width 0.1s linear;
 }
 
-/* Character Category Sub-bar */
+/* Character Category Sub-bar - Modern Responsive Segmented Control (Compact & Sleek) */
 .char-category-bar {
   display: flex;
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  gap: 4px;
+  background: rgba(10, 15, 26, 0.65);
+  border-radius: var(--radius-sm);
   padding: 3px;
-  gap: 3px;
   border: 1px solid var(--border-subtle);
 }
 
 .char-cat-btn {
-  flex: 1;
-  background: transparent;
-  border: none;
+  flex: 1 1 calc(33.333% - 4px);
+  min-width: 68px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: 0.71rem;
   font-weight: 700;
-  padding: 0.35rem 0.2rem;
-  border-radius: var(--radius-sm);
+  padding: 0 0.4rem;
+  border-radius: 4px;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: all var(--transition-fast);
   white-space: nowrap;
+  user-select: none;
+}
+
+.char-cat-btn .cat-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: transform var(--transition-fast);
+}
+
+.char-cat-btn .cat-name {
+  pointer-events: none;
+  letter-spacing: 0.01em;
 }
 
 .char-cat-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
 
 .char-cat-btn.active {
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  border-color: rgba(129, 140, 248, 0.6);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.45);
+}
+
+.char-cat-btn.active .cat-icon {
+  transform: scale(1.1);
 }
 
 /* 6 Demo Templates Grid */
@@ -1063,4 +1111,775 @@ body {
 }
 .center-stage-container::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.8);
+}
+
+/* ==========================================================================
+   TRANSPARENCY CHECKERBOARDS & CUSTOM GIF CARDS
+   ========================================================================== */
+
+.checkerboard-bg {
+  background-color: #0f172a;
+  background-image: 
+    linear-gradient(45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1e293b 75%),
+    linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+.checkerboard-light {
+  background-color: #f8fafc;
+  background-image: 
+    linear-gradient(45deg, #cbd5e1 25%, transparent 25%),
+    linear-gradient(-45deg, #cbd5e1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #cbd5e1 75%),
+    linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+.custom-chars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.custom-char-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-char-card:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  background: rgba(30, 41, 59, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.custom-char-card.active {
+  border-color: var(--accent-indigo);
+  background: rgba(49, 46, 129, 0.35);
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.35);
+}
+
+.custom-char-card.active::before {
+  content: 'ACTIVE';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--accent-indigo);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.custom-char-thumb-box {
+  width: 100%;
+  height: 90px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.custom-char-thumb-box canvas,
+.custom-char-thumb-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.custom-char-frames-badge {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: #38bdf8;
+  font-size: 0.62rem;
+  font-family: monospace;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.custom-char-transparent-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: rgba(16, 185, 129, 0.85);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.custom-char-info {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-char-title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-char-meta {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.custom-char-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 0.4rem;
+}
+
+.custom-char-actions .btn {
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  border-radius: 4px;
+}
+
+.custom-char-actions .btn-use {
+  flex: 1;
+  min-width: 48px;
+}
+
+/* GIF Preview Modal */
+.gif-speed-btn.active,
+.gif-bg-btn.active {
+  background: var(--accent-indigo) !important;
+  color: #fff !important;
+  border-color: var(--accent-indigo) !important;
+}
+
+/* ==========================================================================
+   EASYPRO TOOLS BRANDING FOOTER & MOBILE RESPONSIVE SUITE
+   ========================================================================== */
+
+/* Deck Branding Attribution Footer */
+.deck-branding-footer {
+  padding: 0.65rem 0.9rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(10, 15, 29, 0.7);
+  flex-shrink: 0;
+}
+.deck-branding-footer strong {
+  color: #fbbf24;
+}
+
+/* Explicit Desktop Viewport (Screens > 992px): Completely hide all mobile controls & drawers */
+@media (min-width: 993px) {
+  .mobile-only,
+  .mobile-only-btn,
+  .mobile-floating-bar,
+  .mobile-drawer-backdrop,
+  .mobile-drawer-header {
+    display: none !important;
+  }
+}
+
+/* Desktop Medium Screens (993px - 1300px) Responsive Header & Toolbar */
+@media (max-width: 1300px) and (min-width: 993px) {
+  .studio-header {
+    padding: 0 0.85rem;
+    gap: 0.5rem;
+  }
+  .brand-badge {
+    display: none !important;
+  }
+  .brand-title {
+    font-size: 1.05rem;
+  }
+  .header-center-tools {
+    gap: 0.35rem;
+  }
+  .ratio-pill-btn .ratio-text {
+    display: none !important;
+  }
+  .ratio-pill-btn {
+    padding: 0.3rem 0.55rem;
+  }
+  .demo-text {
+    display: none !important;
+  }
+  .header-right-actions {
+    gap: 0.4rem;
+  }
+  .btn-viral-export {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+  }
+  .stage-floating-toolbar {
+    padding: 0.25rem 0.45rem;
+    gap: 0.35rem;
+  }
+}
+
+/* Desktop Sidebar Buttons & Layout Responsiveness (Prevents any button cut-off or overflow) */
+.left-control-deck .btn,
+.right-layer-dock .btn {
+  max-width: 100%;
+}
+.left-control-deck .char-grid,
+.left-control-deck .title-style-grid,
+.left-control-deck .subtitle-style-grid {
+  min-width: 0;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM (Screens <= 992px)
+   Keeps desktop 100% intact while transforming mobile into a smooth app with:
+   1. Front-and-center responsive video canvas
+   2. Slide-out Left Drawer for Controls & Tools
+   3. Slide-out Right Drawer for Layers & Inspector
+   4. Floating Quick Actions Bar & Backdrop dismiss
+   ========================================================================== */
+@media (max-width: 992px) {
+  .mobile-only {
+    display: flex !important;
+  }
+  .mobile-only-btn {
+    display: inline-flex !important;
+  }
+
+  /* Backdrop Overlay */
+  .mobile-drawer-backdrop {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 15, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mobile-drawer-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  body.mobile-drawer-active {
+    overflow: hidden !important;
+  }
+
+  /* Top Header on Mobile */
+  .studio-header {
+    height: 52px;
+    padding: 0 0.5rem;
+    gap: 0.35rem;
+    justify-content: space-between;
+  }
+
+  .header-left-cluster {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .brand-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .brand-logo-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  /* User requested: Hide tool name text in mobile mode, keeping only logo icon */
+  .brand-wrapper > div,
+  .brand-title,
+  .brand-badge {
+    display: none !important;
+  }
+
+  /* Header Quick Settings Tray (Toggled on Mobile by #btnToggleQuickSettings) */
+  .header-center-tools {
+    display: none !important;
+  }
+
+  .header-center-tools.mobile-expanded {
+    display: flex !important;
+    position: fixed;
+    top: 52px;
+    left: 0;
+    right: 0;
+    background: rgba(11, 17, 32, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.55rem 0.75rem;
+    z-index: 150;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75);
+    animation: slideDownBar 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideDownBar {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  #btnOpenDemosModal {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.74rem;
+  }
+  #btnOpenDemosModal .demo-text {
+    display: inline;
+  }
+
+  .ratio-selector-bar {
+    padding: 2px;
+    background: var(--bg-surface);
+  }
+  .ratio-pill-btn {
+    padding: 0.28rem 0.5rem;
+    font-size: 0.72rem;
+    gap: 3px;
+  }
+  .ratio-pill-btn .ratio-text {
+    display: inline;
+  }
+
+  .header-right-actions {
+    gap: 0.35rem;
+    display: flex;
+    align-items: center;
+  }
+
+  #btnToggleQuickSettings {
+    padding: 0.32rem 0.55rem;
+    font-size: 0.8rem;
+  }
+  #btnToggleQuickSettings.active {
+    background: rgba(99, 102, 241, 0.3);
+    color: #818cf8;
+    border-color: #6366f1;
+  }
+
+  #btnResetProject,
+  #btnToggleMode {
+    display: none; /* Accessible in the mobile drawer */
+  }
+
+  #btnOpenExportModal {
+    font-size: 0.76rem;
+    padding: 0.32rem 0.65rem;
+  }
+  #btnOpenExportModal .export-btn-text {
+    display: none;
+  }
+
+  .mobile-nav-toggle-btn {
+    padding: 0.32rem 0.55rem;
+    font-size: 0.74rem;
+    gap: 0.3rem;
+  }
+
+  .mobile-count-pill {
+    background: #fbbf24;
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 9999px;
+    line-height: 1;
+  }
+
+  /* Main Workspace Layout on Mobile */
+  .studio-workspace {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 52px);
+    height: calc(100dvh - 52px);
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Center Stage Container on Mobile - Clean vertical layout after top header */
+  .center-stage-container {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem 0.5rem 1.25rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* CRITICAL: Starts cleanly below top header so toolbar is never cut off */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stage-floating-toolbar {
+    position: static;
+    max-width: 100%;
+    width: auto;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.28rem 0.55rem;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.4rem;
+    flex-shrink: 0;
+    border: 1px solid var(--border-subtle);
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  }
+  .stage-floating-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .stage-viewport-wrapper {
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  #masterCanvas {
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+  }
+
+  .stage-bottom-deck {
+    margin-top: 0.4rem;
+    padding: 0.28rem 0.6rem;
+    gap: 0.45rem;
+    max-width: 100%;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+  }
+
+  .time-scrubber {
+    width: 95px;
+    flex: 1;
+  }
+
+  .time-readout {
+    font-size: 0.68rem;
+  }
+
+  /* Left Control Deck as Slide-out Drawer */
+  .left-control-deck {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(92vw, 420px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 100% !important;
+    z-index: 1000;
+    background: #0b1120 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 12px 0 45px rgba(0, 0, 0, 0.85);
+    transform: translateX(-105%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex !important;
+    flex-direction: column;
+    overscroll-behavior: contain;
+  }
+
+  .left-control-deck.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .mobile-drawer-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(15, 23, 42, 0.98);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  .mobile-drawer-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .btn-close-drawer {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .btn-close-drawer:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Sidebar Buttons & Inputs Responsive Overflow Guards */
+  .left-control-deck .btn,
+  .right-layer-dock .btn {
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    line-height: 1.25 !important;
+  }
+
+  .left-control-deck div[style*="display: flex"],
+  .left-control-deck div[style*="display:flex"],
+  .right-layer-dock div[style*="display: flex"],
+  .right-layer-dock div[style*="display:flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  .left-control-deck .ui-section,
+  .right-layer-dock .ui-section {
+    padding: 0.75rem !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .left-control-deck .form-input,
+  .right-layer-dock .form-input {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .left-control-deck .title-style-grid,
+  .left-control-deck .subtitle-style-grid,
+  .left-control-deck .timer-style-grid,
+  .left-control-deck .char-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+  }
+
+  .left-control-deck .title-style-card,
+  .left-control-deck .subtitle-style-card,
+  .left-control-deck .timer-style-card,
+  .left-control-deck .char-card {
+    min-width: 0 !important;
+    padding: 0.45rem 0.35rem !important;
+    word-break: break-word !important;
+  }
+
+  .left-control-deck .title-style-card span,
+  .left-control-deck .subtitle-style-card span {
+    font-size: 0.7rem !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+  }
+
+  .left-control-deck .char-category-bar {
+    gap: 3px !important;
+  }
+  .left-control-deck .char-cat-btn {
+    flex: 1 1 calc(33.333% - 4px) !important;
+    min-width: 55px !important;
+    padding: 0 0.3rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* User requested: Generous empty space at the bottom of sidebar */
+  .left-control-deck .deck-content-scroller {
+    padding: 0.75rem 0.75rem 9rem 0.75rem !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .deck-branding-footer {
+    padding: 0.85rem 1rem 2.5rem 1rem !important;
+    margin-top: auto !important;
+    background: rgba(11, 17, 32, 0.98) !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Right Layer Dock as Slide-out Drawer */
+  .right-layer-dock {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(92vw, 380px) !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 100% !important;
+    z-index: 1000;
+    background: #0b1120 !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: -12px 0 45px rgba(0, 0, 0, 0.85);
+    transform: translateX(105%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex !important;
+    flex-direction: column;
+    overscroll-behavior: contain;
+  }
+
+  .right-layer-dock.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .right-layer-dock .layer-list-scroller {
+    max-height: 36vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .right-layer-dock .layer-inspector-details {
+    padding-bottom: 9rem !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile Quick Floating Action Bar: Removed to eliminate duplicate bottom navbar */
+  .mobile-floating-bar {
+    display: none !important;
+  }
+
+  /* Modals on Mobile: Fullscreen friendly with sticky header & scrollable body */
+  .modal-overlay {
+    z-index: 2000 !important;
+    padding: 0.6rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .modal-card {
+    width: min(94vw, 480px) !important;
+    max-width: 94vw !important;
+    max-height: 88vh !important;
+    max-height: 88dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: var(--radius-lg) !important;
+    background: #0f172a !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9) !important;
+  }
+
+  .modal-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.85rem 1rem !important;
+    background: rgba(15, 23, 42, 0.98) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .modal-title {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  .modal-body,
+  .export-modal-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 1rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  #exportVideoPlayer {
+    max-height: 180px !important;
+    width: 100% !important;
+    object-fit: contain !important;
+  }
+
+  #exportLiveCanvas {
+    max-height: 160px !important;
+    width: auto !important;
+  }
+
+  #exportModalActions {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  #exportModalActions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.65rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  #btnCancelExport {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.6rem !important;
+  }
+
+  .demo-templates-grid {
+    grid-template-columns: 1fr !important;
+    max-height: 58vh !important;
+  }
+}
+
+/* Extra Compact Phones (Screens <= 480px) */
+@media (max-width: 480px) {
+  .mobile-toggle-text {
+    display: none;
+  }
+  .btn-float-action span {
+    font-size: 0.7rem;
+  }
 }

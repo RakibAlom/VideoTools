@@ -59,16 +59,28 @@ function Remux-ToUniversalMp4([string]$inPath, [string]$outPath) {
     }
 
     $ffmpegDir = Split-Path $ffmpegPath
-    $args = @("-y", "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", "-i", $inPath, "-c", "copy", "-movflags", "+faststart", $outPath)
+    # 1. First attempt: Stream-copy with strict FastStart + Zero Interleave Delta (interleaves audio/video every 0.1s)
+    $argsCopy = @("-y", "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", "-i", $inPath, "-c", "copy", "-max_interleave_delta", "0", "-movflags", "+faststart", $outPath)
     try {
-        $proc = Start-Process -FilePath $ffmpegPath -ArgumentList $args -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
+        $proc = Start-Process -FilePath $ffmpegPath -ArgumentList $argsCopy -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
         if ($proc.ExitCode -eq 0 -and (Test-Path $outPath) -and (Get-Item $outPath).Length -gt 1000) {
-            Write-Host "Universal MP4 FastStart progressive optimization complete!" -ForegroundColor Green
+            Write-Host "Universal MP4 FastStart progressive optimization complete (Interleaved Stream Copy)!" -ForegroundColor Green
             return $true
         }
     } catch {
-        Write-Host "FFmpeg execution error: $_" -ForegroundColor Red
+        Write-Host "Stream copy notice: $_" -ForegroundColor Yellow
     }
+
+    # 2. Fallback: Fast re-mux to normalize any non-standard MediaRecorder timestamps & GOP
+    $argsTrans = @("-y", "-fflags", "+genpts", "-avoid_negative_ts", "make_zero", "-i", $inPath, "-c:v", "h264_mf", "-b:v", "8M", "-g", "30", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-max_interleave_delta", "0", "-movflags", "+faststart", $outPath)
+    try {
+        $proc2 = Start-Process -FilePath $ffmpegPath -ArgumentList $argsTrans -WorkingDirectory $ffmpegDir -NoNewWindow -Wait -PassThru
+        if ($proc2.ExitCode -eq 0 -and (Test-Path $outPath) -and (Get-Item $outPath).Length -gt 1000) {
+            Write-Host "Universal MP4 FastStart normalization complete (Hardware Transcode)!" -ForegroundColor Green
+            return $true
+        }
+    } catch {}
+
     return $false
 }
 
@@ -148,15 +160,24 @@ try {
             }
 
             if ($request.HttpMethod -eq "POST" -and $request.Url.LocalPath -eq "/api/save-file") {
-                # Legacy endpoint disabled from saving to disk to preserve user storage
                 $response.StatusCode = 200
-                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true,"notice":"Local disk saving disabled to preserve storage. File delivered via browser download."}')
+                $resBytes = [System.Text.Encoding]::UTF8.GetBytes('{"success":true}')
                 $response.ContentType = "application/json"
                 $response.ContentLength64 = $resBytes.Length
                 $response.OutputStream.Write($resBytes, 0, $resBytes.Length)
                 $response.Close()
                 continue
             }
+
+            if ($request.HttpMethod -eq "POST" -and $request.Url.LocalPath -eq "/api/debug") {
+                $reader = New-Object System.IO.StreamReader($request.InputStream)
+                $body = $reader.ReadToEnd()
+                [System.IO.File]::WriteAllText((Join-Path $root "debug.log"), $body)
+                $response.StatusCode = 200
+                $response.Close()
+                continue
+            }
+
 
             $localPath = $request.Url.LocalPath
             if ($localPath -eq "/" -or $localPath -eq "") {

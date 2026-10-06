@@ -120,8 +120,21 @@ To run World Flag Guess Studio with full voiceover audio generation enabled for 
 
 ---
 
-## 💡 How to Run
+## 💡 How to Run & Deploy
 
-1. Double-click `Start-Studio.bat` inside `d:\VideoTools\world-flag-guess-studio\`.
-2. The local server opens `http://localhost:5500/index.html` in your browser.
-3. Choose your theme colors or pick a preset, select how many questions to show (5, 10, 20, etc.), and click **"Record & Generate Video"** to produce viral video content!
+### A. Local PC (One-Click Launcher)
+1. Double-click **`Start-Studio.bat`** inside the folder.
+2. The local server opens **`http://localhost:5500/index.html`** in your browser automatically.
+3. Everything is active: voice synthesis, video recording, 197 flags, and FastStart MP4 packaging.
+
+### B. Web Hosting Server (Hostinger, cPanel, LiteSpeed, Apache, Nginx)
+To host online or sell as a turnkey web tool:
+1. Upload the entire project folder to your hosting file manager (e.g. `public_html/` or a subfolder like `public_html/flag-quiz/`).
+2. Required files on server:
+   - `index.html`
+   - `api.php`
+   - `.htaccess`
+   - `lib/` (`fix-mp4.js`, `fix-webm-duration.js`)
+3. Open `https://yourdomain.com/` (or `https://yourdomain.com/flag-quiz/index.html`).
+4. The server health badge will show **`● Studio Active`**.
+5. When exporting videos, voiceover audio and sound effects are automatically synthesized and 100% encoded into universal MP4 video downloads with zero Node.js, Python, or command-line configuration required!
