@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MangaRecap AI Studio 2.0 - Long-Form Viral Recap Production Suite</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              gold: '#facc15',
+              cyan: '#38bdf8',
+              purple: '#a855f7',
+              dark: '#090a10',
+              card: 'rgba(18, 22, 36, 0.75)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Glassmorphic Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col justify-between selection:bg-yellow-400 selection:text-black">
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/80 px-6 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-yellow-500/20 text-slate-950 font-black text-xl">
+          MR
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-300 via-amber-200 to-white bg-clip-text text-transparent">
+              MangaRecap AI Studio
+            </h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/30">
+              v2.0 PRO
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium">Long-Form Comic Recap Video Engine & High-CTR Publishing Kit</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions & Status -->
+      <div class="flex items-center space-x-2.5">
+        <div id="header-gemini-status" class="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400 cursor-pointer hover:bg-emerald-500/20 transition" title="Click to view Gemini API status">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="gemini-status-text">Gemini: Connected</span>
+        </div>
+
+        <div id="header-voice-status" class="hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span id="voice-status-text">Voice Engine: Ready</span>
+        </div>
+
+        <button id="btn-load-demo" class="flex items-center space-x-2 px-3.5 py-1.5 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 text-xs font-bold transition">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>🌟 Load Demo Project</span>
+        </button>
+
+        <button id="btn-open-settings" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span>API Settings</span>
+        </button>
+
+        <button id="btn-new-project" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          <span>New Project</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Pipeline Body -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow">
+    
+    <!-- 5-Step Pipeline Stepper -->
+    <div class="glass-panel p-2.5 mb-8">
+      <div class="grid grid-cols-5 gap-2 text-center text-xs font-bold">
+        
+        <div id="step-nav-1" class="step-item active cursor-pointer py-2.5 px-2 rounded-xl border border-transparent flex flex-col sm:flex-row items-center justify-center space-x-1.5">
+          <span class="w-5 h-5 rounded-full bg-yellow-400 text-slate-950 flex items-center justify-center text-[11px] font-black">1</span>
+          <span>Setup & Directives</span>
+        </div>
+
+        <div id="step-nav-2" class="step-item cursor-pointer py-2.5 px-2 rounded-xl border border-transparent text-slate-400 flex flex-col sm:flex-row items-center justify-center space-x-1.5">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[11px] font-black">2</span>
+          <span>Panels & Slicing</span>
+        </div>
+
+        <div id="step-nav-3" class="step-item cursor-pointer py-2.5 px-2 rounded-xl border border-transparent text-slate-400 flex flex-col sm:flex-row items-center justify-center space-x-1.5">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[11px] font-black">3</span>
+          <span>Script & Voiceover</span>
+        </div>
+
+        <div id="step-nav-4" class="step-item cursor-pointer py-2.5 px-2 rounded-xl border border-transparent text-slate-400 flex flex-col sm:flex-row items-center justify-center space-x-1.5">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[11px] font-black">4</span>
+          <span>Video Compilation</span>
+        </div>
+
+        <div id="step-nav-5" class="step-item cursor-pointer py-2.5 px-2 rounded-xl border border-transparent text-slate-400 flex flex-col sm:flex-row items-center justify-center space-x-1.5">
+          <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-[11px] font-black">5</span>
+          <span>Publishing Kit</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== STEP 1: SETUP & DIRECTIVES ==================== -->
+    <section id="section-step-1" class="space-y-6">
+      
+      <div class="glass-panel p-6 sm:p-8">
+        <h2 class="text-xl font-bold flex items-center space-x-2.5 text-white mb-2">
+          <i data-lucide="file-up" class="w-6 h-6 text-yellow-400"></i>
+          <span>Step 1: Upload Manga PDF & Configure Recapping Directives</span>
+        </h2>
+        <p class="text-sm text-slate-400 mb-6">Upload your manga or manhwa chapter PDF (or ZIP of image panels). The system extracts panels with OpenCV and prepares high-retention narration.</p>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-yellow-400/60 rounded-2xl p-8 sm:p-12 text-center transition cursor-pointer bg-slate-900/40 hover:bg-slate-900/70 mb-8">
+          <input type="file" id="file-input" accept=".pdf,.zip,.png,.jpg,.jpeg,.webp" class="hidden">
+          <div class="max-w-md mx-auto space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 flex items-center justify-center mx-auto shadow-inner">
+              <i data-lucide="upload-cloud" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="text-base font-bold text-white">Click to browse or drag & drop Manga PDF here</p>
+              <p class="text-xs text-slate-400 mt-1">Supports PDF (multi-page chapters), ZIP archives, or raw images</p>
+            </div>
+            <div id="selected-file-badge" class="hidden inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-xs font-semibold">
+              <i data-lucide="file-check" class="w-4 h-4"></i>
+              <span id="selected-filename">chapter_01.pdf</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuration Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          
+          <!-- Internal Manga Ref -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Internal Manga Ref
+            </label>
+            <input type="text" id="input-manga-ref" placeholder="e.g. Solo Leveling, Omniscient Reader" value="Solo Leveling"
+              class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+            <p class="text-[10px] text-amber-400/90 mt-1 flex items-center space-x-1">
+              <i data-lucide="shield-alert" class="w-3 h-3 flex-shrink-0"></i>
+              <span>Hidden from public meta</span>
+            </p>
+          </div>
+
+          <!-- Story Language -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Story Language
+              </label>
+              <span class="text-[10px] text-yellow-400 font-semibold" id="language-badge">English</span>
+            </div>
+            <select id="select-language" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="en" selected>English (US / Global)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="ur">Urdu (اردو)</option>
+              <option value="bn">Bangla (বাংলা)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="ja">Japanese (日本語)</option>
+              <option value="ko">Korean (한국어)</option>
+              <option value="id">Indonesian (Bahasa)</option>
+              <option value="pt">Portuguese (Português)</option>
+              <option value="fr">French (Français)</option>
+              <option value="de">German (Deutsch)</option>
+              <option value="ar">Arabic (العربية)</option>
+            </select>
+            <p class="text-[10px] text-emerald-400 mt-1">Adapts AI script & voices</p>
+          </div>
+
+          <!-- Target Video Length -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Target Video Length
+            </label>
+            <select id="select-target-length" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="20-Min Quick Recap" selected>20-Min Quick Recap</option>
+              <option value="45-Min Standard">45-Min Standard (Full Arc)</option>
+              <option value="1-2 Hour Marathon">1-2 Hour Marathon (Deep Dive)</option>
+              <option value="Quick Test / Demo (1-3 min)">Quick Test (1-3 min)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Paces storytelling script length</p>
+          </div>
+
+          <!-- Aspect Ratio -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Aspect Ratio Format
+            </label>
+            <select id="select-aspect-ratio" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="16:9" selected>16:9 Landscape (YouTube)</option>
+              <option value="9:16">9:16 Vertical (Shorts/TikTok)</option>
+              <option value="1:1">1:1 Square (Instagram/Web)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Adaptive backdrop framing</p>
+          </div>
+
+          <!-- Pages to Extract / Range -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Pages to Extract
+              </label>
+              <span class="text-[10px] text-yellow-400 font-semibold" id="page-range-hint">e.g. 1-15</span>
+            </div>
+            <div class="flex space-x-1.5">
+              <select id="select-max-pages" class="w-1/2 bg-slate-900/80 border border-slate-700 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+                <option value="15" selected>15 Pages</option>
+                <option value="10">10 Pages</option>
+                <option value="30">30 Pages</option>
+                <option value="50">50 Pages</option>
+                <option value="100">100 Pages</option>
+                <option value="all">Full Arc (All)</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <input type="text" id="input-page-range" value="1-15" placeholder="1-15 or 10-30"
+                class="w-1/2 bg-slate-900/80 border border-slate-700 rounded-xl px-2.5 py-2.5 text-xs text-white focus:border-yellow-400 font-mono transition" title="Manual page range (e.g. 1-15, 10-30, 20, or all)">
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">Extracts only selected pages from PDF</p>
+          </div>
+
+        </div>
+
+        <!-- Advanced Quality, Motion, Frame & Voice Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 pt-4 border-t border-slate-800/80">
+          
+          <!-- Narrator Voice with Audition Button -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Narrator Voice
+              </label>
+              <button type="button" id="btn-play-voice-sample" class="text-[10px] font-bold text-yellow-400 hover:text-yellow-300 flex items-center space-x-1">
+                <i data-lucide="volume-2" class="w-3 h-3"></i>
+                <span id="voice-sample-btn-label">Play Sample</span>
+              </button>
+            </div>
+            <select id="select-narrator" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <optgroup label="Google Gemini Studio Voices (Default & High Retention)">
+                <option value="Charon" selected>Charon (Deep Recapper - Recommended)</option>
+                <option value="Puck">Puck (Energetic Storyteller)</option>
+                <option value="Kore">Kore (Clear Narrative Female)</option>
+                <option value="Fenrir">Fenrir (Intense Suspense)</option>
+                <option value="Aoede">Aoede (Dramatic Female)</option>
+              </optgroup>
+              <optgroup label="Zero-Cost Natural Edge-TTS (No Key Needed)">
+                <option value="Christopher">Christopher (Deep Natural)</option>
+                <option value="Guy">Guy (Engaging Storyteller)</option>
+                <option value="Madhur">Madhur (Hindi Male)</option>
+                <option value="Swara">Swara (Hindi Female)</option>
+              </optgroup>
+              <optgroup label="ElevenLabs High-Retention Narrators">
+                <option value="Adam">Adam (Deep Authority)</option>
+                <option value="George">George (Warm Storyteller)</option>
+                <option value="Marcus">Marcus (Resonant Epic)</option>
+                <option value="Daniel">Daniel (British Suspense)</option>
+                <option value="Prem">Prem (Native Hindi)</option>
+                <option value="Kabir">Kabir (Deep Hindi)</option>
+                <option value="custom">Custom Voice ID</option>
+              </optgroup>
+            </select>
+            <p class="text-[10px] text-emerald-400 mt-1 flex items-center space-x-1">
+              <i data-lucide="check" class="w-3 h-3"></i>
+              <span>Monetization safe human cadence</span>
+            </p>
+          </div>
+
+          <!-- Motion Pacing -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Motion Pacing & Speed
+            </label>
+            <select id="select-motion-speed" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="smooth_slow" selected>Smooth & Slow (Clamped ~95px/s - Recommended)</option>
+              <option value="gentle_drift">Gentle Drift (Ultra Subtle & Slow)</option>
+              <option value="balanced">Balanced (Standard Pacing)</option>
+              <option value="fast_dynamic">Fast & Dynamic (Quick Action)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Clamps tall manhwa strips to prevent hyper-speed</p>
+          </div>
+
+          <!-- Video Frame Style -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Video Frame Style
+            </label>
+            <select id="select-frame-style" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="dark_ambient" selected>Dark Ambient Blur (Cinematic Glow)</option>
+              <option value="comic_border">Manga Reader Border (Classic Manga)</option>
+              <option value="full_bleed">Full Bleed Zoom (Edge-to-Edge)</option>
+              <option value="vintage_halftone">Retro Halftone Paper (Vintage Print)</option>
+              <option value="neon_cyberpunk">Neon Cyberpunk (Vibrant Glow)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Visual framing & border styling</p>
+          </div>
+
+          <!-- Export Quality -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              Export Quality
+            </label>
+            <select id="select-export-quality" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:border-yellow-400 transition">
+              <option value="1080p" selected>1080p Full HD (Default / YouTube Standard)</option>
+              <option value="480p">480p SD (Fast Preview / Draft)</option>
+              <option value="720p">720p HD (Balanced Speed)</option>
+              <option value="2K">2K QHD 1440p (Crisp Detail)</option>
+              <option value="4K">4K Ultra HD 2160p (Maximum Master)</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">Output video resolution preset</p>
+          </div>
+
+        </div>
+
+        <!-- Custom Voice ID Input (conditional) -->
+        <div id="custom-voice-container" class="hidden mb-6">
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+            Custom ElevenLabs Voice ID
+          </label>
+          <input type="text" id="input-custom-voice-id" placeholder="Paste your cloned ElevenLabs Voice ID here (e.g. 21m00Tcm4TlvDq8ikWAM)"
+            class="w-full max-w-lg bg-slate-900/80 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-yellow-400 transition">
+        </div>
+
+        <!-- ====================================================================== -->
+        <!-- PROMINENT REQUIREMENT: CUSTOM / MANUAL INSTRUCTIONS TEXTAREA -->
+        <!-- ====================================================================== -->
+        <div class="glass-panel-accent p-6 mb-8 border border-amber-400/30">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="flex items-center space-x-2">
+                <i data-lucide="sparkles" class="w-5 h-5 text-yellow-400"></i>
+                <h3 class="text-base font-bold text-yellow-300">
+                  Custom Story & Style Directives (Gemini System Prompt Injection)
+                </h3>
+              </div>
+              <p class="text-xs text-slate-300 mt-1">
+                Direct pacing, dark suspense, battle mechanics, character renaming, and climax moments. This text is dynamically injected into the Gemini Vision narrative prompt.
+              </p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="directives-autosave-badge" class="text-[11px] font-semibold text-emerald-400 flex items-center space-x-1">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span id="directives-autosave-text">Auto-Saved</span>
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/40">
+                Active Directive
+              </span>
+            </div>
+          </div>
+
+          <textarea id="textarea-custom-instructions" rows="4"
+            placeholder="e.g., Emphasize fight scenes and battle mechanics; keep the narrator tone dark and suspenseful; skip unnecessary side conversations; highlight the leveling system stats; refer to the main character as 'The Shadow King'..."
+            class="w-full bg-slate-950/90 border border-slate-700 hover:border-slate-600 focus:border-yellow-400 rounded-xl p-4 text-sm text-white leading-relaxed resize-y placeholder:text-slate-500 font-normal transition">Emphasize the sudden awakening of dark powers; keep narrator tone deep, suspenseful and cinematic; refer to the hero as The Shadow Monarch.</textarea>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex items-center justify-end space-x-4">
+          <button id="btn-extract-panels" class="flex items-center space-x-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black text-sm shadow-lg shadow-yellow-500/20 transition transform hover:-translate-y-0.5">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+            <span>Extract Panels & Begin Production</span>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ==================== STEP 2: PANELS & SLICING GALLERY ==================== -->
+    <section id="section-step-2" class="hidden space-y-6">
+      
+      <div class="glass-panel p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-bold flex items-center space-x-2 text-white">
+              <i data-lucide="layout-grid" class="w-6 h-6 text-yellow-400"></i>
+              <span>Step 2: Extracted Comic Panels Gallery</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Curate your story panels. Click <span class="text-red-400 font-bold">🗑 Remove</span> on unwanted images (credit pages, blank gutters, ads) to exclude them. The AI Script will be generated strictly from remaining panels.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span id="panel-count-badge" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
+              0 Panels Extracted
+            </span>
+            <button id="btn-generate-script" class="flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-extrabold text-xs shadow-md shadow-yellow-500/10 hover:brightness-110 transition">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              <span>Generate AI Script with Gemini</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panel Curation Toolbar & Batch Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-3 mb-5 rounded-xl bg-slate-900/70 border border-slate-800 text-xs">
+          <div class="flex items-center space-x-3">
+            <label class="flex items-center space-x-2 cursor-pointer font-bold text-slate-300 hover:text-white transition">
+              <input type="checkbox" id="checkbox-select-all-panels" class="w-4 h-4 rounded accent-yellow-400 bg-slate-950 border-slate-700">
+              <span>Select All</span>
+            </label>
+            <span class="text-slate-600">|</span>
+            <button type="button" id="btn-add-custom-panel" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-300 border border-yellow-400/40 font-bold text-xs transition">
+              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+              <span>➕ Add Custom Image</span>
+            </button>
+            <input type="file" id="input-custom-panel-files" multiple accept="image/*" class="hidden">
+            <button type="button" id="btn-delete-selected-panels" class="hidden items-center space-x-1.5 px-3 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-bold transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span id="delete-selected-text">Remove Selected (0)</span>
+            </button>
+            <button type="button" id="btn-restore-all-panels" class="hidden items-center space-x-1.5 px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold transition">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span id="restore-panels-text">Restore Removed Panels</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2 text-[11px] text-slate-400">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-yellow-400"></i>
+            <span>Drag cards or use ◀ ▶ arrows to reorder • Click image to preview • Excluded panels won't be narrated</span>
+          </div>
+        </div>
+
+        <!-- Removal Notice Banner -->
+        <div id="panel-removal-banner" class="hidden mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+          <span id="panel-removal-msg">Panel removed.</span>
+          <button type="button" id="btn-undo-panel-removal" class="underline font-bold text-yellow-300 hover:text-white ml-2">Undo</button>
+        </div>
+
+        <!-- Panels Grid Container -->
+        <div id="panels-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 min-h-[220px]">
+          <!-- Dynamic panel cards injected here -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== STEP 3: STORY SCRIPT & VOICEOVER STUDIO ==================== -->
+    <section id="section-step-3" class="hidden space-y-6">
+      
+      <div class="glass-panel p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-xl font-bold flex items-center space-x-2 text-white">
+              <i data-lucide="mic-2" class="w-6 h-6 text-yellow-400"></i>
+              <span>Step 3: Interactive Script & Voice Studio (AI + Manual Voice)</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Review third-person recap lines with human cadence pauses. You can synthesize with ElevenLabs or <span class="text-yellow-400 font-bold">record your own manual voiceover</span> for any segment!
+            </p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button id="btn-synthesize-all" class="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-400 border border-yellow-400/30 text-xs font-bold transition">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>⚡ Synthesize All AI Voices</span>
+            </button>
+            <button id="btn-proceed-to-render" class="flex items-center space-x-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 text-xs font-black shadow-md shadow-yellow-500/20 hover:brightness-110 transition">
+              <i data-lucide="film" class="w-4 h-4"></i>
+              <span>Proceed to Video Render</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Script Segments Container -->
+        <div id="segments-container" class="space-y-4">
+          <!-- Dynamic segment cards injected here -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== STEP 4: VIDEO COMPILATION STAGE ==================== -->
+    <section id="section-step-4" class="hidden space-y-6">
+      
+      <div class="glass-panel p-6 sm:p-8">
+        <h2 class="text-xl font-bold flex items-center space-x-2.5 text-white mb-2">
+          <i data-lucide="clapperboard" class="w-6 h-6 text-yellow-400"></i>
+          <span>Step 4: Chunked Video Compilation & Anti-Copyright Engine</span>
+        </h2>
+        <p class="text-sm text-slate-400 mb-6">
+          Rendering video chunks with dynamic Ken Burns motion, blurred ambient backgrounds, 80Hz highpass + soft vocal compressor mastering, and 1% anti-hash noise overlays.
+        </p>
+
+        <!-- Progress Tracker Bar -->
+        <div class="glass-panel p-6 mb-8 border border-slate-700/80 bg-slate-950/60">
+          <div class="flex items-center justify-between text-xs font-bold mb-2">
+            <span id="render-status-title" class="text-slate-300">Ready to Render</span>
+            <span id="render-percentage" class="text-yellow-400">0%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden mb-3">
+            <div id="render-progress-bar" class="bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 h-full w-0 transition-all duration-300"></div>
+          </div>
+          <p id="render-message" class="text-xs text-slate-400">All chunks will be rendered in parallel and concatenated into a FastStart MP4.</p>
+        </div>
+
+        <!-- Transformative & Anti-Copyright Verification Checklist -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">Dynamic Ken Burns Motion</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Continuous smooth camera zooming & panning. Zero static frames.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">Blurred Ambient Background</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Darkened Gaussian blur fill for 16:9 & 9:16 aspect ratios.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">Anti-Hash Color Grade & Noise</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">1-2% grain noise overlay to break perceptual copyright hashes.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">Studio Audio Mastering</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">80Hz highpass filter + soft vocal compressor broadcast chain.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">Subtle Ambient Audio Bed</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Layered -28dB cinematic tension bed under voiceover.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/30 flex items-start space-x-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <h4 class="text-xs font-bold text-white">FastStart MP4 Optimization</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Instant progressive streaming on YouTube, VLC, and mobile players.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Video Watermark & Channel Copyright Option (Disabled by default) -->
+        <div class="glass-panel p-5 mb-8 border border-slate-700/80 bg-slate-900/60">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-white flex items-center space-x-2">
+                  <span>Custom Channel Watermark & Copyright Protection</span>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Optional</span>
+                </h4>
+                <p class="text-xs text-slate-400 mt-0.5">Burn your channel handle or watermark into the video to prevent unauthorized content re-uploading. (Default: Disabled)</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="checkbox-enable-watermark" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+            </label>
+          </div>
+
+          <!-- Collapsible Watermark Customization Settings -->
+          <div id="watermark-options-container" class="hidden mt-4 pt-4 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Watermark Text</label>
+              <input type="text" id="input-watermark-text" value="@MangaRecapStudio"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-yellow-400 font-mono"
+                placeholder="e.g. @YourChannelRecaps">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Overlay Position</label>
+              <select id="select-watermark-pos" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:border-yellow-400">
+                <option value="top_right" selected>Top Right (Recommended)</option>
+                <option value="top_left">Top Left</option>
+                <option value="bottom_right">Bottom Right</option>
+                <option value="bottom_left">Bottom Left</option>
+                <option value="center">Center</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Opacity / Visibility</label>
+              <select id="select-watermark-opacity" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:border-yellow-400">
+                <option value="0.30">30% (Subtle Ghost)</option>
+                <option value="0.45" selected>45% (Standard Clean)</option>
+                <option value="0.70">70% (Bold Visible)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-300 mb-1">Display Size</label>
+              <select id="select-watermark-size" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:border-yellow-400">
+                <option value="24">Small (24px)</option>
+                <option value="32" selected>Medium (32px)</option>
+                <option value="46">Large (46px)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-4">
+          <button id="btn-preview-frame" class="flex items-center space-x-2 px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 font-bold text-sm shadow-md transition">
+            <i data-lucide="play-circle" class="w-5 h-5 text-yellow-400"></i>
+            <span>🎬 Preview Frame & Motion (3s Clip)</span>
+          </button>
+
+          <button id="btn-start-render" class="flex items-center space-x-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 text-slate-950 font-black text-sm shadow-xl shadow-yellow-500/20 transition transform hover:-translate-y-0.5">
+            <i data-lucide="play" class="w-5 h-5"></i>
+            <span>🚀 Render Full Recap Video (FastStart MP4)</span>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ==================== STEP 5: VIRAL PUBLISHING KIT ==================== -->
+    <section id="section-step-5" class="hidden space-y-6">
+      
+      <!-- Verified Zero-Manga-Name Banner -->
+      <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-emerald-300">100% Monetization Safe & Anti-Copyright Verified</h3>
+            <p class="text-xs text-slate-400">Zero manga title mentions detected in titles, thumbnail, or description. Transformative Fair Use compliant.</p>
+          </div>
+        </div>
+        <span class="text-xs font-black px-3 py-1 rounded-full bg-emerald-400 text-slate-950">
+          PASSED
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Rendered Video & Thumbnail Preview (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <!-- Master Video Player Card -->
+          <div class="glass-panel p-5">
+            <h3 class="text-sm font-bold text-white mb-3 flex items-center space-x-2">
+              <i data-lucide="video" class="w-4 h-4 text-yellow-400"></i>
+              <span>Exported Master Video (MP4)</span>
+            </h3>
+            <div class="aspect-video bg-black rounded-xl overflow-hidden mb-4 border border-slate-800 flex items-center justify-center">
+              <video id="final-video-player" controls class="w-full h-full object-contain"></video>
+            </div>
+            <a id="btn-download-video" href="#" download="recap_video.mp4"
+              class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Download Master Video (MP4)</span>
+            </a>
+          </div>
+
+          <!-- High-CTR Thumbnail Card -->
+          <div class="glass-panel p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <i data-lucide="image" class="w-4 h-4 text-yellow-400"></i>
+                <span>High-CTR Thumbnail (1280x720)</span>
+              </h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-300 border border-yellow-400/40">
+                Action Climax • Two-Tone 3D
+              </span>
+            </div>
+            
+            <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden mb-4 border border-slate-800 relative group shadow-2xl shadow-yellow-500/10">
+              <img id="thumbnail-img-preview" src="" alt="Recap Thumbnail" class="w-full h-full object-cover">
+              <div id="thumbnail-loading-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm hidden flex-col items-center justify-center space-y-2 text-yellow-400">
+                <div class="w-8 h-8 border-3 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-xs font-bold text-white">Rendering Rich Thumbnail...</span>
+              </div>
+            </div>
+
+            <!-- Hook text customizer -->
+            <div class="space-y-3 mb-4">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-300">Curiosity Hook Text (3 to 6 Words)</label>
+                <span class="text-[10px] text-yellow-400/80 font-bold">Auto-Stacked 2-Line Layout</span>
+              </div>
+              <div class="flex space-x-2">
+                <input type="text" id="input-thumbnail-hook" value="HE WAS BETRAYED!"
+                  class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-yellow-400 uppercase font-black tracking-wide">
+                <button id="btn-update-thumbnail" class="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 font-black text-xs hover:brightness-110 shadow-md transition">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  <span>Update</span>
+                </button>
+              </div>
+
+              <!-- Quick Viral Hook Chips -->
+              <div>
+                <span class="block text-[11px] font-bold text-slate-400 mb-1.5">⚡ Viral Hook Presets:</span>
+                <div id="thumbnail-hook-chips" class="flex flex-wrap gap-1.5">
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="HE WAS BETRAYED!">
+                    HE WAS BETRAYED!
+                  </button>
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="GOD POWERS AWAKENED!">
+                    GOD POWERS AWAKENED!
+                  </button>
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="LEFT FOR DEAD...">
+                    LEFT FOR DEAD...
+                  </button>
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="BANNED FROM THE SECT!">
+                    BANNED FROM THE SECT!
+                  </button>
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="THE WEAKEST HUNTER...">
+                    THE WEAKEST HUNTER...
+                  </button>
+                  <button type="button" class="btn-hook-chip text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 transition" data-hook="SYSTEM ACTIVATED!">
+                    SYSTEM ACTIVATED!
+                  </button>
+                </div>
+              </div>
+
+              <!-- Theme & Font Size Controls -->
+              <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-400 mb-1">Color Theme</label>
+                  <select id="select-thumbnail-theme" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-yellow-400">
+                    <option value="viral_yellow" selected>⚡ Viral Yellow (#FFE600)</option>
+                    <option value="crimson_revenge">🩸 Crimson Revenge (#FF2A2A)</option>
+                    <option value="electric_cyan">❄️ Frost Cyan (#00F5FF)</option>
+                    <option value="monarch_purple">👑 Shadow Monarch (#E040FB)</option>
+                    <option value="toxic_green">🧪 Toxic Acid Green (#00FF66)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-400 mb-1">Display Text Size</label>
+                  <select id="select-thumbnail-font-size" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-yellow-400">
+                    <option value="giant" selected>🔥 Giant (135px Display)</option>
+                    <option value="large">⚡ Large (110px Display)</option>
+                    <option value="standard">Standard (92px Display)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <a id="btn-download-thumbnail" href="#" download="thumbnail.png"
+              class="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-yellow-300 border border-yellow-400/30 font-bold text-xs transition">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Download High-CTR Thumbnail (PNG)</span>
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Right: 5 Viral Titles, SEO Description, Tags (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <!-- 5 Viral Titles -->
+          <div class="glass-panel p-6">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+                <span>5 Viral Zero-Manga-Name Titles (Pick 1 for YouTube)</span>
+              </h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                100% English Global CPM
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">High-concept trope titles built for maximum curiosity click-through rate.</p>
+
+            <div id="viral-titles-list" class="space-y-2.5">
+              <!-- Dynamically injected titles -->
+            </div>
+          </div>
+
+          <!-- SEO Description with Timestamps & Fair Use -->
+          <div class="glass-panel p-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <i data-lucide="file-text" class="w-4 h-4 text-yellow-400"></i>
+                <span>SEO Description with Video Timestamps</span>
+              </h3>
+              <button id="btn-copy-description" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-300 border border-yellow-400/40 text-xs font-bold transition">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy Description</span>
+              </button>
+            </div>
+            <textarea id="textarea-description" rows="8" readonly
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-300 leading-relaxed font-mono resize-none"></textarea>
+          </div>
+
+          <!-- High-Traffic Tags -->
+          <div class="glass-panel p-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <i data-lucide="tags" class="w-4 h-4 text-yellow-400"></i>
+                <span>Targeted Keywords & Tags</span>
+              </h3>
+              <button id="btn-copy-tags" class="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-yellow-400/20 hover:bg-yellow-400/30 text-yellow-300 border border-yellow-400/40 text-xs font-bold transition">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>Copy Tags</span>
+              </button>
+            </div>
+            <div id="tags-container" class="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 font-mono">
+              <!-- Comma separated tags -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950/60 py-4 px-6 text-center text-xs text-slate-500">
+    MangaRecap AI Studio v2.0 • Pure High-Retention Video Engine • Zero-Manga-Name Monetization Shield
+  </footer>
+
+  <!-- ==================== SETTINGS MODAL ==================== -->
+  <div id="settings-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full p-6 sm:p-8 space-y-6 relative border border-slate-700">
+      
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <i data-lucide="settings" class="w-5 h-5 text-yellow-400"></i>
+          <h3 class="text-lg font-bold text-white">Studio API & Voice Settings</h3>
+        </div>
+        <button id="btn-close-settings" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Status Notification Box -->
+        <div id="settings-status-alert" class="hidden p-3 rounded-xl text-xs font-semibold transition"></div>
+
+        <!-- Gemini API Key -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-300">Google Gemini API Key</label>
+            <button type="button" id="btn-test-gemini" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300 flex items-center space-x-1">
+              <i data-lucide="zap" class="w-3 h-3"></i>
+              <span>Test Connection</span>
+            </button>
+          </div>
+          <div class="relative">
+            <input type="password" id="input-gemini-key" placeholder="AIzaSy... or paste Gemini API key"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white focus:border-yellow-400 font-mono">
+            <button type="button" id="btn-toggle-gemini-eye" class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition" title="Show/Hide API Key">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p id="gemini-status-note" class="text-[11px] text-slate-400 mt-1 flex items-center space-x-1">
+            <span>Saved in config.json & browser memory. Powers vision script generation.</span>
+          </p>
+        </div>
+
+        <!-- ElevenLabs API Key -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-300">ElevenLabs API Key (Optional)</label>
+            <button type="button" id="btn-test-eleven" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300 flex items-center space-x-1">
+              <i data-lucide="zap" class="w-3 h-3"></i>
+              <span>Test Voice</span>
+            </button>
+          </div>
+          <div class="relative">
+            <input type="password" id="input-elevenlabs-key" placeholder="sk_... (leave empty for free Edge-TTS)"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white focus:border-yellow-400 font-mono">
+            <button type="button" id="btn-toggle-eleven-eye" class="absolute right-3 top-2.5 text-slate-400 hover:text-white transition" title="Show/Hide API Key">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p id="eleven-status-note" class="text-[11px] text-slate-400 mt-1">
+            Free Edge-TTS studio voices active if empty. No key required.
+          </p>
+        </div>
+
+        <!-- Gemini Model Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1.5">Primary Google Gemini Model</label>
+          <select id="select-gemini-model" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-yellow-400 font-mono transition">
+            <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Latest Fast Recapper - Recommended)</option>
+            <option value="gemini-3-flash-preview">gemini-3-flash-preview (Gemini 3.0 Preview)</option>
+            <option value="gemini-flash-latest">gemini-flash-latest (Auto Stable)</option>
+            <option value="gemini-4-argon">gemini-4-argon (Argon 4 Ultra)</option>
+          </select>
+          <p class="text-[11px] text-slate-400 mt-1">
+            Auto-cascades to backup models if a specific model quota or version changes.
+          </p>
+        </div>
+
+        <!-- Audio Mastering Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div>
+            <h4 class="text-xs font-bold text-white">80Hz Highpass & Soft Compressor Mastering</h4>
+            <p class="text-[11px] text-slate-400">FFmpeg broadcast studio audio pipeline</p>
+          </div>
+          <input type="checkbox" id="checkbox-mastering" checked class="w-4 h-4 accent-yellow-400">
+        </div>
+
+        <!-- Subtle Ambient Bed Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div>
+            <h4 class="text-xs font-bold text-white">Layered Ambient Audio Bed (-28dB)</h4>
+            <p class="text-[11px] text-slate-400">Cinematic drone room tone under narrator voice</p>
+          </div>
+          <input type="checkbox" id="checkbox-ambient" checked class="w-4 h-4 accent-yellow-400">
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] text-slate-500 font-medium">Auto-persists to config.json & browser memory</span>
+        <div class="flex space-x-2.5">
+          <button type="button" id="btn-close-settings-2" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+            Close
+          </button>
+          <button id="btn-save-settings" class="px-5 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-extrabold text-xs shadow-md shadow-yellow-500/20 transition">
+            Save Settings & Keys
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== LIVE FRAME & MOTION PREVIEW MODAL ==================== -->
+  <div id="preview-frame-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-2xl w-full p-6 sm:p-7 space-y-5 relative border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <i data-lucide="play-circle" class="w-5 h-5 text-yellow-400"></i>
+          <h3 class="text-base font-bold text-white">Live Frame & Motion Preview (3-Sec MP4 Clip)</h3>
+        </div>
+        <button id="btn-close-preview-modal" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Preview Video Container -->
+      <div class="aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center relative group">
+        <video id="preview-frame-video" controls autoplay loop playsinline class="w-full h-full object-contain"></video>
+        <div id="preview-loading-spinner" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-yellow-400 text-xs font-bold space-y-2">
+          <span class="animate-spin text-3xl">⚙️</span>
+          <span>Rendering 3-Second Motion & Frame Preview...</span>
+        </div>
+      </div>
+
+      <!-- Modal Quick Tweakers -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Frame Style</label>
+          <select id="modal-preview-frame-style" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+            <option value="dark_ambient">Dark Ambient Blur</option>
+            <option value="comic_border">Manga Reader Border</option>
+            <option value="full_bleed">Full Bleed Zoom</option>
+            <option value="vintage_halftone">Retro Halftone Paper</option>
+            <option value="neon_cyberpunk">Neon Cyberpunk</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-300 mb-1">Motion Pacing & Speed</label>
+          <select id="modal-preview-motion-speed" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+            <option value="smooth_slow">Smooth & Slow (Clamped ~95px/s)</option>
+            <option value="gentle_drift">Gentle Drift (Ultra Subtle)</option>
+            <option value="balanced">Balanced</option>
+            <option value="fast_dynamic">Fast & Dynamic</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
+        <span class="text-slate-400">Tests Ken Burns zoom, travel speed, border filter & aspect ratio</span>
+        <div class="flex space-x-2">
+          <button id="btn-refresh-preview" class="px-4 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black transition">
+            🔄 Re-test Preview
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL LIGHTBOX / INSPECT MODAL ==================== -->
+  <div id="panel-lightbox-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-4xl w-full p-4 sm:p-6 space-y-4 relative border border-slate-700 max-h-[95vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center space-x-3">
+          <span id="lightbox-panel-badge" class="px-2.5 py-1 rounded-lg bg-yellow-400 text-slate-950 font-black text-xs">#1</span>
+          <h3 id="lightbox-panel-title" class="text-sm font-bold text-white">Panel Inspection</h3>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button type="button" id="lightbox-btn-remove" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-bold transition">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Remove This Panel</span>
+          </button>
+          <button type="button" id="btn-close-lightbox" class="text-slate-400 hover:text-white p-1 transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto flex items-center justify-center min-h-[300px] bg-slate-950/80 rounded-xl p-2 border border-slate-800/80">
+        <img id="lightbox-img" src="" alt="Panel Full Preview" class="max-h-[68vh] max-w-full object-contain rounded-lg">
+      </div>
+      <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+        <span id="lightbox-panel-meta">Dimensions: 800x1200 • Page 1</span>
+        <span class="text-slate-500">Click Remove to exclude from recap, or close to keep</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Player element for auditions -->
+  <audio id="global-audition-player" class="hidden"></audio>
+
+  <!-- Application Logic Scripts -->
+  <script src="/static/js/api-client.js"></script>
+  <script src="/static/js/audio-recorder.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

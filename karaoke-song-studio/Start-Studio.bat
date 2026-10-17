@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 title Karaoke Video Studio Launcher
 echo ======================================================
 echo    Starting Karaoke Video Studio Local Server...

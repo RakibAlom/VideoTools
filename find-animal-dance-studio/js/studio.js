@@ -86,6 +86,8 @@ class AnimalDanceStudio {
       showSubtitle: true,
       nx: 0.5,
       ny: 0.11,
+      rotation: 0, // Rotation angle in degrees (-180 to +180)
+      subtitleRotation: 0, // Subtitle rotation angle in degrees (-180 to +180)
       style: 'viral_bold',
       fontFamily: 'Outfit',
       fontSize: 64,
@@ -144,7 +146,7 @@ class AnimalDanceStudio {
       gap: 40 // Title to subtitle spacing margin (0-250px)
     };
 
-    // Watermark (Unrestricted 0-100% with Full Branding Styles & Persistence)
+    // Watermark (Unrestricted 0-100% with Clean Customization, Transparency, Color & Rotation)
     this.watermark = {
       enabled: true,
       text: 'SmartBrain Game',
@@ -152,11 +154,27 @@ class AnimalDanceStudio {
       fontSize: 24,
       color: '#ffffff',
       opacity: 0.65,
+      rotation: 0, // Rotation angle in degrees (-180 to +180)
+      showShadow: true,
       style: 'clean_glow',
       pillColor: '#000000',
       nx: 0.5,
       ny: 0.97 // right against bottom edge
     };
+
+    // Answer Reveal Highlight Configuration (7 Minimal Designs, Customizable Duration, Numbers, and SFX)
+    this.reveal = {
+      enabled: false,
+      duration: 3, // 3s, 5s, 7s or custom seconds
+      style: 'minimal_ring', // 'minimal_ring', 'pointer_arrow', 'focus_reticle', 'map_pin', 'numbered_badge', 'spotlight_halo', 'radar_ping'
+      showNumbers: true, // true: #1, #2... | false: minimal circle/point only
+      color: '#10b981', // Accent color
+      sfx: 'ding_bell', // 'ding_bell', 'bubble_pop', 'magic_chime', 'tada_fanfare', 'marimba_knock', 'cyber_ping', 'none'
+      sfxEnabled: true, // Enable/disable answer reveal audio sound
+      sfxVolume: 0.85 // Volume 0.0 to 1.0
+    };
+    this.lastRevealSfxFired = false;
+    this.lastExportRevealSfxFired = false;
 
     // Auto-restore permanent brand default if previously saved
     try {
@@ -167,16 +185,38 @@ class AnimalDanceStudio {
       }
     } catch (e) {}
 
-    // Countdown Timer (Disabled by default, customizable clock styles, bigger size & positionable)
+    // Countdown Timer (Customizable timing, 10 designs, freely draggable, 6 audio SFX presets, 3 visibility modes, numbers-only)
     this.timer = {
       enabled: false,
-      style: 'radial_ring', // 'radial_ring', 'analog_clock', 'digital_badge', 'top_bar', 'bottom_bar', 'none'
+      style: 'radial_ring', // 'radial_ring', 'analog_clock', 'digital_badge', 'cyber_pill', 'minimal_clean', 'arcade_retro', 'bomb_fuse', 'hourglass', 'neon_speedometer', 'split_flip', 'top_bar', 'bottom_bar', 'none'
       size: 130,
       nx: 0.88,
       ny: 0.08,
       height: 10,
-      color: '#38bdf8'
+      color: '#38bdf8',
+      startTime: 0,
+      duration: 10,
+      sfx: 'clock_tick',
+      sfxVolume: 0.8,
+      sfxMuted: false,
+      visibilityMode: 'visible_on_start', // 'visible_on_start', 'transparent_idle', 'full_visible'
+      idleOpacity: 30, // Standby transparency percentage (5% - 90%)
+      numbersOnly: false // Only show countdown numbers without extra text, SEC, emojis, or labels
     };
+    if (window.audioEngine) {
+      if (typeof window.audioEngine.timerSfxVolume === 'number') {
+        this.timer.sfxVolume = window.audioEngine.timerSfxVolume;
+      }
+      if (window.audioEngine.timerSfx) {
+        this.timer.sfx = window.audioEngine.timerSfx;
+      }
+      if (typeof window.audioEngine.timerSfxMuted === 'boolean') {
+        this.timer.sfxMuted = window.audioEngine.timerSfxMuted;
+      }
+    }
+    this.isTimerHovered = false;
+    this.lastTimerTickSec = null;
+    this.lastExportTimerTickSec = null;
 
     // History (Undo / Redo)
     this.historyStack = [];
@@ -234,6 +274,8 @@ class AnimalDanceStudio {
     this.syncTitleUI();
     this.syncBackgroundUI();
     this.syncWatermarkUI();
+    this.syncRevealUI();
+    this.syncAudioUI();
 
     // 3. START 60FPS RENDER LOOP IMMEDIATELY!
     // The canvas preview frame is now alive, rendering the backdrop, titles, HUD, and grid instantly!
@@ -1044,17 +1086,13 @@ class AnimalDanceStudio {
     const customInput = document.getElementById('inputCustomDuration');
     if (customInput) customInput.value = dur;
 
-    // Update scrubber on stage
-    const scrubber = document.getElementById('stageTimeScrubber');
-    if (scrubber) scrubber.max = dur;
-
     // Highlight matching chip if available, or clear active chips
     document.querySelectorAll('.preset-chip[data-dur]').forEach(c => {
       c.classList.toggle('active', parseInt(c.dataset.dur) === dur);
     });
 
-    // Update playhead readout
-    this.updatePlayheadUI();
+    // Update scrubber on stage and playhead UI to reflect total duration (including any reveal ending)
+    this.updateTotalTimelineDuration();
 
     if (notify) {
       this.showToast(`Export length set to ${dur}s`, 'info');
@@ -1069,7 +1107,10 @@ class AnimalDanceStudio {
 
     // 2. Update track badges across tabs
     const badge = document.getElementById('currentTrackBadge');
-    if (badge) badge.textContent = name;
+    if (badge) {
+      badge.textContent = name;
+      badge.title = name;
+    }
 
     const trimBadge = document.getElementById('audioTrimLenBadge');
     if (trimBadge) trimBadge.textContent = `${fullDur}s`;
@@ -1100,6 +1141,7 @@ class AnimalDanceStudio {
     }
 
     this.drawWaveform();
+    this.syncAudioUI();
 
     if (showToast) {
       this.showToast(`🎵 Loaded "${name}" (${fullDur}s) — Video length set to ${this.videoDuration}s`, 'success');
@@ -1371,10 +1413,47 @@ class AnimalDanceStudio {
 
     if (this.isPlaying && !this.isExporting) {
       this.currentTime += delta;
-      if (this.currentTime >= this.videoDuration) {
+      const totalDur = this.getTotalDuration();
+      if (this.currentTime >= totalDur) {
         this.currentTime = 0;
+        this.lastTimerTickSec = null;
+        this.lastRevealSfxFired = false;
+        if (window.audioEngine) {
+          window.audioEngine.play(0, window.audioEngine.loop !== false);
+        }
       }
       this.updatePlayheadUI();
+
+      // Real-time Countdown Timer Audio Effect (SFX) triggering
+      if (this.timer.enabled && !this.timer.sfxMuted && this.timer.sfx && this.timer.sfx !== 'none') {
+        const tStart = Math.max(0, this.timer.startTime || 0);
+        const tDur = Math.max(1, this.timer.duration || 10);
+        if (this.currentTime >= tStart && this.currentTime <= tStart + tDur) {
+          const secLeft = Math.max(0, Math.ceil(tDur - (this.currentTime - tStart)));
+          if (this.lastTimerTickSec !== secLeft) {
+            this.lastTimerTickSec = secLeft;
+            window.audioEngine?.playTimerTick(this.timer.sfx, secLeft, this.timer.sfxVolume);
+          }
+        } else {
+          this.lastTimerTickSec = null;
+        }
+      } else {
+        this.lastTimerTickSec = null;
+      }
+
+      // Real-time Answer Reveal Audio Effect (Ding / Chime / Pop SFX) triggering
+      if (this.appendRevealEnding && this.reveal?.sfxEnabled !== false && this.reveal?.sfx && this.reveal?.sfx !== 'none') {
+        if (this.currentTime >= this.videoDuration) {
+          if (!this.lastRevealSfxFired) {
+            this.lastRevealSfxFired = true;
+            window.audioEngine?.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+          }
+        } else {
+          this.lastRevealSfxFired = false;
+        }
+      } else {
+        this.lastRevealSfxFired = false;
+      }
 
       // Video background sync during playback
       if (this.bg.isVideo && this.bg.video && this.bg.video.readyState >= 2) {
@@ -1435,8 +1514,9 @@ class AnimalDanceStudio {
       this.renderTimer(ctx, width, height, timeMs, cleanMode);
     }
 
-    // 6. Answer Reveal Rings
-    if (this.answerRevealMode) {
+    // 6. Answer Reveal Rings (Renders when toggled OR when preview is in the ending reveal section)
+    const isRevealEndingActive = this.appendRevealEnding && (this.currentTime >= this.videoDuration);
+    if (this.answerRevealMode || isRevealEndingActive) {
       this.renderAnswerRevealRings(ctx, width, height, timeMs);
     }
 
@@ -1829,7 +1909,7 @@ class AnimalDanceStudio {
     ctx.restore();
   }
 
-  // --- Title & Subtitle Rendering (Fully Customizable Background, Border, Opacity, Radius, Glow & Gradient) ---
+  // --- Title & Subtitle Rendering (Independent Rotation Angles, Customizable Background, Border, Opacity, Glow & Gradient) ---
   renderTitle(ctx, width, height, cleanMode) {
     const x = this.title.nx * width;
     const y = this.title.ny * height;
@@ -1837,11 +1917,6 @@ class AnimalDanceStudio {
     const fontSize = (this.title.fontSize || 64) * scale;
     const strokeWidth = (this.title.strokeWidth !== undefined ? this.title.strokeWidth : 10) * scale;
     const font = this.title.fontFamily || 'Outfit';
-
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `900 ${fontSize}px '${font}', sans-serif`;
 
     const titleText = this.title.text || '';
     const style = this.title.style || 'viral_bold';
@@ -1895,12 +1970,60 @@ class AnimalDanceStudio {
     const presetHasBg = (style === 'clean_pill' || style === 'glass_border' || style === 'glass_pill' || style === 'danger_alert' || style === 'stealth_dark');
     const isBgActive = this.title.bgEnabled || (this.title.bgEnabled !== false && presetHasBg);
 
+    // ==========================================
+    // RENDER MAIN TITLE (WITH ROTATION ANGLE)
+    // ==========================================
+    ctx.save();
+    ctx.translate(x, y);
+    if (this.title.rotation) {
+      ctx.rotate((this.title.rotation * Math.PI) / 180);
+    }
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `900 ${fontSize}px '${font}', sans-serif`;
+
+    // Word wrap & Multi-line Breakdown:
+    // Respect explicit newlines (\n) and wrap sentences that exceed max allowable width
+    const padX = (this.title.bgPaddingX !== undefined ? this.title.bgPaddingX : 36) * scale;
+    const padY = (this.title.bgPaddingY !== undefined ? this.title.bgPaddingY : 16) * scale;
+    const maxAllowedTextW = Math.max(200 * scale, (width * 0.88) - (padX * 2));
+
+    const rawParagraphs = String(titleText || '').split(/\r?\n/);
+    const lines = [];
+    for (const para of rawParagraphs) {
+      if (!para || para.trim().length === 0) {
+        lines.push('');
+        continue;
+      }
+      const words = para.split(/\s+/);
+      let curLine = '';
+      for (const w of words) {
+        const testLine = curLine ? `${curLine} ${w}` : w;
+        if (ctx.measureText(testLine).width > maxAllowedTextW && curLine) {
+          lines.push(curLine);
+          curLine = w;
+        } else {
+          curLine = testLine;
+        }
+      }
+      if (curLine) lines.push(curLine);
+    }
+    if (lines.length === 0) lines.push('');
+
+    const lineHeight = fontSize * 1.18;
+    let maxLineWidth = 0;
+    for (const l of lines) {
+      if (!l) continue;
+      const w = ctx.measureText(l).width;
+      if (w > maxLineWidth) maxLineWidth = w;
+    }
+
+    const boxW = Math.max(120 * scale, maxLineWidth + (padX * 2));
+    const textBlockH = lines.length * lineHeight;
+    const boxH = textBlockH + (padY * 2);
+    const startY = -((lines.length - 1) * lineHeight) / 2;
+
     if (isBgActive && titleText.length > 0) {
-      const tm = ctx.measureText(titleText);
-      const padX = (this.title.bgPaddingX !== undefined ? this.title.bgPaddingX : 36) * scale;
-      const padY = (this.title.bgPaddingY !== undefined ? this.title.bgPaddingY : 16) * scale;
-      const boxW = tm.width + (padX * 2);
-      const boxH = fontSize + (padY * 2);
       const radius = (this.title.bgRadius !== undefined ? this.title.bgRadius : 16) * scale;
       const bgOpacity = this.title.bgOpacity !== undefined ? this.title.bgOpacity : 0.85;
 
@@ -1917,7 +2040,6 @@ class AnimalDanceStudio {
       let bColor = this.title.bgBorderColor || '#6366f1';
       let bOpacity = this.title.bgBorderOpacity !== undefined ? this.title.bgBorderOpacity : 1.0;
 
-      // Handle preset border defaults if not custom enabled
       if (!this.title.bgEnabled && presetHasBg) {
         if (style === 'glass_border') { bWidth = 2.5 * scale; bColor = '#6366f1'; bOpacity = 1.0; }
         else if (style === 'glass_pill') { bWidth = 2 * scale; bColor = '#ffffff'; bOpacity = 0.35; }
@@ -1926,41 +2048,40 @@ class AnimalDanceStudio {
 
       const borderColor = bWidth > 0 ? toRgba(bColor, bOpacity) : null;
 
-      // Box shadow / ambient glow
       ctx.save();
       if ((this.title.shadowBlur || 0) > 0) {
         ctx.shadowColor = this.title.shadowColor || 'rgba(0,0,0,0.5)';
         ctx.shadowBlur = (this.title.shadowBlur || 14) * scale;
         ctx.shadowOffsetY = (this.title.shadowOffsetY || 4) * scale;
       }
-      drawPillBox(x, y, boxW, boxH, radius, fillColor, borderColor, bWidth);
+      drawPillBox(0, 0, boxW, boxH, radius, fillColor, borderColor, bWidth);
       ctx.restore();
     }
 
     // 2. Setup Text Fill (Gradient, Preset, or Solid Color)
     let fillStyle = this.title.textColor || '#ffffff';
     if (this.title.gradientEnabled) {
-      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      const g = ctx.createLinearGradient(0, -fontSize / 2, 0, fontSize / 2);
       g.addColorStop(0, this.title.gradientColor1 || '#ff7a00');
       g.addColorStop(1, this.title.gradientColor2 || '#f43f5e');
       fillStyle = g;
     } else if (style === 'gradient_sunset') {
-      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      const g = ctx.createLinearGradient(0, -fontSize / 2, 0, fontSize / 2);
       g.addColorStop(0, '#ff7a00');
       g.addColorStop(1, '#f43f5e');
       fillStyle = g;
     } else if (style === 'cyan_ice') {
-      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      const g = ctx.createLinearGradient(0, -fontSize / 2, 0, fontSize / 2);
       g.addColorStop(0, '#e0f2fe');
       g.addColorStop(1, '#38bdf8');
       fillStyle = g;
     } else if (style === 'royal_gold') {
-      const g = ctx.createLinearGradient(x, y - fontSize / 2, x, y + fontSize / 2);
+      const g = ctx.createLinearGradient(0, -fontSize / 2, 0, fontSize / 2);
       g.addColorStop(0, '#fef08a');
       g.addColorStop(1, '#ca8a04');
       fillStyle = g;
     } else if (style === 'rainbow_candy') {
-      const g = ctx.createLinearGradient(x - 200 * scale, y, x + 200 * scale, y);
+      const g = ctx.createLinearGradient(-200 * scale, 0, 200 * scale, 0);
       g.addColorStop(0, '#f43f5e');
       g.addColorStop(0.5, '#fbbf24');
       g.addColorStop(1, '#06b6d4');
@@ -1995,7 +2116,11 @@ class AnimalDanceStudio {
       const shadowColor = style === 'golden_arcade' ? '#78350f' : '#000000';
       for (let s = Math.round(5 * scale); s >= 1; s--) {
         ctx.fillStyle = shadowColor;
-        ctx.fillText(titleText, x + s, y + s);
+        for (let i = 0; i < lines.length; i++) {
+          const l = lines[i];
+          if (!l) continue;
+          ctx.fillText(l, s, startY + (i * lineHeight) + s);
+        }
       }
     }
 
@@ -2005,24 +2130,44 @@ class AnimalDanceStudio {
       ctx.strokeStyle = this.title.strokeColor || '#000000';
       ctx.lineJoin = 'round';
       ctx.miterLimit = 2;
-      ctx.strokeText(titleText, x, y);
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        if (!l) continue;
+        ctx.strokeText(l, 0, startY + (i * lineHeight));
+      }
     }
 
     // 6. Main Text Fill
     ctx.shadowColor = 'transparent';
     ctx.fillStyle = fillStyle;
-    ctx.fillText(titleText, x, y);
-    ctx.restore();
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (!l) continue;
+      ctx.fillText(l, 0, startY + (i * lineHeight));
+    }
+    ctx.restore(); // restore shadow setup
 
-    // 7. Subtitle / Hook Rendering
+    ctx.restore(); // restore main title translate & rotation
+
+    // ==========================================
+    // 7. RENDER SUBTITLE (WITH INDEPENDENT ROTATION)
+    // ==========================================
     const gap = (this.title.gap !== undefined ? this.title.gap : 40) * scale;
     if (this.title.showSubtitle && this.title.subtitle && this.title.subtitle.trim().length > 0) {
       const subFontSize = (this.title.subtitleFontSize || 28) * scale;
-      const subY = y + (fontSize * 0.5) + gap + (subFontSize * 0.5);
+      const titleBottomHalf = isBgActive ? (boxH / 2) : (textBlockH / 2);
+      const subY = y + titleBottomHalf + gap + (subFontSize * 0.5);
       const subFont = (this.title.subtitleFontFamily && this.title.subtitleFontFamily !== 'inherit') 
         ? this.title.subtitleFontFamily 
         : font;
       
+      ctx.save();
+      ctx.translate(x, subY);
+      if (this.title.subtitleRotation) {
+        ctx.rotate((this.title.subtitleRotation * Math.PI) / 180);
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.font = `800 ${subFontSize}px '${subFont}', sans-serif`;
       
       let subText = this.title.subtitle;
@@ -2053,7 +2198,7 @@ class AnimalDanceStudio {
           ctx.shadowBlur = (this.title.subtitleShadowBlur || 6) * scale;
           ctx.shadowOffsetY = (this.title.subtitleShadowOffsetY || 2) * scale;
         }
-        drawPillBox(x, subY, pW, pH, subRadius, subFill, subBorder, subBWidth);
+        drawPillBox(0, 0, pW, pH, subRadius, subFill, subBorder, subBWidth);
         ctx.restore();
       }
 
@@ -2073,17 +2218,25 @@ class AnimalDanceStudio {
         ctx.lineWidth = subStrokeW;
         ctx.strokeStyle = this.title.subtitleStrokeColor || '#000000';
         ctx.lineJoin = 'round';
-        ctx.strokeText(subText, x, subY);
+        ctx.strokeText(subText, 0, 0);
       }
 
       ctx.shadowColor = 'transparent';
       ctx.fillStyle = this.title.subtitleColor || '#fde047';
-      ctx.fillText(subText, x, subY);
-      ctx.restore();
+      ctx.fillText(subText, 0, 0);
+      ctx.restore(); // restore stroke shadow
+
+      ctx.restore(); // restore subtitle translate & rotation
     }
 
     // 8. Creator Mode Drag & Alignment Bounding Box
     if (!cleanMode && this.creatorMode) {
+      ctx.save();
+      ctx.translate(x, y);
+      if (this.title.rotation) {
+        ctx.rotate((this.title.rotation * Math.PI) / 180);
+      }
+      ctx.font = `900 ${fontSize}px '${font}', sans-serif`;
       const metrics = ctx.measureText(titleText);
       const padX = (this.title.bgPaddingX || 36) * scale;
       const boxW = Math.max(metrics.width + 40 * scale, isBgActive ? metrics.width + padX * 2 : 0);
@@ -2092,123 +2245,212 @@ class AnimalDanceStudio {
       ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 4]);
-      ctx.strokeRect(x - boxW / 2, y - fontSize * 0.6, boxW, boxH);
+      ctx.strokeRect(-boxW / 2, -fontSize * 0.7, boxW, boxH);
       ctx.setLineDash([]);
+      ctx.restore();
     }
-
-    ctx.restore();
   }
 
-  // --- Watermark Rendering (UNRESTRICTED POSITIONING 0% TO 100% WITH STYLES) ---
+  // --- Watermark / Brand Copyright Rendering (Clean Customizable Text with Color, Transparency & Rotation) ---
   renderWatermark(ctx, width, height, cleanMode) {
+    if (!this.watermark.enabled) return;
     const x = this.watermark.nx * width;
     const y = this.watermark.ny * height;
     const scale = width / 1080;
     const fontSize = (this.watermark.fontSize || 24) * scale;
     const font = this.watermark.fontFamily || 'Outfit';
-    const style = this.watermark.style || 'clean_glow';
+    const text = this.watermark.text || '';
+    const rotation = this.watermark.rotation || 0;
 
     ctx.save();
+    ctx.translate(x, y);
+    if (rotation !== 0) {
+      ctx.rotate((rotation * Math.PI) / 180);
+    }
     ctx.globalAlpha = this.watermark.opacity !== undefined ? this.watermark.opacity : 0.65;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `700 ${fontSize}px '${font}', sans-serif`;
 
-    const metrics = ctx.measureText(this.watermark.text);
-    const pW = metrics.width + 24 * scale;
-    const pH = fontSize * 1.5;
+    const metrics = ctx.measureText(text);
 
-    if (style === 'frosted_pill') {
-      // 1. Frosted Glass Pill Backplate
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-      ctx.beginPath();
-      ctx.roundRect(x - pW / 2, y - pH / 2, pW, pH, 8 * scale);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1.5 * scale;
-      ctx.stroke();
-      ctx.fillStyle = this.watermark.color || '#38bdf8';
-      ctx.fillText(this.watermark.text, x, y);
-
-    } else if (style === 'shadow_stroke') {
-      // 2. Solid 3D Stroke Outline
-      ctx.lineWidth = 4 * scale;
-      ctx.strokeStyle = '#000000';
-      ctx.strokeText(this.watermark.text, x, y);
-      ctx.fillStyle = this.watermark.color || '#ffffff';
-      ctx.fillText(this.watermark.text, x, y);
-
-    } else if (style === 'neon_brand') {
-      // 3. Cyber Neon Cyan Branding
-      ctx.shadowColor = '#06b6d4';
-      ctx.shadowBlur = 12 * scale;
-      ctx.lineWidth = 3 * scale;
-      ctx.strokeStyle = '#083344';
-      ctx.strokeText(this.watermark.text, x, y);
-      ctx.fillStyle = this.watermark.color || '#22d3ee';
-      ctx.fillText(this.watermark.text, x, y);
-
-    } else if (style === 'gold_brand') {
-      // 4. Royal Gold Branding
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6 * scale;
-      ctx.lineWidth = 3.5 * scale;
-      ctx.strokeStyle = '#78350f';
-      ctx.strokeText(this.watermark.text, x, y);
-      ctx.fillStyle = this.watermark.color || '#fde047';
-      ctx.fillText(this.watermark.text, x, y);
-
-    } else if (style === 'dark_pill') {
-      // 5. Solid Dark Pill
-      ctx.fillStyle = this.watermark.pillColor || 'rgba(0, 0, 0, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(x - pW / 2, y - pH / 2, pW, pH, 6 * scale);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 1.5 * scale;
-      ctx.stroke();
-      ctx.fillStyle = this.watermark.color || '#ffffff';
-      ctx.fillText(this.watermark.text, x, y);
-
+    if (this.watermark.showShadow !== false) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 4 * scale;
+      ctx.shadowOffsetY = 1.5 * scale;
     } else {
-      // 6. Subtle Drop Glow (Default)
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 6 * scale;
-      ctx.fillStyle = this.watermark.color || '#ffffff';
-      ctx.fillText(this.watermark.text, x, y);
+      ctx.shadowColor = 'transparent';
     }
 
+    ctx.fillStyle = this.watermark.color || '#ffffff';
+    ctx.fillText(text, 0, 0);
+
     if (!cleanMode && this.creatorMode) {
+      ctx.shadowColor = 'transparent';
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
-      ctx.strokeRect(x - metrics.width / 2 - 8, y - fontSize / 2 - 4, metrics.width + 16, fontSize + 8);
+      ctx.strokeRect(-metrics.width / 2 - 8, -fontSize / 2 - 4, metrics.width + 16, fontSize + 8);
       ctx.setLineDash([]);
     }
     ctx.restore();
   }
 
-  // --- Multiple Countdown Timer & Clock Styles ---
+  // --- Multiple Countdown Timer & Clock Styles (10+ Designs, Timing Window, Drag, 3 Visibility Modes, Numbers-Only) ---
   renderTimer(ctx, width, height, timeMs, cleanMode = false) {
-    const progress = Math.max(0, Math.min(1, (timeMs / 1000) / this.videoDuration));
-    const remainingRatio = 1 - progress;
+    const timerStart = Math.max(0, this.timer.startTime || 0);
+    const timerDur = Math.max(1, this.timer.duration || 10);
+    const timerEnd = timerStart + timerDur;
+    const curTimeSec = timeMs / 1000;
     const style = this.timer.style;
     const resScale = width / 1080;
     const posX = (this.timer.nx ?? 0.88) * width;
     const posY = (this.timer.ny ?? 0.08) * height;
     const diameter = (this.timer.size || 130) * resScale;
     const r = diameter / 2;
-    const secLeft = Math.ceil(this.videoDuration * remainingRatio);
+    const numbersOnly = !!this.timer.numbersOnly;
+
+    const visibilityMode = this.timer.visibilityMode || 'visible_on_start';
+    const idleAlpha = Math.max(0.05, Math.min(0.95, (this.timer.idleOpacity !== undefined ? this.timer.idleOpacity : 30) / 100));
+    const fadeDuration = 0.4; // 400ms silky smooth animation transition
+
+    let renderAlpha = 1.0;
+    let scaleMultiplier = 1.0;
+    let progress = 0;
+    let secLeft = timerDur;
+
+    if (curTimeSec < timerStart) {
+      // Prior to active countdown window
+      progress = 0;
+      secLeft = timerDur;
+      if (visibilityMode === 'full_visible') {
+        renderAlpha = 1.0;
+        scaleMultiplier = 1.0;
+      } else if (visibilityMode === 'transparent_idle') {
+        if (curTimeSec < timerStart - fadeDuration) {
+          renderAlpha = idleAlpha;
+          scaleMultiplier = 1.0;
+        } else {
+          // Smooth ramp from idleAlpha up to 1.0
+          const p = (curTimeSec - (timerStart - fadeDuration)) / fadeDuration;
+          const ease = p * p * (3 - 2 * p);
+          renderAlpha = idleAlpha + (1.0 - idleAlpha) * ease;
+          scaleMultiplier = 1.0 + 0.04 * ease;
+        }
+      } else { // 'visible_on_start'
+        renderAlpha = 0.0;
+        scaleMultiplier = 0.82;
+      }
+    } else if (curTimeSec <= timerEnd) {
+      // Inside active countdown window
+      progress = Math.max(0, Math.min(1, (curTimeSec - timerStart) / timerDur));
+      const remainingRatio = 1 - progress;
+      secLeft = Math.max(0, Math.ceil(timerDur * remainingRatio));
+
+      if (visibilityMode === 'visible_on_start') {
+        if (curTimeSec < timerStart + fadeDuration) {
+          // Smooth fade-in & pop-in
+          const p = (curTimeSec - timerStart) / fadeDuration;
+          const ease = p * p * (3 - 2 * p);
+          renderAlpha = ease;
+          scaleMultiplier = 0.82 + 0.18 * ease;
+        } else {
+          renderAlpha = 1.0;
+          scaleMultiplier = 1.0;
+        }
+      } else {
+        renderAlpha = 1.0;
+        scaleMultiplier = 1.0;
+      }
+    } else {
+      // After active countdown window has ended
+      progress = 1.0;
+      secLeft = 0;
+      if (visibilityMode === 'full_visible') {
+        renderAlpha = 1.0;
+        scaleMultiplier = 1.0;
+      } else if (visibilityMode === 'transparent_idle') {
+        if (curTimeSec <= timerEnd + fadeDuration) {
+          // Smooth ramp from 1.0 down to idleAlpha
+          const p = (curTimeSec - timerEnd) / fadeDuration;
+          const ease = p * p * (3 - 2 * p);
+          renderAlpha = 1.0 - (1.0 - idleAlpha) * ease;
+          scaleMultiplier = 1.0 - 0.04 * ease;
+        } else {
+          renderAlpha = idleAlpha;
+          scaleMultiplier = 1.0;
+        }
+      } else { // 'visible_on_start'
+        if (curTimeSec <= timerEnd + fadeDuration) {
+          // Smooth fade-out & shrink-out
+          const p = (curTimeSec - timerEnd) / fadeDuration;
+          const ease = p * p * (3 - 2 * p);
+          renderAlpha = 1.0 - ease;
+          scaleMultiplier = 1.0 - 0.18 * ease;
+        } else {
+          renderAlpha = 0.0;
+          scaleMultiplier = 0.82;
+        }
+      }
+    }
+
+    // If completely invisible:
+    if (renderAlpha <= 0.001) {
+      if (cleanMode) return;
+      // In creator mode: ONLY show ghost preview box if user is actively hovering or dragging it!
+      const isDraggingThis = (this.interaction && this.interaction.dragTarget === 'timer');
+      if (this.creatorMode && (this.isTimerHovered || isDraggingThis) && style !== 'top_bar' && style !== 'bottom_bar') {
+        ctx.save();
+        ctx.globalAlpha = 0.65;
+        const ghostLabel = curTimeSec < timerStart ? `Starts at ${timerStart.toFixed(1)}s` : `Ended`;
+        const isPill = ['digital_badge', 'cyber_pill', 'arcade_retro', 'split_flip'].includes(style);
+        const bw = isPill ? diameter * 1.55 : diameter;
+        const bh = isPill ? diameter * 0.75 : diameter;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.8 * resScale;
+        ctx.setLineDash([5 * resScale, 5 * resScale]);
+
+        if (isPill) {
+          ctx.beginPath();
+          ctx.roundRect(posX - bw / 2, posY - bh / 2, bw, bh, 10 * resScale);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.arc(posX, posY, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = `700 ${Math.max(11, Math.round(13 * resScale))}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`⏱️ [${ghostLabel}]`, posX, posY);
+        ctx.restore();
+      }
+      return;
+    }
+
+    const remainingRatio = 1 - progress;
     const accentColor = secLeft <= 3 ? '#ef4444' : (this.timer.color || '#38bdf8');
 
     ctx.save();
+    ctx.globalAlpha = renderAlpha;
+    if (scaleMultiplier !== 1.0 && style !== 'top_bar' && style !== 'bottom_bar') {
+      ctx.translate(posX, posY);
+      ctx.scale(scaleMultiplier, scaleMultiplier);
+      ctx.translate(-posX, -posY);
+    }
 
     if (style === 'top_bar') {
       const barH = (this.timer.height || 10) * resScale;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(0, 0, width, barH);
       const grad = ctx.createLinearGradient(0, 0, width * remainingRatio, 0);
-      grad.addColorStop(0, this.timer.color || '#38bdf8');
+      grad.addColorStop(0, accentColor);
       grad.addColorStop(0.5, '#6366f1');
       grad.addColorStop(1, '#f43f5e');
       ctx.fillStyle = grad;
@@ -2216,16 +2458,17 @@ class AnimalDanceStudio {
 
     } else if (style === 'bottom_bar') {
       const barH = (this.timer.height || 10) * resScale;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(0, height - barH, width, barH);
       const grad = ctx.createLinearGradient(0, 0, width * remainingRatio, 0);
       grad.addColorStop(0, '#10b981');
-      grad.addColorStop(1, '#fbbf24');
+      grad.addColorStop(0.6, accentColor);
+      grad.addColorStop(1, '#ef4444');
       ctx.fillStyle = grad;
       ctx.fillRect(0, height - barH, width * remainingRatio, barH);
 
     } else if (style === 'radial_ring') {
-      // 1. Dark glass circular background with soft drop shadow
+      // 1. Radial Circular Ring Clock
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
       ctx.shadowBlur = 14 * resScale;
@@ -2265,8 +2508,7 @@ class AnimalDanceStudio {
       ctx.textBaseline = 'middle';
       ctx.fillText(`${secLeft}`, posX, posY);
 
-      // Micro-label under number when size is large enough
-      if (diameter >= 90 * resScale) {
+      if (!numbersOnly && diameter >= 90 * resScale) {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.font = `700 ${Math.round(r * 0.22)}px 'Outfit', sans-serif`;
         ctx.fillText('SEC', posX, posY + r * 0.52);
@@ -2283,7 +2525,6 @@ class AnimalDanceStudio {
       ctx.fill();
       ctx.restore();
 
-      // Clock Outer Bezel
       ctx.strokeStyle = accentColor;
       ctx.lineWidth = Math.max(3 * resScale, 5 * (diameter / 130));
       ctx.beginPath();
@@ -2296,7 +2537,6 @@ class AnimalDanceStudio {
         const isQuarter = (i % 3 === 0);
         const innerR = r - (isQuarter ? 14 : 9) * (diameter / 130);
         const outerR = r - 5 * (diameter / 130);
-
         ctx.strokeStyle = isQuarter ? '#ffffff' : 'rgba(255, 255, 255, 0.35)';
         ctx.lineWidth = (isQuarter ? 3 : 1.5) * resScale;
         ctx.beginPath();
@@ -2305,7 +2545,7 @@ class AnimalDanceStudio {
         ctx.stroke();
       }
 
-      // Rotating Clock Hand (sweeps clockwise as time counts down)
+      // Rotating Clock Hand (sweeps clockwise)
       const handAngle = -Math.PI / 2 + (progress * Math.PI * 2);
       const handLen = r * 0.66;
       ctx.strokeStyle = secLeft <= 3 ? '#f87171' : '#fbbf24';
@@ -2316,23 +2556,22 @@ class AnimalDanceStudio {
       ctx.lineTo(posX + Math.cos(handAngle) * handLen, posY + Math.sin(handAngle) * handLen);
       ctx.stroke();
 
-      // Center pivot point
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(posX, posY, 4.5 * resScale, 0, Math.PI * 2);
       ctx.fill();
 
-      // Seconds readout in lower half of dial
       ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
       ctx.font = `900 ${Math.round(r * 0.32)}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`${secLeft}s`, posX, posY + r * 0.44);
+      const clockText = numbersOnly ? `${secLeft}` : `${secLeft}s`;
+      ctx.fillText(clockText, posX, posY + r * 0.44);
 
     } else if (style === 'digital_badge') {
       // 3. Digital Stopwatch Badge
-      const baseW = diameter * 1.35;
-      const baseH = diameter * 0.62;
+      const baseW = diameter * 1.45;
+      const baseH = diameter * 0.65;
 
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
@@ -2353,69 +2592,812 @@ class AnimalDanceStudio {
       ctx.font = `900 ${Math.round(baseH * 0.52)}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(`⏱️ ${secLeft}s`, posX, posY);
-    }
+      const badgeText = numbersOnly ? `${secLeft}` : `⏱️ ${secLeft}s`;
+      ctx.fillText(badgeText, posX, posY);
 
-    // Creator Mode Draggable Gizmo outline
-    if (!cleanMode && this.creatorMode && (style === 'radial_ring' || style === 'analog_clock' || style === 'digital_badge')) {
+    } else if (style === 'cyber_pill') {
+      // 4. Cyberpunk HUD Capsule
+      const bw = diameter * 1.55;
+      const bh = diameter * 0.72;
+      const x0 = posX - bw / 2;
+      const y0 = posY - bh / 2;
+      const cornerR = 8 * resScale;
+
       ctx.save();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      if (style === 'digital_badge') {
-        const bw = diameter * 1.35;
-        const bh = diameter * 0.62;
-        ctx.strokeRect(posX - bw / 2 - 4, posY - bh / 2 - 4, bw + 8, bh + 8);
-      } else {
+      ctx.shadowColor = 'rgba(0, 240, 255, 0.35)';
+      ctx.shadowBlur = 16 * resScale;
+      ctx.fillStyle = 'rgba(10, 18, 30, 0.92)';
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, bw, bh, cornerR);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 1.8 * resScale;
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, bw, bh, cornerR);
+      ctx.stroke();
+
+      // Corner tech brackets
+      const bLen = 14 * resScale;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5 * resScale;
+      ctx.beginPath();
+      ctx.moveTo(x0 + bLen, y0); ctx.lineTo(x0, y0); ctx.lineTo(x0, y0 + bLen);
+      ctx.moveTo(x0 + bw - bLen, y0); ctx.lineTo(x0 + bw); ctx.lineTo(x0 + bw, y0 + bLen);
+      ctx.moveTo(x0, y0 + bh - bLen); ctx.lineTo(x0, y0 + bh); ctx.lineTo(x0 + bLen, y0 + bh);
+      ctx.moveTo(x0 + bw - bLen, y0 + bh); ctx.lineTo(x0 + bw, y0 + bh); ctx.lineTo(x0 + bw, y0 + bh - bLen);
+      ctx.stroke();
+
+      // Scanline pattern
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+      for (let sl = y0 + 4 * resScale; sl < y0 + bh - 4 * resScale; sl += 4 * resScale) {
+        ctx.fillRect(x0 + 4 * resScale, sl, bw - 8 * resScale, 1.2 * resScale);
+      }
+
+      if (!numbersOnly) {
+        // Micro status dot
+        ctx.fillStyle = secLeft <= 3 ? '#ef4444' : '#10b981';
         ctx.beginPath();
-        ctx.arc(posX, posY, r + 6 * resScale, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.arc(x0 + 16 * resScale, y0 + 14 * resScale, 3.5 * resScale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Top mini header
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = `700 ${Math.round(bh * 0.18)}px monospace`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('SYS.TMR', x0 + 24 * resScale, y0 + 14 * resScale);
+      }
+
+      // Main Digital Counter
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(bh * (numbersOnly ? 0.58 : 0.48))}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const pillText = numbersOnly ? `${secLeft}` : `00:${String(secLeft).padStart(2, '0')}`;
+      const pillY = numbersOnly ? posY : (y0 + bh * 0.62);
+      ctx.fillText(pillText, posX, pillY);
+
+    } else if (style === 'minimal_clean') {
+      // 5. Sleek Minimalist Ring (Fine Stroke & Orbital Orb)
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 10 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+      ctx.beginPath();
+      ctx.arc(posX, posY, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const trackW = 2.5 * resScale;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = trackW;
+      ctx.beginPath();
+      ctx.arc(posX, posY, r - 4 * resScale, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = trackW;
+      ctx.lineCap = 'round';
+      const endAngle = -Math.PI / 2 + Math.PI * 2 * remainingRatio;
+      ctx.beginPath();
+      ctx.arc(posX, posY, r - 4 * resScale, -Math.PI / 2, endAngle);
+      ctx.stroke();
+
+      // Glowing tip orb
+      const tipX = posX + Math.cos(endAngle) * (r - 4 * resScale);
+      const tipY = posY + Math.sin(endAngle) * (r - 4 * resScale);
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = accentColor;
+      ctx.shadowBlur = 8 * resScale;
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 4 * resScale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(r * 0.75)}px 'Outfit', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${secLeft}`, posX, posY);
+
+    } else if (style === 'arcade_retro') {
+      // 6. 8-Bit Pixel Arcade Box
+      const bw = diameter * 1.45;
+      const bh = diameter * 0.82;
+      const x0 = posX - bw / 2;
+      const y0 = posY - bh / 2;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x0, y0, bw, bh);
+
+      const bColor = secLeft <= 3 ? ((Math.floor(timeMs / 200) % 2 === 0) ? '#ef4444' : '#ffffff') : (this.timer.color || '#facc15');
+      ctx.strokeStyle = bColor;
+      ctx.lineWidth = 4 * resScale;
+      ctx.strokeRect(x0 + 2 * resScale, y0 + 2 * resScale, bw - 4 * resScale, bh - 4 * resScale);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 2 * resScale;
+      ctx.strokeRect(x0 + 7 * resScale, y0 + 7 * resScale, bw - 14 * resScale, bh - 14 * resScale);
+
+      if (!numbersOnly) {
+        ctx.fillStyle = bColor;
+        ctx.font = `900 ${Math.round(bh * 0.22)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('◄ TIME ►', posX, y0 + bh * 0.24);
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(bh * (numbersOnly ? 0.6 : 0.48))}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const arcY = numbersOnly ? posY : (y0 + bh * 0.65);
+      ctx.fillText(`${secLeft}`, posX, arcY);
+
+    } else if (style === 'bomb_fuse') {
+      // 7. Cartoon Ticking Bomb
+      const bombR = r * 0.76;
+      const bombCenterY = posY + r * 0.18;
+
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(posX - 6 * resScale, bombCenterY - bombR - 12 * resScale, 12 * resScale, 14 * resScale);
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 1.5 * resScale;
+      ctx.strokeRect(posX - 6 * resScale, bombCenterY - bombR - 12 * resScale, 12 * resScale, 14 * resScale);
+
+      const fuseStart = { x: posX, y: bombCenterY - bombR - 12 * resScale };
+      const fuseCtrl = { x: posX + 28 * resScale, y: bombCenterY - bombR - 32 * resScale };
+      const fuseMaxEnd = { x: posX + 40 * resScale, y: bombCenterY - bombR - 18 * resScale };
+      const currentFuseT = Math.max(0.1, remainingRatio);
+      const oneMinusT = 1 - currentFuseT;
+      const tipX = oneMinusT * oneMinusT * fuseStart.x + 2 * oneMinusT * currentFuseT * fuseCtrl.x + currentFuseT * currentFuseT * fuseMaxEnd.x;
+      const tipY = oneMinusT * oneMinusT * fuseStart.y + 2 * oneMinusT * currentFuseT * fuseCtrl.y + currentFuseT * currentFuseT * fuseMaxEnd.y;
+
+      ctx.strokeStyle = '#a16207';
+      ctx.lineWidth = 3.5 * resScale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(fuseStart.x, fuseStart.y);
+      ctx.quadraticCurveTo(fuseCtrl.x, fuseCtrl.y, tipX, tipY);
+      ctx.stroke();
+
+      // Sparking Fire Particles
+      const sparkPhase = (timeMs % 300) / 300;
+      ctx.save();
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 12 * resScale;
+      ctx.fillStyle = secLeft <= 3 ? '#ef4444' : '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, (4 + Math.sin(timeMs * 0.05) * 2) * resScale, 0, Math.PI * 2);
+      ctx.fill();
+      for (let sp = 0; sp < 4; sp++) {
+        const ang = (sp * Math.PI / 2) + sparkPhase * Math.PI * 2;
+        const spDist = (6 + (sp * 3)) * resScale;
+        ctx.fillStyle = sp % 2 === 0 ? '#ef4444' : '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(tipX + Math.cos(ang) * spDist, tipY + Math.sin(ang) * spDist, 1.8 * resScale, 0, Math.PI * 2);
+        ctx.fill();
       }
       ctx.restore();
+
+      // Bomb Sphere Body
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 16 * resScale;
+      const bombGrad = ctx.createRadialGradient(posX - bombR * 0.35, bombCenterY - bombR * 0.35, 2, posX, bombCenterY, bombR);
+      bombGrad.addColorStop(0, '#374151');
+      bombGrad.addColorStop(0.7, '#111827');
+      bombGrad.addColorStop(1, '#030712');
+      ctx.fillStyle = bombGrad;
+      ctx.beginPath();
+      ctx.arc(posX, bombCenterY, bombR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 3 * resScale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(posX, bombCenterY, bombR * 0.78, -Math.PI * 0.85, -Math.PI * 0.4);
+      ctx.stroke();
+
+      ctx.fillStyle = secLeft <= 3 ? '#ef4444' : '#fbbf24';
+      ctx.font = `900 ${Math.round(bombR * 0.85)}px 'Outfit', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 6 * resScale;
+      ctx.fillText(`${secLeft}`, posX, bombCenterY);
+
+    } else if (style === 'hourglass') {
+      // 8. Neon Sand Hourglass
+      const hgW = diameter * 0.72;
+      const hgH = diameter * 1.05;
+      const x0 = posX - hgW / 2;
+      const y0 = posY - hgH / 2;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 14 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(x0 - 6 * resScale, y0 - 6 * resScale, hgW + 12 * resScale, hgH + 12 * resScale, 14 * resScale);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2.5 * resScale;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0); ctx.lineTo(x0 + hgW, y0);
+      ctx.lineTo(posX + 5 * resScale, posY);
+      ctx.lineTo(x0 + hgW, y0 + hgH);
+      ctx.lineTo(x0, y0 + hgH);
+      ctx.lineTo(posX - 5 * resScale, posY);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Top Sand Bulb
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x0 + 4 * resScale, y0 + 4 * resScale);
+      ctx.lineTo(x0 + hgW - 4 * resScale, y0 + 4 * resScale);
+      ctx.lineTo(posX + 4 * resScale, posY - 2 * resScale);
+      ctx.lineTo(posX - 4 * resScale, posY - 2 * resScale);
+      ctx.closePath();
+      ctx.clip();
+      const topSandH = (posY - y0 - 6 * resScale) * remainingRatio;
+      ctx.fillStyle = secLeft <= 3 ? '#ef4444' : '#fbbf24';
+      ctx.fillRect(x0, posY - topSandH, hgW, topSandH);
+      ctx.restore();
+
+      // Bottom Sand Bulb
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(posX - 4 * resScale, posY + 2 * resScale);
+      ctx.lineTo(posX + 4 * resScale, posY + 2 * resScale);
+      ctx.lineTo(x0 + hgW - 4 * resScale, y0 + hgH - 4 * resScale);
+      ctx.lineTo(x0 + 4 * resScale, y0 + hgH - 4 * resScale);
+      ctx.closePath();
+      ctx.clip();
+      const botSandH = (y0 + hgH - posY - 6 * resScale) * progress;
+      ctx.fillStyle = secLeft <= 3 ? '#ef4444' : '#fbbf24';
+      ctx.fillRect(x0, y0 + hgH - botSandH, hgW, botSandH);
+      ctx.restore();
+
+      if (remainingRatio > 0.02) {
+        ctx.strokeStyle = secLeft <= 3 ? '#ef4444' : '#fbbf24';
+        ctx.lineWidth = 2 * resScale;
+        ctx.beginPath();
+        ctx.moveTo(posX, posY - 3 * resScale);
+        ctx.lineTo(posX, y0 + hgH - botSandH);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(diameter * 0.28)}px 'Outfit', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 6 * resScale;
+      const hgText = numbersOnly ? `${secLeft}` : `${secLeft}s`;
+      ctx.fillText(hgText, posX, posY);
+
+    } else if (style === 'neon_speedometer') {
+      // 9. Cyber Speedometer / Tachometer Gauge
+      const startAngle = (5 * Math.PI) / 6;
+      const totalAngle = (4 * Math.PI) / 3;
+      const gaugeR = r * 0.85;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+      ctx.shadowBlur = 14 * resScale;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.beginPath();
+      ctx.arc(posX, posY, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 6 * resScale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(posX, posY, gaugeR, startAngle, startAngle + totalAngle);
+      ctx.stroke();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 6 * resScale;
+      ctx.beginPath();
+      ctx.arc(posX, posY, gaugeR, startAngle, startAngle + totalAngle * remainingRatio);
+      ctx.stroke();
+
+      for (let t = 0; t <= 8; t++) {
+        const tAng = startAngle + (t / 8) * totalAngle;
+        const innerTR = gaugeR - 10 * resScale;
+        const outerTR = gaugeR - 3 * resScale;
+        ctx.strokeStyle = (t / 8 <= remainingRatio) ? accentColor : 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 2 * resScale;
+        ctx.beginPath();
+        ctx.moveTo(posX + Math.cos(tAng) * innerTR, posY + Math.sin(tAng) * innerTR);
+        ctx.lineTo(posX + Math.cos(tAng) * outerTR, posY + Math.sin(tAng) * outerTR);
+        ctx.stroke();
+      }
+
+      const needleAngle = startAngle + totalAngle * remainingRatio;
+      ctx.strokeStyle = secLeft <= 3 ? '#ef4444' : '#ffffff';
+      ctx.lineWidth = 3 * resScale;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(posX, posY);
+      ctx.lineTo(posX + Math.cos(needleAngle) * (gaugeR - 6 * resScale), posY + Math.sin(needleAngle) * (gaugeR - 6 * resScale));
+      ctx.stroke();
+
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
+      ctx.arc(posX, posY, 4.5 * resScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(r * 0.42)}px 'Outfit', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${secLeft}`, posX, posY + r * 0.45);
+
+    } else if (style === 'split_flip') {
+      // 10. Vintage Mechanical Split-Flap Clock
+      const bw = diameter * 1.25;
+      const bh = diameter * 1.05;
+      const x0 = posX - bw / 2;
+      const y0 = posY - bh / 2;
+      const midY = posY;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+      ctx.shadowBlur = 14 * resScale;
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, bw, bh, 8 * resScale);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, bw, bh / 2, [8 * resScale, 8 * resScale, 0, 0]);
+      ctx.fill();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(x0, midY, bw, bh / 2, [0, 0, 8 * resScale, 8 * resScale]);
+      ctx.fill();
+
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2 * resScale;
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, bw, bh, 8 * resScale);
+      ctx.stroke();
+
+      const rivetR = 2.5 * resScale;
+      ctx.fillStyle = '#94a3b8';
+      [[x0 + 6 * resScale, y0 + 6 * resScale], [x0 + bw - 6 * resScale, y0 + 6 * resScale],
+       [x0 + 6 * resScale, y0 + bh - 6 * resScale], [x0 + bw - 6 * resScale, y0 + bh - 6 * resScale]].forEach(([rx, ry]) => {
+        ctx.beginPath();
+        ctx.arc(rx, ry, rivetR, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = secLeft <= 3 ? '#f87171' : '#ffffff';
+      ctx.font = `900 ${Math.round(bh * 0.65)}px 'Outfit', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${secLeft}`, posX, posY);
+
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.lineWidth = 2.5 * resScale;
+      ctx.beginPath();
+      ctx.moveTo(x0, midY);
+      ctx.lineTo(x0 + bw, midY);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 1 * resScale;
+      ctx.beginPath();
+      ctx.moveTo(x0, midY + 1.5 * resScale);
+      ctx.lineTo(x0 + bw, midY + 1.5 * resScale);
+      ctx.stroke();
+    }
+
+    // Creator Mode Draggable Gizmo outline & drag label (only if hovered or dragged)
+    if (!cleanMode && this.creatorMode && style !== 'top_bar' && style !== 'bottom_bar') {
+      const isDraggingThis = (this.interaction && this.interaction.dragTarget === 'timer');
+      const isHovered = this.isTimerHovered;
+      if (isDraggingThis || isHovered) {
+        const isPill = ['digital_badge', 'cyber_pill', 'arcade_retro', 'split_flip'].includes(style);
+        const bw = isPill ? diameter * 1.55 : diameter;
+        const bh = isPill ? diameter * 0.75 : diameter;
+
+        ctx.save();
+        ctx.strokeStyle = isDraggingThis ? '#38bdf8' : 'rgba(56, 189, 248, 0.6)';
+        ctx.lineWidth = isDraggingThis ? 2.5 * resScale : 1.5 * resScale;
+        ctx.setLineDash([4 * resScale, 4 * resScale]);
+
+        if (isPill) {
+          ctx.strokeRect(posX - bw / 2 - 4 * resScale, posY - bh / 2 - 4 * resScale, bw + 8 * resScale, bh + 8 * resScale);
+        } else {
+          ctx.beginPath();
+          ctx.arc(posX, posY, r + 6 * resScale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Drag Handle Pill Badge above the timer
+        const badgeY = isPill ? (posY - bh / 2 - 14 * resScale) : (posY - r - 14 * resScale);
+        ctx.setLineDash([]);
+        ctx.fillStyle = isDraggingThis ? 'rgba(56, 189, 248, 0.95)' : 'rgba(15, 23, 42, 0.85)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1 * resScale;
+        const badgeW = 92 * resScale;
+        const badgeH = 18 * resScale;
+        ctx.beginPath();
+        ctx.roundRect(posX - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 9 * resScale);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isDraggingThis ? '#0f172a' : '#38bdf8';
+        ctx.font = `800 ${Math.max(9, Math.round(10 * resScale))}px 'Outfit', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⏱️ DRAG TIMER', posX, badgeY);
+        ctx.restore();
+      }
     }
 
     ctx.restore();
   }
 
-  // --- Answer Reveal Rings (Clean Toggle) ---
+  // --- Answer Reveal Rings (7 Sleek Minimal Styles, Numbers Toggle, Accent Color) ---
   renderAnswerRevealRings(ctx, width, height, timeMs) {
-    const pulse = 1 + Math.sin(timeMs * 0.008) * 0.15;
+    const resScale = width / 1080;
+    const style = this.reveal?.style || 'minimal_ring';
+    const showNumbers = this.reveal?.showNumbers !== false;
+    const accentColor = this.reveal?.color || '#10b981';
+    const pulse = 1 + Math.sin(timeMs * 0.006) * 0.07;
+    const radarPhase = (timeMs % 1500) / 1500;
+    const bob = Math.sin(timeMs * 0.007) * (6 * resScale);
+
+    // Helper for translucent hex colors
+    const hexToRgba = (hex, alpha) => {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      if (isNaN(num)) return `rgba(16, 185, 129, ${alpha})`;
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
     ctx.save();
     for (let i = 0; i < this.animals.length; i++) {
       const a = this.animals[i];
       const x = a.nx * width;
       const y = a.ny * height;
-      const resScale = width / 1080;
-      const radius = 60 * a.scale * resScale * pulse;
+      const baseR = 54 * a.scale * resScale;
+      const radius = Math.max(26 * resScale, baseR * pulse);
+      const numText = `${a.index}`;
 
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 4 * resScale;
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 15 * resScale;
+      ctx.save();
 
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.stroke();
+      if (style === 'minimal_ring') {
+        // STYLE 1: Minimalist Hairline Ring + Soft Glow
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2.5 * resScale;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 10 * resScale;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
 
-      ctx.lineWidth = 2 * resScale;
-      ctx.beginPath();
-      ctx.moveTo(x - radius * 1.25, y);
-      ctx.lineTo(x + radius * 1.25, y);
-      ctx.moveTo(x, y - radius * 1.25);
-      ctx.lineTo(x, y + radius * 1.25);
-      ctx.stroke();
+        ctx.fillStyle = hexToRgba(accentColor, 0.08);
+        ctx.fill();
 
-      ctx.shadowColor = 'transparent';
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(x, y - radius - 15 * resScale, 14 * resScale, 0, Math.PI * 2);
-      ctx.fill();
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          const badgeY = y - radius - 15 * resScale;
+          const badgeR = 13 * resScale;
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, badgeY, badgeR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(13 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, badgeY);
+        } else {
+          // Cardinal accent tick dots
+          ctx.fillStyle = accentColor;
+          const dotR = 2.5 * resScale;
+          const offsets = [
+            [0, -radius], [radius, 0], [0, radius], [-radius, 0]
+          ];
+          for (const [ox, oy] of offsets) {
+            ctx.beginPath();
+            ctx.arc(x + ox, y + oy, dotR, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${14 * resScale}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${a.index}`, x, y - radius - 15 * resScale);
+      } else if (style === 'pointer_arrow') {
+        // STYLE 2: Sleek Floating Pointer Arrow (Points down to the animal)
+        // Subtle outline around animal
+        ctx.strokeStyle = hexToRgba(accentColor, 0.4);
+        ctx.lineWidth = 1.5 * resScale;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const tipY = y - radius * 0.9 + bob;
+        const arrowH = 24 * resScale;
+        const arrowW = 16 * resScale;
+        const baseY = tipY - arrowH;
+
+        // Pointer triangle with glow
+        ctx.fillStyle = accentColor;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 12 * resScale;
+        ctx.beginPath();
+        ctx.moveTo(x, tipY);
+        ctx.lineTo(x - arrowW / 2, baseY);
+        ctx.lineTo(x + arrowW / 2, baseY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          const badgeY = baseY - 13 * resScale;
+          const badgeW = 28 * resScale;
+          const badgeH = 20 * resScale;
+          ctx.fillStyle = '#0f172a';
+          ctx.strokeStyle = accentColor;
+          ctx.lineWidth = 1.5 * resScale;
+          ctx.beginPath();
+          ctx.roundRect(x - badgeW / 2, badgeY - badgeH / 2, badgeW, badgeH, 6 * resScale);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(12 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, badgeY);
+        }
+
+      } else if (style === 'focus_reticle') {
+        // STYLE 3: Modern Camera Focus Reticle (4 Minimalist Corner Brackets)
+        const boxSize = radius * 1.1;
+        const bracketLen = radius * 0.45;
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2.5 * resScale;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 8 * resScale;
+        ctx.lineCap = 'round';
+
+        // Top-left
+        ctx.beginPath();
+        ctx.moveTo(x - boxSize, y - boxSize + bracketLen);
+        ctx.lineTo(x - boxSize, y - boxSize);
+        ctx.lineTo(x - boxSize + bracketLen, y - boxSize);
+        ctx.stroke();
+
+        // Top-right
+        ctx.beginPath();
+        ctx.moveTo(x + boxSize - bracketLen, y - boxSize);
+        ctx.lineTo(x + boxSize, y - boxSize);
+        ctx.lineTo(x + boxSize, y - boxSize + bracketLen);
+        ctx.stroke();
+
+        // Bottom-right
+        ctx.beginPath();
+        ctx.moveTo(x + boxSize, y + boxSize - bracketLen);
+        ctx.lineTo(x + boxSize, y + boxSize);
+        ctx.lineTo(x + boxSize - bracketLen, y + boxSize);
+        ctx.stroke();
+
+        // Bottom-left
+        ctx.beginPath();
+        ctx.moveTo(x - boxSize + bracketLen, y + boxSize);
+        ctx.lineTo(x - boxSize, y + boxSize);
+        ctx.lineTo(x - boxSize, y + boxSize - bracketLen);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          const badgeY = y - boxSize - 12 * resScale;
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, badgeY, 12 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(12 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, badgeY);
+        } else {
+          // Center micro cross-dot
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, y, 2.5 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+      } else if (style === 'map_pin') {
+        // STYLE 4: Modern Map Location Marker Pin
+        // Ground shadow ellipse
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(x, y + radius * 0.9, radius * 0.5, radius * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ground accent ring
+        ctx.strokeStyle = hexToRgba(accentColor, 0.6);
+        ctx.lineWidth = 1.5 * resScale;
+        ctx.beginPath();
+        ctx.ellipse(x, y + radius * 0.9, radius * 0.65 * pulse, radius * 0.25 * pulse, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pin body floating above
+        const pinTipY = y - radius * 0.65 + bob;
+        const pinHeadY = pinTipY - 26 * resScale;
+        const pinR = 15 * resScale;
+
+        ctx.fillStyle = accentColor;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 10 * resScale;
+
+        // Teardrop pin path
+        ctx.beginPath();
+        ctx.arc(x, pinHeadY, pinR, Math.PI * 0.8, Math.PI * 0.2, false);
+        ctx.lineTo(x, pinTipY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(13 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, pinHeadY);
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x, pinHeadY, 4 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+      } else if (style === 'numbered_badge') {
+        // STYLE 5: Floating Numbered Pill Badge with Connector
+        ctx.strokeStyle = hexToRgba(accentColor, 0.45);
+        ctx.lineWidth = 2 * resScale;
+        ctx.setLineDash([4 * resScale, 3 * resScale]);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const badgeY = y - radius - 18 * resScale + bob;
+        // Connector stem
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2 * resScale;
+        ctx.beginPath();
+        ctx.moveTo(x, badgeY + 12 * resScale);
+        ctx.lineTo(x, y - radius);
+        ctx.stroke();
+
+        // Badge pill
+        const bW = showNumbers ? Math.max(34 * resScale, (numText.length * 12 + 18) * resScale) : 22 * resScale;
+        const bH = 22 * resScale;
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2 * resScale;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 12 * resScale;
+        ctx.beginPath();
+        ctx.roundRect(x - bW / 2, badgeY - bH / 2, bW, bH, 11 * resScale);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          ctx.fillStyle = accentColor;
+          ctx.font = `bold ${Math.round(13 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`#${numText}`, x, badgeY);
+        } else {
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, badgeY, 3.5 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+      } else if (style === 'spotlight_halo') {
+        // STYLE 6: Soft Spotlight Halo Glow
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.35);
+        grad.addColorStop(0, hexToRgba(accentColor, 0.45));
+        grad.addColorStop(0.65, hexToRgba(accentColor, 0.15));
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 1.8 * resScale;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 8 * resScale;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          const badgeY = y - radius - 14 * resScale;
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, badgeY, 13 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(13 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, badgeY);
+        }
+
+      } else if (style === 'radar_ping') {
+        // STYLE 7: Radar Ping Wave Ripple
+        const waveR = radius + (radius * 0.7 * radarPhase);
+        const waveAlpha = Math.max(0, 1 - radarPhase) * 0.7;
+
+        // Expanding ripple
+        ctx.strokeStyle = hexToRgba(accentColor, waveAlpha);
+        ctx.lineWidth = 2.5 * resScale;
+        ctx.beginPath();
+        ctx.arc(x, y, waveR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner solid ring
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 2 * resScale;
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 8 * resScale;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        if (showNumbers) {
+          const badgeY = y - radius - 14 * resScale;
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, badgeY, 13 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(13 * resScale)}px Outfit, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(numText, x, badgeY);
+        } else {
+          // Center beacon dot
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(x, y, 3 * resScale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -2430,6 +3412,7 @@ class AnimalDanceStudio {
     this.canvas.addEventListener('pointerdown', this.onPointerDown.bind(this));
     window.addEventListener('pointermove', this.onPointerMove.bind(this));
     window.addEventListener('pointerup', this.onPointerUp.bind(this));
+    this.canvas.addEventListener('pointerleave', () => { this.isTimerHovered = false; });
 
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -2813,39 +3796,17 @@ class AnimalDanceStudio {
     if (flipAllBtn) flipAllBtn.addEventListener('click', () => this.flipAllAnimals());
 
     // Highlight All / Answer Rings (FIXED: Clean Toggle with state feedback)
+    // Highlight All / Answer Rings (Synchronized across all buttons and tabs)
     const toggleReveal = () => {
-      this.answerRevealMode = !this.answerRevealMode;
-      const statusBadge = document.getElementById('revealStatusBadge');
-      const btnText = document.getElementById('revealBtnText');
-      const stageText = document.getElementById('stageRevealText');
-      const dockText = document.getElementById('dockHighlightText');
-
-      if (this.answerRevealMode) {
-        statusBadge.textContent = 'ON';
-        statusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-        statusBadge.style.color = '#ef4444';
-        btnText.textContent = 'Hide Answer Rings';
-        stageText.textContent = 'Hide Rings';
-        dockText.textContent = 'Hide';
-        document.getElementById('btnStageRevealToggle').classList.add('btn-primary');
-        document.getElementById('btnPingAllAnimals').classList.add('btn-primary');
-        this.showToast('🎯 Highlight Rings: ON', 'info');
-      } else {
-        statusBadge.textContent = 'OFF';
-        statusBadge.style.background = 'rgba(16, 185, 129, 0.2)';
-        statusBadge.style.color = '#10b981';
-        btnText.textContent = 'Show Answer Rings';
-        stageText.textContent = 'Highlight All';
-        dockText.textContent = 'Highlight';
-        document.getElementById('btnStageRevealToggle').classList.remove('btn-primary');
-        document.getElementById('btnPingAllAnimals').classList.remove('btn-primary');
-        this.showToast('Highlight Rings: OFF', 'info');
-      }
+      this.setAnswerRevealMode(!this.answerRevealMode, true);
     };
 
-    document.getElementById('btnToggleAnswerReveal').addEventListener('click', toggleReveal);
-    document.getElementById('btnStageRevealToggle').addEventListener('click', toggleReveal);
-    document.getElementById('btnPingAllAnimals').addEventListener('click', toggleReveal);
+    const btnToggleAns = document.getElementById('btnToggleAnswerReveal');
+    if (btnToggleAns) btnToggleAns.addEventListener('click', toggleReveal);
+    const btnStageRev = document.getElementById('btnStageRevealToggle');
+    if (btnStageRev) btnStageRev.addEventListener('click', toggleReveal);
+    const btnPingRev = document.getElementById('btnPingAllAnimals');
+    if (btnPingRev) btnPingRev.addEventListener('click', toggleReveal);
 
     // Save Answer Key PNG
     document.getElementById('btnExportAnswerKeyPng').addEventListener('click', () => {
@@ -3029,6 +3990,11 @@ class AnimalDanceStudio {
     // Title Controls & 18+ Styles
     document.getElementById('inputTitleText').addEventListener('input', (e) => {
       this.title.text = e.target.value;
+      if (this.title.autoSyncCount) {
+        this.title.autoSyncCount = false;
+        const chk = document.getElementById('checkAutoSyncCount');
+        if (chk) chk.checked = false;
+      }
       this.debouncedSaveState();
     });
     document.getElementById('checkAutoSyncCount').addEventListener('change', (e) => {
@@ -3370,6 +4336,23 @@ class AnimalDanceStudio {
         this.debouncedSaveState();
       });
     }
+
+    // Main Title Rotation Angle (-180° to +180°)
+    const syncTitleRotation = (val) => {
+      val = Math.max(-180, Math.min(180, val));
+      this.title.rotation = val;
+      const sl = document.getElementById('sliderTitleRotation');
+      const inp = document.getElementById('inputTitleRotationExact');
+      const ind = document.getElementById('titleRotationVal');
+      if (sl) sl.value = val;
+      if (inp) inp.value = val;
+      if (ind) ind.textContent = `${val}°`;
+      this.debouncedSaveState();
+    };
+    const slTitleRot = document.getElementById('sliderTitleRotation');
+    if (slTitleRot) slTitleRot.addEventListener('input', (e) => syncTitleRotation(parseInt(e.target.value) || 0));
+    const inTitleRot = document.getElementById('inputTitleRotationExact');
+    if (inTitleRot) inTitleRot.addEventListener('input', (e) => syncTitleRotation(parseInt(e.target.value) || 0));
 
     // --- Main Title Advanced Effects (Gradient, Glow, Shadow) ---
     const checkTitleGrad = document.getElementById('checkTitleGradientEnable');
@@ -3715,6 +4698,23 @@ class AnimalDanceStudio {
       });
     });
 
+    // Subtitle Rotation Angle (-180° to +180°)
+    const syncSubtitleRotation = (val) => {
+      val = Math.max(-180, Math.min(180, val));
+      this.title.subtitleRotation = val;
+      const sl = document.getElementById('sliderSubtitleRotation');
+      const inp = document.getElementById('inputSubtitleRotationExact');
+      const ind = document.getElementById('subtitleRotationVal');
+      if (sl) sl.value = val;
+      if (inp) inp.value = val;
+      if (ind) ind.textContent = `${val}°`;
+      this.debouncedSaveState();
+    };
+    const slSubRot = document.getElementById('sliderSubtitleRotation');
+    if (slSubRot) slSubRot.addEventListener('input', (e) => syncSubtitleRotation(parseInt(e.target.value) || 0));
+    const inSubRot = document.getElementById('inputSubtitleRotationExact');
+    if (inSubRot) inSubRot.addEventListener('input', (e) => syncSubtitleRotation(parseInt(e.target.value) || 0));
+
     // Title to Subtitle Spacing (Gap) Controls
     const syncTitleGap = (val) => {
       this.title.gap = val;
@@ -3796,17 +4796,133 @@ class AnimalDanceStudio {
       this.waveformCanvas.addEventListener('pointercancel', (e) => this.onWaveformPointerUp(e));
     }
 
-    document.getElementById('sliderAudioVolume').addEventListener('input', (e) => {
-      const vol = parseInt(e.target.value);
-      window.audioEngine.setVolume(vol / 100);
-      document.getElementById('audioVolumeVal').textContent = `${vol}%`;
-    });
+    // Dual Audio: Background Music Controls
+    const chkBgmActive = document.getElementById('checkBgmActive');
+    if (chkBgmActive) {
+      chkBgmActive.addEventListener('change', (e) => {
+        const active = e.target.checked;
+        window.audioEngine.setBgmMuted(!active);
+        const lbl = document.getElementById('bgmActiveLabel');
+        if (lbl) {
+          lbl.textContent = active ? 'Active' : 'Muted';
+          lbl.style.color = active ? 'var(--accent-duck)' : 'var(--text-muted)';
+        }
+        this.syncAudioUI();
+      });
+    }
+
+    const updateBgmVol = (val) => {
+      window.audioEngine.setVolume(val / 100);
+      const sl1 = document.getElementById('sliderAudioVolume');
+      const sl2 = document.getElementById('sliderBgmVolume');
+      const lbl = document.getElementById('audioVolumeVal');
+      const lbl2 = document.getElementById('bgmVolumeVal');
+      if (sl1) sl1.value = val;
+      if (sl2) sl2.value = val;
+      if (lbl) lbl.textContent = `${val}%`;
+      if (lbl2) lbl2.textContent = `${val}%`;
+    };
+    const slAudioVol = document.getElementById('sliderAudioVolume');
+    if (slAudioVol) slAudioVol.addEventListener('input', (e) => updateBgmVol(parseInt(e.target.value)));
+    const slBgmVol = document.getElementById('sliderBgmVolume');
+    if (slBgmVol) slBgmVol.addEventListener('input', (e) => updateBgmVol(parseInt(e.target.value)));
+
     document.getElementById('checkFadeIn').addEventListener('change', (e) => window.audioEngine.fadeIn = e.target.checked);
     document.getElementById('checkFadeOut').addEventListener('change', (e) => window.audioEngine.fadeOut = e.target.checked);
+
+    const chkAudioLoop = document.getElementById('checkAudioLoop');
+    if (chkAudioLoop) {
+      chkAudioLoop.checked = window.audioEngine ? (window.audioEngine.loop !== false) : true;
+      chkAudioLoop.addEventListener('change', (e) => {
+        if (window.audioEngine) {
+          window.audioEngine.setLoop(e.target.checked);
+        }
+        this.showToast(e.target.checked ? '🔁 Audio Repeat / Loop Enabled' : '⏹️ Audio Repeat Disabled (Plays Once)', 'info');
+        this.debouncedSaveState();
+      });
+    }
+
+    // Dual Audio: Voice Track Controls & Noise Cancellation
+    const chkVoiceActive = document.getElementById('checkVoiceActive');
+    if (chkVoiceActive) {
+      chkVoiceActive.addEventListener('change', (e) => {
+        const active = e.target.checked;
+        window.audioEngine.setVoiceMuted(!active);
+        const lbl = document.getElementById('voiceActiveLabel');
+        if (lbl) {
+          lbl.textContent = active ? 'Active' : 'Muted';
+          lbl.style.color = active ? 'var(--accent-cyan)' : 'var(--text-muted)';
+        }
+        this.syncAudioUI();
+      });
+    }
+
+    const voiceUploadInput = document.getElementById('voiceAudioUpload');
+    if (voiceUploadInput) {
+      voiceUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          this.showToast(`Loading voice file "${file.name}"...`, 'info');
+          await window.audioEngine.loadVoiceFromFile(file);
+          this.syncAudioUI();
+          this.showToast('✨ Voice track loaded with Noise Cancellation!', 'success');
+        } catch (err) {
+          this.showToast(`Voice load error: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    const btnToggleDenoise = document.getElementById('btnToggleVoiceDenoise');
+    if (btnToggleDenoise) {
+      btnToggleDenoise.addEventListener('click', () => {
+        const isDenoised = window.audioEngine.toggleVoiceDenoise();
+        this.syncAudioUI();
+        this.showToast(isDenoised ? '✨ Noise Cancellation Enabled (Active DSP)' : 'Original Voice Audio (Unfiltered)', 'info');
+      });
+    }
+
+    const slVoiceVol = document.getElementById('sliderVoiceVolume');
+    if (slVoiceVol) {
+      slVoiceVol.addEventListener('input', (e) => {
+        const vol = parseInt(e.target.value);
+        window.audioEngine.setVoiceVolume(vol / 100);
+        const ind = document.getElementById('voiceVolumeVal');
+        if (ind) ind.textContent = `${vol}%`;
+      });
+    }
+
+    const btnVoicePrev = document.getElementById('btnVoicePreviewToggle');
+    if (btnVoicePrev) {
+      btnVoicePrev.addEventListener('click', async () => {
+        const isPlaying = await window.audioEngine.playVoicePreview();
+        btnVoicePrev.innerHTML = isPlaying
+          ? '<i class="fa-solid fa-circle-stop" style="color:#ef4444;"></i> Stop Audition'
+          : '<i class="fa-solid fa-circle-play"></i> Audition Voice Only';
+      });
+    }
+
+    const btnMuteBoth = document.getElementById('btnToggleMuteAll');
+    if (btnMuteBoth) {
+      btnMuteBoth.addEventListener('click', () => {
+        const bothMuted = window.audioEngine.bgmMuted && window.audioEngine.voiceMuted;
+        if (bothMuted) {
+          window.audioEngine.setBgmMuted(false);
+          window.audioEngine.setVoiceMuted(false);
+          this.showToast('Unmuted both tracks', 'info');
+        } else {
+          window.audioEngine.setBgmMuted(true);
+          window.audioEngine.setVoiceMuted(true);
+          this.showToast('Muted both tracks (Silent video export)', 'info');
+        }
+        this.syncAudioUI();
+      });
+    }
+
     document.getElementById('btnAudioPreviewToggle').addEventListener('click', () => {
       if (window.audioEngine.isPlaying) {
         window.audioEngine.stop();
-        document.getElementById('btnAudioPreviewToggle').innerHTML = '<i class="fa-solid fa-play"></i> Preview Audio Track';
+        document.getElementById('btnAudioPreviewToggle').innerHTML = '<i class="fa-solid fa-play"></i> Preview Audio';
       } else {
         window.audioEngine.play(0);
         document.getElementById('btnAudioPreviewToggle').innerHTML = '<i class="fa-solid fa-stop"></i> Stop Audio';
@@ -3909,6 +5025,34 @@ class AnimalDanceStudio {
       this.saveWatermarkBranding(false);
     });
 
+    // Watermark Rotation Angle (-180° to +180°)
+    const syncWmRotation = (val) => {
+      val = Math.max(-180, Math.min(180, val));
+      this.watermark.rotation = val;
+      const sl = document.getElementById('sliderWatermarkRotation');
+      const inp = document.getElementById('inputWatermarkRotationExact');
+      const ind = document.getElementById('wmRotationVal');
+      if (sl) sl.value = val;
+      if (inp) inp.value = val;
+      if (ind) ind.textContent = `${val}°`;
+      this.saveWatermarkBranding(false);
+      this.debouncedSaveState();
+    };
+    const slWmRot = document.getElementById('sliderWatermarkRotation');
+    if (slWmRot) slWmRot.addEventListener('input', (e) => syncWmRotation(parseInt(e.target.value) || 0));
+    const inWmRot = document.getElementById('inputWatermarkRotationExact');
+    if (inWmRot) inWmRot.addEventListener('input', (e) => syncWmRotation(parseInt(e.target.value) || 0));
+
+    // Watermark Subtle Shadow Toggle
+    const chkWmShadow = document.getElementById('checkWatermarkShadow');
+    if (chkWmShadow) {
+      chkWmShadow.addEventListener('change', (e) => {
+        this.watermark.showShadow = e.target.checked;
+        this.saveWatermarkBranding(false);
+        this.debouncedSaveState();
+      });
+    }
+
     const syncWmSize = (val) => {
       this.watermark.fontSize = val;
       document.getElementById('sliderWatermarkSize').value = val;
@@ -3942,6 +5086,58 @@ class AnimalDanceStudio {
         this.pushHistoryState('Change Timer Style');
       });
     }
+
+    // Timer Start Time
+    const syncTimerStartTime = (val) => {
+      this.timer.startTime = Math.max(0, Math.min(60, parseFloat(val) || 0));
+      const sl = document.getElementById('sliderTimerStartTime');
+      const inExact = document.getElementById('inputTimerStartTimeExact');
+      const badge = document.getElementById('timerStartTimeVal');
+      if (sl) sl.value = this.timer.startTime;
+      if (inExact) inExact.value = this.timer.startTime;
+      if (badge) badge.textContent = `${this.timer.startTime.toFixed(1)}s`;
+      const winBadge = document.getElementById('timerWindowBadge');
+      if (winBadge) {
+        const endTime = this.timer.startTime + (this.timer.duration || 10);
+        winBadge.textContent = `${this.timer.startTime.toFixed(1)}s ➔ ${endTime.toFixed(1)}s (${this.timer.duration || 10}s)`;
+      }
+      this.pushHistoryState('Change Timer Start Time');
+    };
+    const slTimerStart = document.getElementById('sliderTimerStartTime');
+    if (slTimerStart) slTimerStart.addEventListener('input', (e) => syncTimerStartTime(e.target.value));
+    const inTimerStartExact = document.getElementById('inputTimerStartTimeExact');
+    if (inTimerStartExact) inTimerStartExact.addEventListener('input', (e) => syncTimerStartTime(e.target.value));
+
+    // Timer Countdown Duration (Seconds to show)
+    const syncTimerDuration = (val) => {
+      this.timer.duration = Math.max(1, Math.min(60, parseInt(val) || 10));
+      const sl = document.getElementById('sliderTimerDuration');
+      const inExact = document.getElementById('inputTimerDurationExact');
+      const badge = document.getElementById('timerDurationVal');
+      if (sl) sl.value = this.timer.duration;
+      if (inExact) inExact.value = this.timer.duration;
+      if (badge) badge.textContent = `${this.timer.duration}s`;
+      const winBadge = document.getElementById('timerWindowBadge');
+      if (winBadge) {
+        const endTime = (this.timer.startTime || 0) + this.timer.duration;
+        winBadge.textContent = `${(this.timer.startTime || 0).toFixed(1)}s ➔ ${endTime.toFixed(1)}s (${this.timer.duration}s)`;
+      }
+      document.querySelectorAll('.timer-dur-chip').forEach(chip => {
+        chip.classList.toggle('active', parseInt(chip.dataset.dur) === this.timer.duration);
+      });
+      this.pushHistoryState('Change Timer Duration');
+    };
+    const slTimerDur = document.getElementById('sliderTimerDuration');
+    if (slTimerDur) slTimerDur.addEventListener('input', (e) => syncTimerDuration(e.target.value));
+    const inTimerDurExact = document.getElementById('inputTimerDurationExact');
+    if (inTimerDurExact) inTimerDurExact.addEventListener('input', (e) => syncTimerDuration(e.target.value));
+
+    document.querySelectorAll('.timer-dur-chip').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        syncTimerDuration(parseInt(chip.dataset.dur));
+      });
+    });
 
     const syncTimerSize = (val) => {
       this.timer.size = Math.max(30, Math.min(400, val));
@@ -4004,8 +5200,174 @@ class AnimalDanceStudio {
       });
     }
 
-    // Duration Chips (Manual override)
-    document.querySelectorAll('.preset-chip[data-dur]').forEach(chip => {
+    // Timer Sound Effects (SFX) Listeners - 2-Way Synced between Brand/Timer Tab & Audio Tab
+    const handleSfxPresetChange = (newVal) => {
+      this.timer.sfx = newVal;
+      if (window.audioEngine) window.audioEngine.setTimerSfx(newVal);
+      this.syncTimerSfxUI();
+      if (window.audioEngine && newVal !== 'none' && !this.timer.sfxMuted && (this.timer.sfxVolume || 0) > 0) {
+        window.audioEngine.playTimerTick(this.timer.sfx, 5, this.timer.sfxVolume);
+      }
+      this.pushHistoryState('Change Timer SFX');
+    };
+
+    const selTimerSfx = document.getElementById('selectTimerSfx');
+    if (selTimerSfx) {
+      selTimerSfx.addEventListener('change', (e) => handleSfxPresetChange(e.target.value));
+    }
+    const selAudioTimerSfx = document.getElementById('selectAudioTabTimerSfx');
+    if (selAudioTimerSfx) {
+      selAudioTimerSfx.addEventListener('change', (e) => handleSfxPresetChange(e.target.value));
+    }
+
+    // Volume Slider & Exact Input in Brand Tab
+    const slTimerSfxVol = document.getElementById('sliderTimerSfxVolume');
+    if (slTimerSfxVol) {
+      slTimerSfxVol.addEventListener('input', (e) => {
+        const vol = (parseInt(e.target.value) || 0) / 100;
+        this.setTimerVolume(vol, true, false);
+      });
+      slTimerSfxVol.addEventListener('change', () => {
+        this.pushHistoryState('Change Timer SFX Volume');
+      });
+    }
+    const inTimerSfxVolExact = document.getElementById('inputTimerSfxVolumeExact');
+    if (inTimerSfxVolExact) {
+      inTimerSfxVolExact.addEventListener('input', (e) => {
+        const pct = Math.max(0, Math.min(150, parseInt(e.target.value) || 0));
+        this.setTimerVolume(pct / 100, true, false);
+      });
+      inTimerSfxVolExact.addEventListener('change', () => {
+        this.pushHistoryState('Change Timer SFX Volume');
+      });
+    }
+
+    // Volume Slider & Exact Input in Audio Tab
+    const slAudioTimerVol = document.getElementById('sliderAudioTabTimerSfxVolume');
+    if (slAudioTimerVol) {
+      slAudioTimerVol.addEventListener('input', (e) => {
+        const vol = (parseInt(e.target.value) || 0) / 100;
+        this.setTimerVolume(vol, true, false);
+      });
+      slAudioTimerVol.addEventListener('change', () => {
+        this.pushHistoryState('Change Timer SFX Volume');
+      });
+    }
+    const inAudioTimerVolExact = document.getElementById('inputAudioTabTimerSfxVolumeExact');
+    if (inAudioTimerVolExact) {
+      inAudioTimerVolExact.addEventListener('input', (e) => {
+        const pct = Math.max(0, Math.min(150, parseInt(e.target.value) || 0));
+        this.setTimerVolume(pct / 100, true, false);
+      });
+      inAudioTimerVolExact.addEventListener('change', () => {
+        this.pushHistoryState('Change Timer SFX Volume');
+      });
+    }
+
+    // Quick Volume Preset Chips (Both Tabs)
+    document.addEventListener('click', (e) => {
+      const chip = e.target.closest('.timer-vol-chip, .audio-timer-vol-chip');
+      if (chip && chip.dataset.vol !== undefined) {
+        e.preventDefault();
+        const pct = parseInt(chip.dataset.vol) || 0;
+        const vol = pct / 100;
+        if (pct === 0) {
+          this.timer.sfxMuted = true;
+          if (window.audioEngine) window.audioEngine.setTimerSfxMuted(true);
+        } else if (this.timer.sfxMuted) {
+          this.timer.sfxMuted = false;
+          if (window.audioEngine) window.audioEngine.setTimerSfxMuted(false);
+        }
+        this.setTimerVolume(vol, true, true);
+      }
+    });
+
+    // Mute Toggles (Synced)
+    const handleMuteToggle = (muted) => {
+      this.timer.sfxMuted = muted;
+      if (window.audioEngine) window.audioEngine.setTimerSfxMuted(muted);
+      if (!muted && (this.timer.sfxVolume || 0) <= 0) {
+        this.timer.sfxVolume = 0.8;
+        if (window.audioEngine) window.audioEngine.setTimerSfxVolume(0.8);
+      }
+      this.syncTimerSfxUI();
+      if (!muted && window.audioEngine && this.timer.sfx !== 'none') {
+        window.audioEngine.playTimerTick(this.timer.sfx, 3, this.timer.sfxVolume);
+      }
+      this.pushHistoryState('Toggle Timer SFX Mute');
+    };
+
+    const chkTimerSfxMute = document.getElementById('checkTimerSfxMute');
+    if (chkTimerSfxMute) {
+      chkTimerSfxMute.addEventListener('change', (e) => handleMuteToggle(e.target.checked));
+    }
+    const chkAudioTimerActive = document.getElementById('checkAudioTabTimerSfxActive');
+    if (chkAudioTimerActive) {
+      chkAudioTimerActive.addEventListener('change', (e) => handleMuteToggle(!e.target.checked));
+    }
+
+    // Test Sound Buttons (Both Tabs)
+    const handleTestSound = () => {
+      if (window.audioEngine) {
+        const sfx = this.timer.sfx || 'clock_tick';
+        const vol = (this.timer.sfxVolume !== undefined ? this.timer.sfxVolume : 0.8);
+        if (this.timer.sfxMuted || vol <= 0) {
+          this.showToast('Timer SFX is currently muted or volume is 0%. Auditioning at 80%...', 'info');
+          window.audioEngine.playTimerTick(sfx, 3, 0.8);
+        } else {
+          window.audioEngine.playTimerTick(sfx, 3, vol);
+        }
+      }
+    };
+
+    const btnTestTimerSfx = document.getElementById('btnTestTimerSfx');
+    if (btnTestTimerSfx) {
+      btnTestTimerSfx.addEventListener('click', handleTestSound);
+    }
+    const btnAudioTestTimerSfx = document.getElementById('btnAudioTabTestTimerSfx');
+    if (btnAudioTestTimerSfx) {
+      btnAudioTestTimerSfx.addEventListener('click', handleTestSound);
+    }
+
+    // Timer Visibility & Animation Behavior Mode
+    const selTimerVisMode = document.getElementById('selectTimerVisibilityMode');
+    if (selTimerVisMode) {
+      selTimerVisMode.addEventListener('change', (e) => {
+        this.timer.visibilityMode = e.target.value;
+        const grp = document.getElementById('timerIdleOpacityGroup');
+        if (grp) grp.style.display = (e.target.value === 'transparent_idle') ? 'block' : 'none';
+        this.pushHistoryState('Change Timer Visibility Mode');
+      });
+    }
+
+    // Timer Standby / Idle Transparency Slider & Input
+    const syncTimerIdleOpacity = (val) => {
+      const parsed = Math.max(5, Math.min(90, parseInt(val) || 30));
+      this.timer.idleOpacity = parsed;
+      const sl = document.getElementById('sliderTimerIdleOpacity');
+      const inExact = document.getElementById('inputTimerIdleOpacityExact');
+      const badge = document.getElementById('timerIdleOpacityVal');
+      if (sl) sl.value = parsed;
+      if (inExact) inExact.value = parsed;
+      if (badge) badge.textContent = `${parsed}%`;
+      this.pushHistoryState('Change Timer Idle Opacity');
+    };
+    const slTimerIdle = document.getElementById('sliderTimerIdleOpacity');
+    if (slTimerIdle) slTimerIdle.addEventListener('input', (e) => syncTimerIdleOpacity(e.target.value));
+    const inTimerIdleExact = document.getElementById('inputTimerIdleOpacityExact');
+    if (inTimerIdleExact) inTimerIdleExact.addEventListener('input', (e) => syncTimerIdleOpacity(e.target.value));
+
+    // Clean Countdown Numbers Only Toggle
+    const chkTimerNumbersOnly = document.getElementById('checkTimerNumbersOnly');
+    if (chkTimerNumbersOnly) {
+      chkTimerNumbersOnly.addEventListener('change', (e) => {
+        this.timer.numbersOnly = e.target.checked;
+        this.pushHistoryState('Toggle Timer Numbers Only');
+      });
+    }
+
+    // Video Length Duration Chips (Scoped strictly to tab-export)
+    document.querySelectorAll('#tab-export .preset-chip[data-dur]').forEach(chip => {
       chip.addEventListener('click', () => {
         this.setVideoDuration(parseInt(chip.dataset.dur));
       });
@@ -4071,10 +5433,181 @@ class AnimalDanceStudio {
       }
       this.debouncedSaveState();
     });
-    document.getElementById('checkAppendReveal').addEventListener('change', (e) => {
-      this.appendRevealEnding = e.target.checked;
-      this.debouncedSaveState();
+    // Answer Key Reveal Ending Customization (Duration, 7 Minimal Styles, Number Toggle, Color, Live Preview)
+    const chkAppendReveal = document.getElementById('checkAppendReveal');
+    if (chkAppendReveal) {
+      chkAppendReveal.addEventListener('change', (e) => {
+        this.appendRevealEnding = e.target.checked;
+        this.setAnswerRevealMode(e.target.checked, false);
+        this.updateTotalTimelineDuration();
+        this.syncRevealUI();
+        this.debouncedSaveState();
+        if (e.target.checked) {
+          this.showToast(`🎯 Answer Reveal enabled (${this.reveal?.duration || 3}s ending preview active)`, 'success');
+        } else {
+          this.showToast('Answer Reveal ending disabled', 'info');
+        }
+      });
+    }
+
+    // Reveal Duration Chips (3s, 5s, 7s)
+    document.querySelectorAll('.reveal-dur-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const dur = parseInt(chip.dataset.revealDur) || 3;
+        this.reveal.duration = dur;
+        this.updateTotalTimelineDuration();
+        this.syncRevealUI();
+        this.debouncedSaveState();
+      });
     });
+
+    // Reveal Duration Exact Custom Input
+    const inRevealDurExact = document.getElementById('inputRevealDurationExact');
+    if (inRevealDurExact) {
+      inRevealDurExact.addEventListener('input', (e) => {
+        const dur = Math.max(1, Math.min(30, parseInt(e.target.value) || 3));
+        this.reveal.duration = dur;
+        this.updateTotalTimelineDuration();
+        this.syncRevealUI();
+        this.debouncedSaveState();
+      });
+    }
+
+    // 7 Sleek Minimal Reveal Style Cards (Automatically shows reveal preview on canvas)
+    document.querySelectorAll('.reveal-style-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const style = card.dataset.revealStyle;
+        this.reveal.style = style;
+        this.setAnswerRevealMode(true, false);
+        this.syncRevealUI();
+        this.debouncedSaveState();
+        this.pushHistoryState(`Reveal style: ${style}`);
+      });
+    });
+
+    // Show Numbers vs Minimal Points/Circles Only
+    const chkRevealNum = document.getElementById('checkRevealShowNumbers');
+    if (chkRevealNum) {
+      chkRevealNum.addEventListener('change', (e) => {
+        this.reveal.showNumbers = e.target.checked;
+        this.setAnswerRevealMode(true, false);
+        this.debouncedSaveState();
+      });
+    }
+
+    // Reveal Accent Color Picker & Quick Chips
+    const inRevealColor = document.getElementById('inputRevealColor');
+    if (inRevealColor) {
+      inRevealColor.addEventListener('input', (e) => {
+        this.reveal.color = e.target.value;
+        this.setAnswerRevealMode(true, false);
+        this.debouncedSaveState();
+      });
+    }
+    document.querySelectorAll('.reveal-color-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const color = chip.dataset.color;
+        this.reveal.color = color;
+        if (inRevealColor) inRevealColor.value = color;
+        this.setAnswerRevealMode(true, false);
+        this.debouncedSaveState();
+      });
+    });
+
+    // Answer Reveal SFX Controls (Preset Selector, Mute Toggle, Volume Slider, Test Sound)
+    const selRevSfx = document.getElementById('selectRevealSfx');
+    if (selRevSfx) {
+      selRevSfx.addEventListener('change', (e) => {
+        this.reveal.sfx = e.target.value;
+        if (window.audioEngine) window.audioEngine.revealSfx = e.target.value;
+        if (window.audioEngine && e.target.value !== 'none' && (this.reveal.sfxEnabled !== false)) {
+          window.audioEngine.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+        }
+        this.debouncedSaveState();
+      });
+    }
+
+    const chkRevSfxEnable = document.getElementById('checkRevealSfxEnable');
+    if (chkRevSfxEnable) {
+      chkRevSfxEnable.addEventListener('change', (e) => {
+        this.reveal.sfxEnabled = e.target.checked;
+        if (window.audioEngine) window.audioEngine.revealSfxMuted = !e.target.checked;
+        if (e.target.checked && window.audioEngine && this.reveal.sfx !== 'none') {
+          window.audioEngine.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+        }
+        this.debouncedSaveState();
+      });
+    }
+
+    const slRevSfxVol = document.getElementById('sliderRevealSfxVolume');
+    if (slRevSfxVol) {
+      slRevSfxVol.addEventListener('input', (e) => {
+        const vol = parseInt(e.target.value) / 100;
+        this.reveal.sfxVolume = vol;
+        if (window.audioEngine) window.audioEngine.revealSfxVolume = vol;
+        const badge = document.getElementById('revealSfxVolumeVal');
+        if (badge) badge.textContent = `${Math.round(vol * 100)}%`;
+        this.debouncedSaveState();
+      });
+    }
+
+    const btnTestRevSfx = document.getElementById('btnTestRevealSfx');
+    if (btnTestRevSfx) {
+      btnTestRevSfx.addEventListener('click', () => {
+        if (window.audioEngine) {
+          const sfx = this.reveal?.sfx || 'ding_bell';
+          const vol = this.reveal?.sfxVolume !== undefined ? this.reveal.sfxVolume : 0.85;
+          window.audioEngine.playRevealSfx(sfx, vol);
+        }
+      });
+    }
+
+    // Canvas Live Preview of Highlight
+    const btnPreviewReveal = document.getElementById('btnPreviewRevealToggle');
+    if (btnPreviewReveal) {
+      btnPreviewReveal.addEventListener('click', () => {
+        const willBeActive = !this.answerRevealMode;
+        this.setAnswerRevealMode(willBeActive, true);
+        if (willBeActive && this.reveal?.sfxEnabled !== false && this.reveal?.sfx !== 'none') {
+          window.audioEngine?.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+        }
+      });
+    }
+
+    const btnJumpReveal = document.getElementById('btnJumpToRevealEnding');
+    if (btnJumpReveal) {
+      btnJumpReveal.addEventListener('click', () => {
+        if (!this.appendRevealEnding) {
+          this.appendRevealEnding = true;
+          const chk = document.getElementById('checkAppendReveal');
+          if (chk) chk.checked = true;
+          this.updateTotalTimelineDuration();
+          this.syncRevealUI();
+        }
+        this.currentTime = this.videoDuration;
+        this.lastRevealSfxFired = true;
+        this.updatePlayheadUI();
+        if (this.reveal?.sfxEnabled !== false && this.reveal?.sfx !== 'none') {
+          window.audioEngine?.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+        }
+        if (!this.isPlaying) {
+          this.togglePlayback();
+        } else {
+          window.audioEngine?.play(this.currentTime, window.audioEngine.loop);
+        }
+
+        btnJumpReveal.classList.add('active');
+        setTimeout(() => btnJumpReveal.classList.remove('active'), 1200);
+
+        if (window.innerWidth <= 992) {
+          const leftDrawer = document.getElementById('leftControlDeck');
+          if (leftDrawer && leftDrawer.classList.contains('mobile-open')) {
+            leftDrawer.classList.remove('mobile-open');
+          }
+        }
+        this.showToast(`🎯 Playing Ending Scene (${this.reveal?.duration || 3}s) on canvas`, 'info');
+      });
+    }
 
     // Playback buttons
     const togglePlay = () => this.togglePlayback();
@@ -4082,6 +5615,8 @@ class AnimalDanceStudio {
     document.getElementById('btnDeckPlay').addEventListener('click', togglePlay);
     document.getElementById('btnResetPlayhead').addEventListener('click', () => {
       this.currentTime = 0;
+      this.lastRevealSfxFired = false;
+      this.lastTimerTickSec = null;
       if (this.isPlaying) window.audioEngine.play(0);
       if (this.bg.isVideo && this.bg.video) {
         try { this.bg.video.currentTime = 0; } catch (e) {}
@@ -4090,6 +5625,10 @@ class AnimalDanceStudio {
     });
     document.getElementById('stageTimeScrubber').addEventListener('input', (e) => {
       this.currentTime = parseFloat(e.target.value);
+      this.lastTimerTickSec = null;
+      if (this.currentTime < this.videoDuration) {
+        this.lastRevealSfxFired = false;
+      }
       if (this.isPlaying) window.audioEngine.play(this.currentTime);
       if (this.bg.isVideo && this.bg.video) {
         try {
@@ -4667,7 +6206,26 @@ class AnimalDanceStudio {
       }
     }
 
-    // 2. Natural Sprite Bounds Hit-Testing on ALL animals (From topmost layer down to 0)
+    // 2. Timer Hit-Testing (Prioritized before animals and text so it can ALWAYS be dragged freely!)
+    if (this.timer.enabled && this.timer.style !== 'none' && this.timer.style !== 'top_bar' && this.timer.style !== 'bottom_bar') {
+      const tmX = (this.timer.nx ?? 0.88) * this.canvasWidth;
+      const tmY = (this.timer.ny ?? 0.08) * this.canvasHeight;
+      const diameter = (this.timer.size || 130) * resScale;
+      const isPill = ['digital_badge', 'cyber_pill', 'arcade_retro', 'split_flip'].includes(this.timer.style);
+      const hitHalfW = isPill ? (diameter * 1.55) / 2 + 15 * resScale : diameter / 2 + 15 * resScale;
+      const hitHalfH = isPill ? (diameter * 0.75) / 2 + 15 * resScale : diameter / 2 + 15 * resScale;
+      if (Math.abs(clientX - tmX) <= hitHalfW && Math.abs(clientY - tmY) <= hitHalfH) {
+        this.interaction.isDragging = true;
+        this.interaction.dragTarget = 'timer';
+        this.interaction.origItemX = this.timer.nx ?? 0.88;
+        this.interaction.origItemY = this.timer.ny ?? 0.08;
+        this.canvas.style.cursor = 'grabbing';
+        try { this.canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        return;
+      }
+    }
+
+    // 3. Natural Sprite Bounds Hit-Testing on ALL animals (From topmost layer down to 0)
     for (let i = this.animals.length - 1; i >= 0; i--) {
       const a = this.animals[i];
       const ax = a.nx * this.canvasWidth;
@@ -4704,11 +6262,17 @@ class AnimalDanceStudio {
       }
     }
 
-    // 3. Title Hit-Testing
+    // 4. Title Hit-Testing (supports rotated bounds and multi-line height)
     const tx = this.title.nx * this.canvasWidth;
     const ty = this.title.ny * this.canvasHeight;
-    const titleH = this.title.fontSize * (this.canvasWidth / 1080) * 2;
-    if (Math.abs(clientX - tx) < 380 * (this.canvasWidth / 1080) && Math.abs(clientY - ty) < titleH / 2) {
+    const titleLinesCount = Math.max(1, (this.title.text || '').split(/\r?\n/).length);
+    const titleH = (this.title.fontSize * (this.canvasWidth / 1080) * 1.5 * titleLinesCount) + 30;
+    const rotTitleRad = (-(this.title.rotation || 0) * Math.PI) / 180;
+    const dxT = clientX - tx;
+    const dyT = clientY - ty;
+    const localTx = dxT * Math.cos(rotTitleRad) - dyT * Math.sin(rotTitleRad);
+    const localTy = dxT * Math.sin(rotTitleRad) + dyT * Math.cos(rotTitleRad);
+    if (Math.abs(localTx) < 380 * (this.canvasWidth / 1080) && Math.abs(localTy) < titleH / 2) {
       this.interaction.isDragging = true;
       this.interaction.dragTarget = 'title';
       this.interaction.origItemX = this.title.nx;
@@ -4716,25 +6280,16 @@ class AnimalDanceStudio {
       return;
     }
 
-    // 4. Timer Hit-Testing
-    if (this.timer.enabled && this.timer.style !== 'none' && this.timer.style !== 'top_bar' && this.timer.style !== 'bottom_bar') {
-      const tmX = (this.timer.nx ?? 0.88) * this.canvasWidth;
-      const tmY = (this.timer.ny ?? 0.08) * this.canvasHeight;
-      const timerRadius = ((this.timer.size || 130) * (this.canvasWidth / 1080)) / 2 + 15;
-      if (Math.hypot(clientX - tmX, clientY - tmY) < timerRadius) {
-        this.interaction.isDragging = true;
-        this.interaction.dragTarget = 'timer';
-        this.interaction.origItemX = this.timer.nx ?? 0.88;
-        this.interaction.origItemY = this.timer.ny ?? 0.08;
-        return;
-      }
-    }
-
-    // 5. Watermark Hit-Testing
+    // 5. Watermark Hit-Testing (supports rotated bounds)
     if (this.watermark.enabled) {
       const wx = this.watermark.nx * this.canvasWidth;
       const wy = this.watermark.ny * this.canvasHeight;
-      if (Math.abs(clientX - wx) < 220 * (this.canvasWidth / 1080) && Math.abs(clientY - wy) < 40) {
+      const rotWmRad = (-(this.watermark.rotation || 0) * Math.PI) / 180;
+      const dxW = clientX - wx;
+      const dyW = clientY - wy;
+      const localWx = dxW * Math.cos(rotWmRad) - dyW * Math.sin(rotWmRad);
+      const localWy = dxW * Math.sin(rotWmRad) + dyW * Math.cos(rotWmRad);
+      if (Math.abs(localWx) < 220 * (this.canvasWidth / 1080) && Math.abs(localWy) < 40) {
         this.interaction.isDragging = true;
         this.interaction.dragTarget = 'watermark';
         this.interaction.origItemX = this.watermark.nx;
@@ -4765,12 +6320,17 @@ class AnimalDanceStudio {
     if (this.timer.enabled && this.timer.style !== 'none' && this.timer.style !== 'top_bar' && this.timer.style !== 'bottom_bar') {
       const tmX = (this.timer.nx ?? 0.88) * this.canvasWidth;
       const tmY = (this.timer.ny ?? 0.08) * this.canvasHeight;
-      const timerRadius = ((this.timer.size || 130) * resScale) / 2 + 10;
-      if (Math.hypot(clientX - tmX, clientY - tmY) < timerRadius) {
-        this.canvas.style.cursor = 'move';
+      const diameter = (this.timer.size || 130) * resScale;
+      const isPill = ['digital_badge', 'cyber_pill', 'arcade_retro', 'split_flip'].includes(this.timer.style);
+      const hitHalfW = isPill ? (diameter * 1.55) / 2 + 12 * resScale : diameter / 2 + 12 * resScale;
+      const hitHalfH = isPill ? (diameter * 0.75) / 2 + 12 * resScale : diameter / 2 + 12 * resScale;
+      if (Math.abs(clientX - tmX) <= hitHalfW && Math.abs(clientY - tmY) <= hitHalfH) {
+        this.isTimerHovered = true;
+        this.canvas.style.cursor = 'grab';
         return;
       }
     }
+    this.isTimerHovered = false;
 
     if (this.selectedAnimalId) {
       const a = this.animals.find(item => item.id === this.selectedAnimalId);
@@ -4997,6 +6557,7 @@ class AnimalDanceStudio {
     if (flPlay) flPlay.innerHTML = `<i class="fa-solid fa-${playIcon}"></i>`;
 
     if (this.isPlaying) {
+      this.lastTimerTickSec = null;
       window.audioEngine.play(this.currentTime);
       if (this.bg.isVideo && this.bg.video) {
         try {
@@ -5015,13 +6576,73 @@ class AnimalDanceStudio {
     }
   }
 
+  getTotalDuration() {
+    const revealDur = this.appendRevealEnding ? (this.reveal?.duration || 3) : 0;
+    return this.videoDuration + revealDur;
+  }
+
+  updateTotalTimelineDuration() {
+    const totalDur = this.getTotalDuration();
+    const scrubber = document.getElementById('stageTimeScrubber');
+    if (scrubber) scrubber.max = totalDur;
+    this.updatePlayheadUI();
+  }
+
   updatePlayheadUI() {
-    document.getElementById('stageTimeScrubber').value = this.currentTime;
+    const totalDur = this.getTotalDuration();
+    const scrubber = document.getElementById('stageTimeScrubber');
+    if (scrubber) {
+      scrubber.max = totalDur;
+      scrubber.value = this.currentTime;
+    }
     const curMin = String(Math.floor(this.currentTime / 60)).padStart(2, '0');
     const curSec = String(Math.floor(this.currentTime % 60)).padStart(2, '0');
-    const totMin = String(Math.floor(this.videoDuration / 60)).padStart(2, '0');
-    const totSec = String(Math.floor(this.videoDuration % 60)).padStart(2, '0');
-    document.getElementById('stageTimeReadout').textContent = `${curMin}:${curSec} / ${totMin}:${totSec}`;
+    const totMin = String(Math.floor(totalDur / 60)).padStart(2, '0');
+    const totSec = String(Math.floor(totalDur % 60)).padStart(2, '0');
+    const readout = document.getElementById('stageTimeReadout');
+    if (readout) {
+      if (this.appendRevealEnding) {
+        const isCurrentlyInReveal = this.currentTime >= this.videoDuration;
+        const revealDur = this.reveal?.duration || 3;
+        const label = isCurrentlyInReveal ? ` 🎯 REVEAL (${revealDur}s)` : ` (+${revealDur}s Reveal)`;
+        readout.textContent = `${curMin}:${curSec} / ${totMin}:${totSec}${label}`;
+      } else {
+        readout.textContent = `${curMin}:${curSec} / ${totMin}:${totSec}`;
+      }
+    }
+  }
+
+  setAnswerRevealMode(enabled, showToast = false) {
+    this.answerRevealMode = !!enabled;
+
+    // Synchronize Animals tab (Tab 1)
+    const statusBadge = document.getElementById('revealStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = this.answerRevealMode ? 'ON' : 'OFF';
+      statusBadge.style.background = this.answerRevealMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+      statusBadge.style.color = this.answerRevealMode ? '#ef4444' : '#10b981';
+    }
+    const btnText = document.getElementById('revealBtnText');
+    if (btnText) btnText.textContent = this.answerRevealMode ? 'Hide Answer Rings' : 'Toggle Answer Rings';
+    const stageText = document.getElementById('stageRevealText');
+    if (stageText) stageText.textContent = this.answerRevealMode ? 'Hide Rings' : 'Highlight All';
+    const dockText = document.getElementById('dockHighlightText');
+    if (dockText) dockText.textContent = this.answerRevealMode ? 'Hide' : 'Highlight';
+
+    const btnStage = document.getElementById('btnStageRevealToggle');
+    if (btnStage) btnStage.classList.toggle('btn-primary', this.answerRevealMode);
+    const btnPing = document.getElementById('btnPingAllAnimals');
+    if (btnPing) btnPing.classList.toggle('btn-primary', this.answerRevealMode);
+
+    // Synchronize Export tab (Tab 5)
+    const btnPrev = document.getElementById('btnPreviewRevealToggle');
+    const txtPrev = document.getElementById('previewRevealBtnText');
+    if (btnPrev) btnPrev.classList.toggle('active', this.answerRevealMode);
+    if (txtPrev) txtPrev.textContent = this.answerRevealMode ? 'Hide Highlight' : 'Preview Highlight';
+
+    if (showToast) {
+      this.showToast(this.answerRevealMode ? '🎯 Highlight Rings: ON' : 'Highlight Rings: OFF', 'info');
+    }
   }
 
   setTrimStart(val) {
@@ -5271,7 +6892,8 @@ class AnimalDanceStudio {
     if (window.audioEngine.isPlaying && window.audioEngine.ctx) {
       const elapsedSincePlay = window.audioEngine.ctx.currentTime - window.audioEngine.playbackStartTime;
       const playLen = Math.max(0.1, trimEnd - trimStart);
-      const curPosSec = trimStart + (elapsedSincePlay % playLen);
+      const shouldLoop = window.audioEngine.loop !== false;
+      const curPosSec = shouldLoop ? (trimStart + (elapsedSincePlay % playLen)) : (trimStart + Math.min(playLen, elapsedSincePlay));
       const needleX = (curPosSec / dur) * w;
 
       ctx.fillStyle = '#f43f5e';
@@ -5884,12 +7506,132 @@ class AnimalDanceStudio {
     this.showToast(`Selected Animal #${a ? a.index : ''}`, 'info');
   }
 
+  setTimerVolume(vol, audition = true, pushHistory = false) {
+    const rawNum = typeof vol === 'number' ? vol : parseFloat(vol);
+    const validVol = Math.max(0, Math.min(1.5, isNaN(rawNum) ? 0.8 : rawNum));
+    this.timer.sfxVolume = validVol;
+    if (window.audioEngine) {
+      window.audioEngine.setTimerSfxVolume(validVol);
+    }
+    if (validVol <= 0) {
+      this.timer.sfxMuted = true;
+      if (window.audioEngine) window.audioEngine.setTimerSfxMuted(true);
+    }
+
+    this.syncTimerSfxUI();
+
+    if (audition && validVol > 0 && !this.timer.sfxMuted && window.audioEngine) {
+      if (this._timerVolAuditionTimeout) clearTimeout(this._timerVolAuditionTimeout);
+      this._timerVolAuditionTimeout = setTimeout(() => {
+        window.audioEngine.playTimerTick(this.timer.sfx || 'clock_tick', 3, validVol);
+      }, 70);
+    }
+
+    if (pushHistory) {
+      this.pushHistoryState('Change Timer Sound Volume');
+    }
+  }
+
+  syncTimerSfxUI() {
+    const vol = this.timer.sfxVolume !== undefined ? this.timer.sfxVolume : (window.audioEngine?.timerSfxVolume ?? 0.8);
+    const volPct = Math.round(vol * 100);
+    const isMuted = !!(this.timer.sfxMuted || vol <= 0);
+    const sfxType = this.timer.sfx || (window.audioEngine?.timerSfx ?? 'clock_tick');
+
+    // 1. Tab Brand (Timer section)
+    const slVol1 = document.getElementById('sliderTimerSfxVolume');
+    const inVol1 = document.getElementById('inputTimerSfxVolumeExact');
+    const valVol1 = document.getElementById('timerSfxVolumeVal');
+    const chkMute1 = document.getElementById('checkTimerSfxMute');
+    const selSfx1 = document.getElementById('selectTimerSfx');
+
+    if (slVol1) slVol1.value = volPct;
+    if (inVol1) inVol1.value = volPct;
+    if (valVol1) valVol1.textContent = `${volPct}%`;
+    if (chkMute1) chkMute1.checked = isMuted;
+    if (selSfx1) selSfx1.value = sfxType;
+
+    // Update active state on preset chips in Tab Brand
+    document.querySelectorAll('.timer-vol-chip').forEach(chip => {
+      const chipVol = parseInt(chip.getAttribute('data-vol'));
+      chip.classList.toggle('active', chipVol === volPct || (chipVol === 0 && isMuted));
+    });
+
+    // 2. Tab Audio (Audio & SFX section)
+    const slVol2 = document.getElementById('sliderAudioTabTimerSfxVolume');
+    const inVol2 = document.getElementById('inputAudioTabTimerSfxVolumeExact');
+    const valVol2 = document.getElementById('audioTabTimerSfxVolumeVal');
+    const chkActive2 = document.getElementById('checkAudioTabTimerSfxActive');
+    const lblActive2 = document.getElementById('audioTabTimerSfxActiveLabel');
+    const selSfx2 = document.getElementById('selectAudioTabTimerSfx');
+    const badgeSfx2 = document.getElementById('audioTabTimerSfxBadge');
+
+    if (slVol2) slVol2.value = volPct;
+    if (inVol2) inVol2.value = volPct;
+    if (valVol2) valVol2.textContent = `${volPct}%`;
+    if (chkActive2) chkActive2.checked = !isMuted;
+    if (lblActive2) {
+      lblActive2.textContent = !isMuted ? 'Active' : 'Muted';
+      lblActive2.style.color = !isMuted ? 'var(--accent-duck)' : 'var(--text-muted)';
+    }
+    if (selSfx2) selSfx2.value = sfxType;
+    if (badgeSfx2) {
+      const names = {
+        clock_tick: 'Clock Tick',
+        digital_beep: 'Arcade Beep',
+        heartbeat: 'Heartbeat',
+        tension_click: 'Metallic Click',
+        metronome: 'Metronome',
+        radar_blip: 'Radar Blip',
+        none: 'Silent'
+      };
+      badgeSfx2.textContent = names[sfxType] || 'Clock Tick';
+    }
+
+    // Update active state on preset chips in Tab Audio
+    document.querySelectorAll('.audio-timer-vol-chip').forEach(chip => {
+      const chipVol = parseInt(chip.getAttribute('data-vol'));
+      chip.classList.toggle('active', chipVol === volPct || (chipVol === 0 && isMuted));
+    });
+  }
+
   syncTimerUI() {
     const chk = document.getElementById('checkTimerBarEnable');
     if (chk) chk.checked = !!this.timer.enabled;
 
     const sel = document.getElementById('selectTimerStyle');
     if (sel) sel.value = this.timer.style;
+
+    // Start Time
+    const startTime = Math.max(0, this.timer.startTime || 0);
+    const slStart = document.getElementById('sliderTimerStartTime');
+    const inStart = document.getElementById('inputTimerStartTimeExact');
+    const badgeStart = document.getElementById('timerStartTimeVal');
+    if (slStart) slStart.value = startTime;
+    if (inStart) inStart.value = startTime;
+    if (badgeStart) badgeStart.textContent = `${startTime.toFixed(1)}s`;
+
+    // Duration
+    const duration = Math.max(1, this.timer.duration || 10);
+    const slDur = document.getElementById('sliderTimerDuration');
+    const inDur = document.getElementById('inputTimerDurationExact');
+    const badgeDur = document.getElementById('timerDurationVal');
+    if (slDur) slDur.value = duration;
+    if (inDur) inDur.value = duration;
+    if (badgeDur) badgeDur.textContent = `${duration}s`;
+
+    // Active Window Badge
+    const winBadge = document.getElementById('timerWindowBadge');
+    if (winBadge) {
+      const endTime = startTime + duration;
+      winBadge.textContent = `${startTime.toFixed(1)}s ➔ ${endTime.toFixed(1)}s (${duration}s)`;
+    }
+
+    // Duration preset chips
+    document.querySelectorAll('.timer-dur-chip').forEach(chip => {
+      const d = parseInt(chip.dataset.dur);
+      chip.classList.toggle('active', d === duration);
+    });
 
     const slSize = document.getElementById('sliderTimerSize');
     const inSize = document.getElementById('inputTimerSizeExact');
@@ -5918,6 +7660,30 @@ class AnimalDanceStudio {
 
     const inColor = document.getElementById('inputTimerColor');
     if (inColor) inColor.value = this.timer.color || '#38bdf8';
+
+    // SFX Settings
+    this.syncTimerSfxUI();
+
+    // Visibility & Animation Behavior Mode
+    const selVis = document.getElementById('selectTimerVisibilityMode');
+    if (selVis) selVis.value = this.timer.visibilityMode || 'visible_on_start';
+
+    const idleGroup = document.getElementById('timerIdleOpacityGroup');
+    if (idleGroup) {
+      idleGroup.style.display = (this.timer.visibilityMode === 'transparent_idle') ? 'block' : 'none';
+    }
+
+    const idleVal = (this.timer.idleOpacity !== undefined ? this.timer.idleOpacity : 30);
+    const slIdle = document.getElementById('sliderTimerIdleOpacity');
+    const inIdle = document.getElementById('inputTimerIdleOpacityExact');
+    const badgeIdle = document.getElementById('timerIdleOpacityVal');
+    if (slIdle) slIdle.value = idleVal;
+    if (inIdle) inIdle.value = idleVal;
+    if (badgeIdle) badgeIdle.textContent = `${idleVal}%`;
+
+    // Numbers Only Toggle
+    const chkNumbers = document.getElementById('checkTimerNumbersOnly');
+    if (chkNumbers) chkNumbers.checked = !!this.timer.numbersOnly;
 
     // Show or hide position/size controls if bar vs clock
     const posCont = document.getElementById('timerPositionContainer');
@@ -5978,7 +7744,7 @@ class AnimalDanceStudio {
           console.warn('AudioContext resume warning:', e);
         }
       }
-      if (window.audioEngine.ctx && window.audioEngine.ctx.state === 'running' && window.audioEngine.currentBuffer) {
+      if (window.audioEngine.ctx && window.audioEngine.ctx.state === 'running' && (window.audioEngine.hasActiveAudio() || (this.appendRevealEnding && this.reveal?.sfxEnabled !== false && this.reveal?.sfx !== 'none') || (this.timer.enabled && !this.timer.sfxMuted && this.timer.sfx !== 'none'))) {
         hasAudio = true;
       }
     }
@@ -6093,7 +7859,8 @@ class AnimalDanceStudio {
       }));
     }
 
-    const totalSeconds = this.videoDuration + (this.appendRevealEnding ? 3 : 0);
+    const revealDuration = this.appendRevealEnding ? (this.reveal?.duration || 3) : 0;
+    const totalSeconds = this.videoDuration + revealDuration;
     const targetFps = this.fps || 30;
 
     // Check if deterministic WebCodecs + Mp4Muxer export engine is available
@@ -6371,7 +8138,7 @@ class AnimalDanceStudio {
 
     // START REAL-TIME WALL CLOCK RECORDING
     if (hasAudio) {
-      window.audioEngine.play(0, true); // Synchronized looping audio playback
+      window.audioEngine.play(0, window.audioEngine.loop); // Respect audio loop / repeat setting
     }
     if (this.bg.isVideo && this.bg.video) {
       try {
@@ -6383,6 +8150,8 @@ class AnimalDanceStudio {
     }
     this.exportMediaRecorder.start(100); // 100ms timeslice sends continuous chunks
 
+    this.lastExportTimerTickSec = null;
+    this.lastExportRevealSfxFired = false;
     const startTime = performance.now();
     const totalFrames = Math.ceil(totalSeconds * targetFps);
     let renderedFrames = 0;
@@ -6400,9 +8169,32 @@ class AnimalDanceStudio {
       if (elapsedMs < targetDurationMs) {
         // Animation time STRICTLY tracks real wall-clock elapsed time so GIF NEVER plays in slow-motion!
         const frameTimeMs = elapsedMs;
+
+        // Trigger real-time timer SFX into recording stream
+        if (this.timer.enabled && !this.timer.sfxMuted && this.timer.sfx && this.timer.sfx !== 'none') {
+          const tSec = frameTimeMs / 1000;
+          const tStart = Math.max(0, this.timer.startTime || 0);
+          const tDur = Math.max(1, this.timer.duration || 10);
+          if (tSec >= tStart && tSec <= tStart + tDur) {
+            const secLeft = Math.max(0, Math.ceil(tDur - (tSec - tStart)));
+            if (this.lastExportTimerTickSec !== secLeft) {
+              this.lastExportTimerTickSec = secLeft;
+              window.audioEngine?.playTimerTick(this.timer.sfx, secLeft, this.timer.sfxVolume);
+            }
+          }
+        }
+
         const isRevealSection = this.appendRevealEnding && (frameTimeMs >= this.videoDuration * 1000);
         const prevReveal = this.answerRevealMode;
-        if (isRevealSection) this.answerRevealMode = true;
+        if (isRevealSection) {
+          this.answerRevealMode = true;
+          if (this.reveal?.sfxEnabled !== false && this.reveal?.sfx && this.reveal?.sfx !== 'none') {
+            if (!this.lastExportRevealSfxFired) {
+              this.lastExportRevealSfxFired = true;
+              window.audioEngine?.playRevealSfx(this.reveal.sfx, this.reveal.sfxVolume);
+            }
+          }
+        }
 
         // Ensure video element stays playing and smoothly loops without stutter
         if (this.bg.isVideo && this.bg.video) {
@@ -6688,8 +8480,20 @@ class AnimalDanceStudio {
       channel.port2.postMessage(null);
     });
 
-    // Audio setup
-    const audioBuf = (hasAudio && window.audioEngine && window.audioEngine.currentBuffer) ? window.audioEngine.currentBuffer : null;
+    // Audio setup (Dual Track composite mix: active BGM + active Voice + Timer SFX + Reveal SFX)
+    let audioBuf = null;
+    if (hasAudio && window.audioEngine) {
+      if (typeof window.audioEngine.getMixedAudioBuffer === 'function') {
+        audioBuf = await window.audioEngine.getMixedAudioBuffer(totalSeconds, this.timer, {
+          enabled: this.appendRevealEnding && (this.reveal?.sfxEnabled !== false),
+          sfx: this.reveal?.sfx,
+          sfxVolume: this.reveal?.sfxVolume,
+          startTime: this.videoDuration
+        });
+      } else {
+        audioBuf = window.audioEngine.currentBuffer || null;
+      }
+    }
     const sampleRate = audioBuf ? audioBuf.sampleRate : 44100;
     const channels = audioBuf ? Math.min(2, audioBuf.numberOfChannels) : 2;
 
@@ -6728,12 +8532,16 @@ class AnimalDanceStudio {
             sampleRate: sampleRate
           };
           totalAudioSamples = Math.round(sampleRate * totalSeconds);
-          const trimStart = (window.audioEngine && typeof window.audioEngine.trimStart === 'number') ? window.audioEngine.trimStart : 0;
-          const trimEnd = (window.audioEngine && typeof window.audioEngine.trimEnd === 'number' && window.audioEngine.trimEnd > trimStart) ? window.audioEngine.trimEnd : audioBuf.duration;
-
-          startSample = Math.max(0, Math.round(trimStart * sampleRate));
-          const endSample = Math.min(audioBuf.length, Math.round(trimEnd * sampleRate));
-          loopLen = Math.max(1, endSample - startSample);
+          if (typeof window.audioEngine?.getMixedAudioBuffer === 'function') {
+            startSample = 0;
+            loopLen = Math.max(1, audioBuf.length);
+          } else {
+            const trimStart = (window.audioEngine && typeof window.audioEngine.trimStart === 'number') ? window.audioEngine.trimStart : 0;
+            const trimEnd = (window.audioEngine && typeof window.audioEngine.trimEnd === 'number' && window.audioEngine.trimEnd > trimStart) ? window.audioEngine.trimEnd : audioBuf.duration;
+            startSample = Math.max(0, Math.round(trimStart * sampleRate));
+            const endSample = Math.min(audioBuf.length, Math.round(trimEnd * sampleRate));
+            loopLen = Math.max(1, endSample - startSample);
+          }
 
           ch0 = audioBuf.getChannelData(0);
           ch1 = (channels > 1 && audioBuf.numberOfChannels > 1) ? audioBuf.getChannelData(1) : ch0;
@@ -6816,15 +8624,27 @@ class AnimalDanceStudio {
     const feedAudioUpTo = (targetSampleLimit) => {
       if (!audioEncoder || samplePos >= totalAudioSamples) return;
       const limit = Math.min(totalAudioSamples, targetSampleLimit);
+      const shouldLoop = window.audioEngine ? (window.audioEngine.loop !== false) : true;
       while (samplePos + frameChunkSize <= limit) {
         if (!this.isExporting) return;
         const planar = new Float32Array(channels * frameChunkSize);
         for (let i = 0; i < frameChunkSize; i++) {
-          const offsetInLoop = (samplePos + i) % loopLen;
-          const srcIdx = startSample + offsetInLoop;
-          planar[i] = ch0[srcIdx] || 0;
+          const sampleIndex = samplePos + i;
+          let srcIdx = 0;
+          let hasSample = false;
+          if (shouldLoop) {
+            const offsetInLoop = sampleIndex % loopLen;
+            srcIdx = startSample + offsetInLoop;
+            hasSample = true;
+          } else {
+            if (sampleIndex < loopLen) {
+              srcIdx = startSample + sampleIndex;
+              hasSample = true;
+            }
+          }
+          planar[i] = (hasSample && ch0[srcIdx]) ? ch0[srcIdx] : 0;
           if (channels > 1) {
-            planar[frameChunkSize + i] = ch1[srcIdx] || 0;
+            planar[frameChunkSize + i] = (hasSample && ch1[srcIdx]) ? ch1[srcIdx] : 0;
           }
         }
 
@@ -7437,6 +9257,24 @@ class AnimalDanceStudio {
     if (slGap) slGap.value = curGap;
     if (inGapExact) inGapExact.value = curGap;
     if (valGap) valGap.textContent = `${curGap}px`;
+
+    // Main Title Rotation Angle
+    const curTitleRot = this.title.rotation || 0;
+    const slTitleRot = document.getElementById('sliderTitleRotation');
+    const inTitleRot = document.getElementById('inputTitleRotationExact');
+    const valTitleRot = document.getElementById('titleRotationVal');
+    if (slTitleRot) slTitleRot.value = curTitleRot;
+    if (inTitleRot) inTitleRot.value = curTitleRot;
+    if (valTitleRot) valTitleRot.textContent = `${curTitleRot}°`;
+
+    // Subtitle Rotation Angle
+    const curSubRot = this.title.subtitleRotation || 0;
+    const slSubRot = document.getElementById('sliderSubtitleRotation');
+    const inSubRot = document.getElementById('inputSubtitleRotationExact');
+    const valSubRot = document.getElementById('subtitleRotationVal');
+    if (slSubRot) slSubRot.value = curSubRot;
+    if (inSubRot) inSubRot.value = curSubRot;
+    if (valSubRot) valSubRot.textContent = `${curSubRot}°`;
   }
 
   syncBackgroundUI() {
@@ -7546,6 +9384,19 @@ class AnimalDanceStudio {
     const valOp = document.getElementById('watermarkOpacityVal');
     if (slOp) slOp.value = opPct;
     if (valOp) valOp.textContent = `${opPct}%`;
+
+    // Watermark Rotation Angle
+    const curWmRot = this.watermark.rotation || 0;
+    const slWmRot = document.getElementById('sliderWatermarkRotation');
+    const inWmRot = document.getElementById('inputWatermarkRotationExact');
+    const valWmRot = document.getElementById('wmRotationVal');
+    if (slWmRot) slWmRot.value = curWmRot;
+    if (inWmRot) inWmRot.value = curWmRot;
+    if (valWmRot) valWmRot.textContent = `${curWmRot}°`;
+
+    // Watermark Subtle Shadow
+    const chkWmShadow = document.getElementById('checkWatermarkShadow');
+    if (chkWmShadow) chkWmShadow.checked = this.watermark.showShadow !== false;
   }
 
   saveWatermarkBranding(showToast = false) {
@@ -7557,6 +9408,8 @@ class AnimalDanceStudio {
         fontSize: this.watermark.fontSize || 24,
         color: this.watermark.color || '#ffffff',
         opacity: this.watermark.opacity !== undefined ? this.watermark.opacity : 0.65,
+        rotation: this.watermark.rotation || 0,
+        showShadow: this.watermark.showShadow !== false,
         style: this.watermark.style || 'clean_glow',
         pillColor: this.watermark.pillColor || '#000000',
         nx: this.watermark.nx ?? 0.5,
@@ -7567,6 +9420,187 @@ class AnimalDanceStudio {
       }
     } catch (e) {
       console.warn('Failed to save default watermark branding:', e);
+    }
+  }
+
+  syncRevealUI() {
+    const chkReveal = document.getElementById('checkAppendReveal');
+    if (chkReveal) chkReveal.checked = !!this.appendRevealEnding;
+
+    const dur = this.reveal?.duration || 3;
+    const badge = document.getElementById('revealDurationBadge');
+    if (badge) badge.textContent = `${dur}s`;
+    const valDur = document.getElementById('revealDurationVal');
+    if (valDur) valDur.textContent = `${dur}s`;
+    const inDur = document.getElementById('inputRevealDurationExact');
+    if (inDur) inDur.value = dur;
+
+    document.querySelectorAll('.reveal-dur-chip').forEach(chip => {
+      chip.classList.toggle('active', parseInt(chip.dataset.revealDur) === dur);
+    });
+
+    const style = this.reveal?.style || 'minimal_ring';
+    document.querySelectorAll('.reveal-style-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.revealStyle === style);
+    });
+
+    const chkNum = document.getElementById('checkRevealShowNumbers');
+    if (chkNum) chkNum.checked = this.reveal?.showNumbers !== false;
+
+    const inCol = document.getElementById('inputRevealColor');
+    if (inCol) inCol.value = this.reveal?.color || '#10b981';
+
+    const selSfx = document.getElementById('selectRevealSfx');
+    if (selSfx) selSfx.value = this.reveal?.sfx || 'ding_bell';
+
+    const chkSfx = document.getElementById('checkRevealSfxEnable');
+    if (chkSfx) chkSfx.checked = this.reveal?.sfxEnabled !== false;
+
+    const sfxVol = this.reveal?.sfxVolume !== undefined ? this.reveal.sfxVolume : 0.85;
+    const slSfxVol = document.getElementById('sliderRevealSfxVolume');
+    if (slSfxVol) slSfxVol.value = Math.round(sfxVol * 100);
+    const valSfxVol = document.getElementById('revealSfxVolumeVal');
+    if (valSfxVol) valSfxVol.textContent = `${Math.round(sfxVol * 100)}%`;
+
+    const btnPrev = document.getElementById('btnPreviewRevealToggle');
+    const txtPrev = document.getElementById('previewRevealBtnText');
+    if (btnPrev && txtPrev) {
+      btnPrev.classList.toggle('active', !!this.answerRevealMode);
+      txtPrev.textContent = this.answerRevealMode ? 'Hide Highlight' : 'Preview Highlight';
+    }
+
+    this.updateTotalTimelineDuration();
+  }
+
+  syncAudioUI() {
+    if (!window.audioEngine) return;
+
+    // Track 1: BGM
+    const chkBgm = document.getElementById('checkBgmActive');
+    if (chkBgm) chkBgm.checked = !window.audioEngine.bgmMuted;
+    const lblBgm = document.getElementById('bgmActiveLabel');
+    if (lblBgm) {
+      lblBgm.textContent = !window.audioEngine.bgmMuted ? 'Active' : 'Muted';
+      lblBgm.style.color = !window.audioEngine.bgmMuted ? 'var(--accent-duck)' : 'var(--text-muted)';
+    }
+
+    const chkLoop = document.getElementById('checkAudioLoop');
+    if (chkLoop) chkLoop.checked = window.audioEngine.loop !== false;
+
+    const bgmVolPct = Math.round((window.audioEngine.volume ?? 0.8) * 100);
+    const slBgmVol = document.getElementById('sliderAudioVolume');
+    const valBgmVol = document.getElementById('audioVolumeVal');
+    const slBgmVol2 = document.getElementById('sliderBgmVolume');
+    const valBgmVol2 = document.getElementById('bgmVolumeVal');
+    if (slBgmVol) slBgmVol.value = bgmVolPct;
+    if (valBgmVol) valBgmVol.textContent = `${bgmVolPct}%`;
+    if (slBgmVol2) slBgmVol2.value = bgmVolPct;
+    if (valBgmVol2) valBgmVol2.textContent = `${bgmVolPct}%`;
+
+    // Track 2: Voice
+    const chkVoice = document.getElementById('checkVoiceActive');
+    if (chkVoice) chkVoice.checked = !window.audioEngine.voiceMuted;
+    const lblVoice = document.getElementById('voiceActiveLabel');
+    if (lblVoice) {
+      lblVoice.textContent = !window.audioEngine.voiceMuted ? 'Active' : 'Muted';
+      lblVoice.style.color = !window.audioEngine.voiceMuted ? 'var(--accent-cyan)' : 'var(--text-muted)';
+    }
+
+    const voiceVolPct = Math.round((window.audioEngine.voiceVolume ?? 1.0) * 100);
+    const slVoiceVol = document.getElementById('sliderVoiceVolume');
+    const valVoiceVol = document.getElementById('voiceVolumeVal');
+    if (slVoiceVol) slVoiceVol.value = voiceVolPct;
+    if (valVoiceVol) valVoiceVol.textContent = `${voiceVolPct}%`;
+
+    const voicePanel = document.getElementById('voiceControlsPanel');
+    const voiceStatus = document.getElementById('voiceStatusBadge');
+    if (window.audioEngine.voiceRawBuffer) {
+      if (voicePanel) voicePanel.style.display = 'block';
+      if (voiceStatus) {
+        voiceStatus.textContent = 'Ready';
+        voiceStatus.style.background = 'rgba(16, 185, 129, 0.2)';
+        voiceStatus.style.color = '#10b981';
+      }
+      const nameLbl = document.getElementById('voiceFileNameLabel');
+      if (nameLbl) nameLbl.textContent = window.audioEngine.voiceTrackName || 'voice_track.mp3';
+      const durBadge = document.getElementById('voiceDurationBadge');
+      if (durBadge) durBadge.textContent = `${(window.audioEngine.voiceDuration || 0).toFixed(1)}s`;
+
+      const denoiseBtn = document.getElementById('btnToggleVoiceDenoise');
+      const denoiseTxt = document.getElementById('denoiseBtnText');
+      const denoiseBadge = document.getElementById('denoiseStatusBadge');
+      const isDenoised = !!window.audioEngine.voiceDenoised;
+      if (denoiseTxt) denoiseTxt.textContent = isDenoised ? 'Noise Cancel: ON' : 'Noise Cancel: OFF';
+      if (denoiseBadge) {
+        denoiseBadge.textContent = isDenoised ? '-22dB Clean' : 'Bypassed';
+        denoiseBadge.style.color = isDenoised ? '#10b981' : '#94a3b8';
+      }
+      if (denoiseBtn) {
+        denoiseBtn.style.background = isDenoised ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+        denoiseBtn.style.borderColor = isDenoised ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)';
+        denoiseBtn.style.color = isDenoised ? '#10b981' : 'var(--text-muted)';
+      }
+
+      this.drawVoiceWaveform();
+    } else {
+      if (voicePanel) voicePanel.style.display = 'none';
+      if (voiceStatus) {
+        voiceStatus.textContent = 'No File';
+        voiceStatus.style.background = 'rgba(100, 116, 139, 0.2)';
+        voiceStatus.style.color = '#94a3b8';
+      }
+    }
+
+    // Master Mute Button state
+    const btnMuteAll = document.getElementById('btnToggleMuteAll');
+    if (btnMuteAll) {
+      const bothMuted = window.audioEngine.bgmMuted && window.audioEngine.voiceMuted;
+      btnMuteAll.innerHTML = bothMuted
+        ? '<i class="fa-solid fa-volume-high" style="color:var(--accent-duck);"></i> Unmute Both'
+        : '<i class="fa-solid fa-volume-xmark"></i> Mute Both';
+    }
+
+    // Track 3: Countdown Timer Sound Effects (SFX)
+    this.syncTimerSfxUI();
+  }
+
+  drawVoiceWaveform() {
+    const canvas = document.getElementById('voiceWaveformCanvas');
+    if (!canvas || !window.audioEngine) return;
+    const w = canvas.clientWidth || 300;
+    const h = 40;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, w, h);
+
+    const data = window.audioEngine.voiceWaveformData || [];
+    if (data.length > 0) {
+      const barW = Math.max(2, w / data.length);
+      for (let i = 0; i < data.length; i++) {
+        const barX = i * barW;
+        const val = data[i];
+        const barH = Math.max(3, val * (h - 8));
+        const grad = ctx.createLinearGradient(0, (h - barH) / 2, 0, (h + barH) / 2);
+        grad.addColorStop(0, '#06b6d4');
+        grad.addColorStop(1, '#10b981');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.roundRect(barX, (h - barH) / 2, Math.max(1.5, barW - 1), barH, 2);
+        ctx.fill();
+      }
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.stroke();
     }
   }
 
@@ -7697,6 +9731,8 @@ class AnimalDanceStudio {
           showSubtitlePill: this.title.showSubtitlePill !== false,
 
           gap: this.title.gap !== undefined ? this.title.gap : 40,
+          rotation: this.title.rotation || 0,
+          subtitleRotation: this.title.subtitleRotation || 0,
           nx: this.title.nx ?? 0.5,
           ny: this.title.ny ?? 0.11
         },
@@ -7706,7 +9742,15 @@ class AnimalDanceStudio {
           size: this.timer.size,
           nx: this.timer.nx,
           ny: this.timer.ny,
-          duration: this.timer.duration
+          startTime: this.timer.startTime || 0,
+          duration: this.timer.duration || 10,
+          color: this.timer.color || '#38bdf8',
+          sfx: this.timer.sfx || 'clock_tick',
+          sfxVolume: this.timer.sfxVolume !== undefined ? this.timer.sfxVolume : 0.8,
+          sfxMuted: !!this.timer.sfxMuted,
+          visibilityMode: this.timer.visibilityMode || 'visible_on_start',
+          idleOpacity: this.timer.idleOpacity !== undefined ? this.timer.idleOpacity : 30,
+          numbersOnly: !!this.timer.numbersOnly
         },
         watermark: {
           enabled: !!this.watermark.enabled,
@@ -7715,13 +9759,25 @@ class AnimalDanceStudio {
           fontSize: this.watermark.fontSize || 24,
           color: this.watermark.color || '#ffffff',
           opacity: this.watermark.opacity !== undefined ? this.watermark.opacity : 0.65,
+          rotation: this.watermark.rotation || 0,
+          showShadow: this.watermark.showShadow !== false,
           style: this.watermark.style || 'clean_glow',
           pillColor: this.watermark.pillColor || '#000000',
           nx: this.watermark.nx ?? 0.5,
           ny: this.watermark.ny ?? 0.97
         },
+        reveal: {
+          duration: this.reveal?.duration || 3,
+          style: this.reveal?.style || 'minimal_ring',
+          showNumbers: this.reveal?.showNumbers !== false,
+          color: this.reveal?.color || '#10b981',
+          sfx: this.reveal?.sfx || 'ding_bell',
+          sfxEnabled: this.reveal?.sfxEnabled !== false,
+          sfxVolume: this.reveal?.sfxVolume !== undefined ? this.reveal.sfxVolume : 0.85
+        },
         audio: {
-          presetTrack: document.getElementById('selectPresetTrack')?.value || 'quack_hop'
+          presetTrack: document.getElementById('selectPresetTrack')?.value || 'quack_hop',
+          loop: window.audioEngine ? (window.audioEngine.loop !== false) : true
         }
       };
 
@@ -7935,6 +9991,8 @@ class AnimalDanceStudio {
         this.title.showSubtitlePill = s.title.showSubtitlePill !== undefined ? !!s.title.showSubtitlePill : this.title.showSubtitlePill;
 
         this.title.gap = s.title.gap ?? this.title.gap;
+        this.title.rotation = s.title.rotation || 0;
+        this.title.subtitleRotation = s.title.subtitleRotation || 0;
         this.title.nx = s.title.nx ?? this.title.nx;
         this.title.ny = s.title.ny ?? this.title.ny;
 
@@ -7952,6 +10010,15 @@ class AnimalDanceStudio {
         this.timer.size = s.timer.size ?? this.timer.size;
         this.timer.nx = s.timer.nx ?? this.timer.nx;
         this.timer.ny = s.timer.ny ?? this.timer.ny;
+        this.timer.startTime = s.timer.startTime !== undefined ? s.timer.startTime : 0;
+        this.timer.duration = s.timer.duration !== undefined ? s.timer.duration : 10;
+        this.timer.color = s.timer.color ?? this.timer.color;
+        this.timer.sfx = s.timer.sfx ?? 'clock_tick';
+        this.timer.sfxVolume = s.timer.sfxVolume !== undefined ? s.timer.sfxVolume : 0.8;
+        this.timer.sfxMuted = s.timer.sfxMuted !== undefined ? !!s.timer.sfxMuted : false;
+        this.timer.visibilityMode = s.timer.visibilityMode ?? 'visible_on_start';
+        this.timer.idleOpacity = s.timer.idleOpacity !== undefined ? s.timer.idleOpacity : 30;
+        this.timer.numbersOnly = !!s.timer.numbersOnly;
         this.syncTimerUI();
       }
 
@@ -7963,6 +10030,8 @@ class AnimalDanceStudio {
         this.watermark.fontSize = s.watermark.fontSize ?? this.watermark.fontSize;
         this.watermark.color = s.watermark.color ?? this.watermark.color;
         this.watermark.opacity = s.watermark.opacity !== undefined ? s.watermark.opacity : this.watermark.opacity;
+        this.watermark.rotation = s.watermark.rotation || 0;
+        this.watermark.showShadow = s.watermark.showShadow !== false;
         this.watermark.style = s.watermark.style ?? this.watermark.style;
         this.watermark.pillColor = s.watermark.pillColor ?? this.watermark.pillColor;
         this.watermark.nx = s.watermark.nx ?? this.watermark.nx;
@@ -7979,15 +10048,36 @@ class AnimalDanceStudio {
       } catch (err) {}
       this.syncWatermarkUI();
 
-      // 8. Audio
-      if (s.audio && s.audio.presetTrack) {
-        const selAudio = document.getElementById('selectPresetTrack');
-        if (selAudio) {
-          selAudio.value = s.audio.presetTrack;
-          const badge = document.getElementById('currentTrackBadge');
-          if (badge) badge.textContent = s.audio.presetTrack.replace('_', ' ').toUpperCase();
+      // 8. Answer Reveal Ending
+      if (s.reveal) {
+        if (s.reveal.duration !== undefined) this.reveal.duration = s.reveal.duration;
+        if (s.reveal.style) this.reveal.style = s.reveal.style;
+        if (s.reveal.showNumbers !== undefined) this.reveal.showNumbers = !!s.reveal.showNumbers;
+        if (s.reveal.color) this.reveal.color = s.reveal.color;
+        if (s.reveal.sfx) this.reveal.sfx = s.reveal.sfx;
+        if (s.reveal.sfxEnabled !== undefined) this.reveal.sfxEnabled = !!s.reveal.sfxEnabled;
+        if (s.reveal.sfxVolume !== undefined) this.reveal.sfxVolume = s.reveal.sfxVolume;
+      }
+      this.syncRevealUI();
+
+      // 9. Audio
+      if (s.audio) {
+        if (s.audio.presetTrack) {
+          const selAudio = document.getElementById('selectPresetTrack');
+          if (selAudio) {
+            selAudio.value = s.audio.presetTrack;
+            const badge = document.getElementById('currentTrackBadge');
+            if (badge) {
+              badge.textContent = s.audio.presetTrack.replace('_', ' ').toUpperCase();
+              badge.title = badge.textContent;
+            }
+          }
+        }
+        if (s.audio.loop !== undefined && window.audioEngine) {
+          window.audioEngine.loop = !!s.audio.loop;
         }
       }
+      this.syncAudioUI();
 
       this.renderLayerList();
       this.fitCanvasToScreen();
@@ -8007,10 +10097,16 @@ class AnimalDanceStudio {
 
     // 2. Reset timer to disabled and default position & style
     this.timer.enabled = false;
-    this.timer.style = 'circle_progress';
+    this.timer.style = 'radial_ring';
     this.timer.size = 130;
     this.timer.nx = 0.88;
     this.timer.ny = 0.08;
+    this.timer.startTime = 0;
+    this.timer.duration = 10;
+    this.timer.color = '#38bdf8';
+    this.timer.sfx = 'clock_tick';
+    this.timer.sfxVolume = 0.8;
+    this.timer.sfxMuted = false;
     this.syncTimerUI();
 
     // 3. Reset title styling & position
@@ -8059,10 +10155,16 @@ class AnimalDanceStudio {
     this.syncGlobalOpacityUI();
     this.generateAnimals(15, true);
     this.timer.enabled = false;
-    this.timer.style = 'circle_progress';
+    this.timer.style = 'radial_ring';
     this.timer.size = 130;
     this.timer.nx = 0.88;
     this.timer.ny = 0.08;
+    this.timer.startTime = 0;
+    this.timer.duration = 10;
+    this.timer.color = '#38bdf8';
+    this.timer.sfx = 'clock_tick';
+    this.timer.sfxVolume = 0.8;
+    this.timer.sfxMuted = false;
     this.syncTimerUI();
     this.watermark.enabled = false;
     const chkWm = document.getElementById('checkWatermarkEnable');

@@ -551,12 +551,12 @@
 
             <div class="form-group">
               <div class="form-label">
-                <span>Main Title</span>
+                <span>Main Title (Multi-line Heading)</span>
                 <label style="display:flex; align-items:center; gap:4px; font-size:0.72rem; cursor:pointer;">
                   <input type="checkbox" id="checkAutoSyncCount" checked> Auto-Sync Count
                 </label>
               </div>
-              <input type="text" id="inputTitleText" class="form-input" value="Find 15 Ducks">
+              <textarea id="inputTitleText" class="form-input" rows="2" style="resize:vertical; min-height:50px; line-height:1.35; font-family:inherit;" placeholder="Enter heading title (Press Enter for second line)...">Find 15 Ducks</textarea>
             </div>
 
             <div class="form-group">
@@ -736,6 +736,18 @@
               <div style="display:flex; gap:0.5rem; align-items:center;">
                 <input type="range" id="sliderStrokeWidth" class="range-slider" min="0" max="40" value="10" style="flex:1;">
                 <input type="number" id="inputStrokeWidthExact" class="form-input" min="0" max="40" value="10" style="width:75px;">
+              </div>
+            </div>
+
+            <!-- Main Title Rotation Angle -->
+            <div class="form-group">
+              <div class="form-label">
+                <span>Title Rotation Angle (-180° to +180°)</span>
+                <span class="val-indicator" id="titleRotationVal">0°</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderTitleRotation" class="range-slider" min="-180" max="180" value="0" style="flex:1;">
+                <input type="number" id="inputTitleRotationExact" class="form-input" min="-180" max="180" value="0" style="width:75px;">
               </div>
             </div>
           </div>
@@ -1072,6 +1084,18 @@
               </div>
             </div>
 
+            <!-- Subtitle Rotation Angle -->
+            <div class="form-group" style="margin-top:0.4rem; padding-top:0.5rem; border-top: 1px solid var(--border-subtle);">
+              <div class="form-label">
+                <span>Subtitle Rotation Angle (-180° to +180°)</span>
+                <span class="val-indicator" id="subtitleRotationVal">0°</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderSubtitleRotation" class="range-slider" min="-180" max="180" value="0" style="flex:1;">
+                <input type="number" id="inputSubtitleRotationExact" class="form-input" min="-180" max="180" value="0" style="width:75px;">
+              </div>
+            </div>
+
             <!-- Title & Subtitle Spacing (Gap) Control -->
             <div class="form-group" style="margin-top:0.5rem; padding-top:0.5rem; border-top: 1px solid var(--border-subtle);">
               <div class="form-label">
@@ -1090,11 +1114,17 @@
         <!-- ================= TAB 4: AUDIO ================= -->
         <div id="tab-audio" class="tab-pane">
 
-          <!-- Soundtrack Selection -->
+          <!-- Track 1: Background Music (BGM) -->
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>6 Copyright-Free Soundtracks</span>
-              <span class="badge" id="currentTrackBadge">Quack Hop</span>
+              <div class="ui-section-title-left">
+                <span>🎵 Background Music (BGM)</span>
+                <span class="badge" id="currentTrackBadge" title="Quack Hop">Quack Hop</span>
+              </div>
+              <label class="ui-section-title-right" title="Uncheck to mute Background Music in preview and export">
+                <input type="checkbox" id="checkBgmActive" checked>
+                <span id="bgmActiveLabel" style="font-weight:700; color:var(--accent-duck);">Active</span>
+              </label>
             </div>
 
             <div class="form-group">
@@ -1109,31 +1139,25 @@
               </select>
             </div>
 
-            <!-- Upload Custom Music (Multiple Files Supported & Saved to LocalStorage/IndexedDB!) -->
+            <!-- Upload Custom BGM & Download WAV -->
             <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
               <input type="file" id="customAudioUpload" accept="audio/*" multiple style="display:none">
-              <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customAudioUpload').click()" title="Upload multiple audio files at once">
-                <i class="fa-solid fa-music"></i> Upload Audio (Multi)
+              <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('customAudioUpload').click()" title="Upload multiple background music files at once">
+                <i class="fa-solid fa-music"></i> Upload BGM (Multi)
               </button>
               <button id="btnDownloadWavTrack" class="btn btn-secondary" style="flex:1;" title="Download current music as copyright-free .WAV">
                 <i class="fa-solid fa-download"></i> Save WAV
               </button>
             </div>
 
-            <!-- Saved Audio Gallery -->
+            <!-- Saved BGM Audio Gallery -->
             <div id="savedAudioSection" style="margin-top: 0.5rem; display: none;">
-              <div class="form-label"><span>My Uploaded Audio</span></div>
+              <div class="form-label"><span>My Uploaded BGM</span></div>
               <div id="savedAudioList" style="display: flex; flex-direction: column; gap: 0.35rem;"></div>
             </div>
-          </div>
 
-          <!-- Waveform & Trimmer -->
-          <div class="ui-section">
-            <div class="ui-section-title">
-              <span>Interactive Audio Trimmer</span>
-            </div>
-
-            <div class="waveform-box">
+            <!-- BGM Waveform & Trimmer -->
+            <div class="waveform-box" style="margin-top:0.6rem;">
               <canvas id="waveformCanvas" width="300" height="48"></canvas>
             </div>
 
@@ -1159,23 +1183,26 @@
               </div>
             </div>
 
-            <!-- Match Duration Quick Button -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; background:rgba(255,255,255,0.03); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
-              <span style="font-size:0.75rem; color:var(--text-muted);">Audio Selected: <strong id="audioTrimLenBadge" style="color:var(--accent-duck);">15.0s</strong></span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">BGM Length: <strong id="audioTrimLenBadge" style="color:var(--accent-duck);">15.0s</strong></span>
               <button id="btnSyncDurationToAudio" class="btn btn-secondary btn-sm" title="Apply audio length to video export duration">
                 <i class="fa-solid fa-arrows-rotate"></i> Sync Video Length
               </button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-top:0.5rem;">
               <div class="form-label">
-                <span>Volume</span>
+                <span>BGM Volume</span>
                 <span class="val-indicator" id="audioVolumeVal">80%</span>
               </div>
               <input type="range" id="sliderAudioVolume" class="range-slider" min="0" max="150" value="80">
             </div>
 
-            <div style="display: flex; gap: 1rem;">
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; cursor:pointer; font-weight:600;" title="Seamlessly repeat / loop soundtrack throughout video">
+                <input type="checkbox" id="checkAudioLoop" checked>
+                <span style="color:var(--text-main);"><i class="fa-solid fa-repeat" style="color:var(--accent-duck); margin-right:2px;"></i> Repeat Audio</span>
+              </label>
               <label style="display:flex; align-items:center; gap:5px; font-size:0.75rem; cursor:pointer;">
                 <input type="checkbox" id="checkFadeIn"> Fade-In
               </label>
@@ -1183,10 +1210,146 @@
                 <input type="checkbox" id="checkFadeOut"> Fade-Out
               </label>
             </div>
+          </div>
 
-            <button id="btnAudioPreviewToggle" class="btn btn-secondary" style="margin-top: 0.5rem;">
-              <i class="fa-solid fa-play"></i> Preview Audio Track
+          <!-- Track 2: Voice Track (Voiceover with Noise Cancellation) -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <div class="ui-section-title-left">
+                <span>🎙️ Voice Track</span>
+                <span class="badge" id="voiceStatusBadge" style="background:rgba(100,116,139,0.2); color:#94a3b8;" title="No File">No File</span>
+              </div>
+              <label class="ui-section-title-right" title="Uncheck to mute Voice in preview and export">
+                <input type="checkbox" id="checkVoiceActive" checked>
+                <span id="voiceActiveLabel" style="font-weight:700; color:var(--accent-cyan);">Active</span>
+              </label>
+            </div>
+
+            <!-- Upload Voice File Button -->
+            <input type="file" id="voiceAudioUpload" accept="audio/*" style="display:none">
+            <button class="btn btn-secondary" style="width:100%; padding:0.6rem; justify-content:center; gap:8px;" onclick="document.getElementById('voiceAudioUpload').click()">
+              <i class="fa-solid fa-microphone-lines" style="color:var(--accent-cyan);"></i>
+              <span id="voiceUploadBtnText">Upload My Voice File (.mp3, .wav, .m4a)</span>
             </button>
+
+            <!-- Voice Controls Panel (Appears once voice is uploaded) -->
+            <div id="voiceControlsPanel" style="display:none; margin-top:0.6rem; background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.6rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <div style="font-size:0.78rem; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;" id="voiceFileNameLabel">voice.mp3</div>
+                <span class="badge" id="voiceDurationBadge" style="background:rgba(6,182,212,0.2); color:var(--accent-cyan);">0.0s</span>
+              </div>
+
+              <!-- Noise Cancellation DSP Button & Status -->
+              <div class="form-group" style="margin-bottom:0.5rem;">
+                <div style="display:flex; gap:0.4rem; align-items:center;">
+                  <button id="btnToggleVoiceDenoise" class="btn btn-secondary btn-sm" style="flex:1; justify-content:center; background:rgba(16, 185, 129, 0.15); border-color:rgba(16, 185, 129, 0.4); color:#10b981;" title="Toggle AI-inspired client-side noise cancellation DSP">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="denoiseBtnText">Noise Cancel: ON</span>
+                  </button>
+                  <span class="badge" id="denoiseStatusBadge" style="background:rgba(16, 185, 129, 0.2); color:#10b981; font-size:0.7rem;">-22dB Clean</span>
+                </div>
+                <p style="font-size:0.69rem; color:var(--text-muted); margin:0.3rem 0 0 0;">
+                  Filters out room rumble, AC fan noise, mic hiss & pauses between words.
+                </p>
+              </div>
+
+              <!-- Voice Volume -->
+              <div class="form-group" style="margin-bottom:0.5rem;">
+                <div class="form-label">
+                  <span>Voice Volume</span>
+                  <span class="val-indicator" id="voiceVolumeVal">100%</span>
+                </div>
+                <input type="range" id="sliderVoiceVolume" class="range-slider" min="0" max="150" value="100">
+              </div>
+
+              <!-- Voice Waveform Canvas -->
+              <div class="waveform-box" style="margin-bottom:0.5rem; height:42px;">
+                <canvas id="voiceWaveformCanvas" width="300" height="40" style="width:100%; height:40px;"></canvas>
+              </div>
+
+              <!-- Voice Audition Button -->
+              <button id="btnVoicePreviewToggle" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
+                <i class="fa-solid fa-circle-play"></i> Audition Voice Only
+              </button>
+            </div>
+
+            <!-- Saved Voices Library -->
+            <div id="savedVoiceSection" style="margin-top: 0.5rem; display: none;">
+              <div class="form-label"><span>Saved Voiceovers</span></div>
+              <div id="savedVoiceList" style="display: flex; flex-direction: column; gap: 0.35rem;"></div>
+            </div>
+          </div>
+
+          <!-- Track 3: Countdown Timer Sound Effects (SFX) -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>⏱️ Countdown Timer Sound (SFX)</span>
+                <span class="badge" id="audioTabTimerSfxBadge" style="background:rgba(56,189,248,0.2); color:#38bdf8;">Clock Tick</span>
+              </div>
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; cursor:pointer;" title="Toggle timer tick sound in preview and export">
+                <input type="checkbox" id="checkAudioTabTimerSfxActive" checked>
+                <span id="audioTabTimerSfxActiveLabel" style="font-weight:700; color:var(--accent-duck);">Active</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">Sound Effect Style</div>
+              <select id="selectAudioTabTimerSfx" class="form-input">
+                <option value="clock_tick" selected>Mechanical Clock Tick (Classic Escapement)</option>
+                <option value="digital_beep">Retro Arcade Beep (8-Bit Pitch Rising)</option>
+                <option value="heartbeat">Cinematic Heartbeat Thump (Tense Sub-Bass Pulse)</option>
+                <option value="tension_click">High-Tension Metallic Click (Fast Escalation)</option>
+                <option value="metronome">Studio Woodblock Metronome (Acoustic Strike)</option>
+                <option value="radar_blip">Sci-Fi Radar Sonar Ping (Swept Echo)</option>
+                <option value="none">Silent / None</option>
+              </select>
+            </div>
+
+            <!-- Volume Slider & Exact Number Input -->
+            <div class="form-group" style="margin-bottom:0.35rem;">
+              <div class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Timer Sound Volume</span>
+                <span class="val-indicator" id="audioTabTimerSfxVolumeVal">80%</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderAudioTabTimerSfxVolume" class="range-slider" min="0" max="150" value="80" style="flex:1;">
+                <input type="number" id="inputAudioTabTimerSfxVolumeExact" class="form-input" min="0" max="150" value="80" style="width:75px;" title="Volume percentage (0% to 150%)">
+                <button type="button" id="btnAudioTabTestTimerSfx" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:4px; white-space:nowrap;" title="Test timer sound at this volume">
+                  <i class="fa-solid fa-volume-high"></i> Test Sound
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick Preset Chips to easily reduce or increase volume -->
+            <div class="preset-button-row" id="audioTabTimerVolChips">
+              <button type="button" class="preset-chip audio-timer-vol-chip" data-vol="0">Mute (0%)</button>
+              <button type="button" class="preset-chip audio-timer-vol-chip" data-vol="25">25% (Soft)</button>
+              <button type="button" class="preset-chip audio-timer-vol-chip" data-vol="50">50%</button>
+              <button type="button" class="preset-chip audio-timer-vol-chip active" data-vol="80">80%</button>
+              <button type="button" class="preset-chip audio-timer-vol-chip" data-vol="100">100%</button>
+              <button type="button" class="preset-chip audio-timer-vol-chip" data-vol="150">150% (Boost)</button>
+            </div>
+            <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.35rem; line-height:1.4;">
+              Plays on each countdown second while the timer is visible on screen. Easily reduce for subtle pacing or increase to stand out over music.
+            </p>
+          </div>
+
+          <!-- Master Audio Mixing & Preview Controls -->
+          <div class="ui-section">
+            <div class="ui-section-title">
+              <span>Multi-Track Audio Master Mix</span>
+            </div>
+            <p style="font-size:0.73rem; color:var(--text-muted); line-height:1.4; margin-bottom:0.5rem;">
+              Background Music, Voiceover, and Timer SFX are mixed together in video export. You can customize each volume independently, mute any track, or mute all.
+            </p>
+            <div style="display:flex; gap:0.5rem;">
+              <button id="btnAudioPreviewToggle" class="btn btn-secondary" style="flex:1; justify-content:center;">
+                <i class="fa-solid fa-play"></i> Preview Audio
+              </button>
+              <button id="btnToggleMuteAll" class="btn btn-secondary" style="flex:1; justify-content:center;" title="Mute or unmute both audio tracks with one click">
+                <i class="fa-solid fa-volume-xmark"></i> Mute Both
+              </button>
+            </div>
           </div>
 
         </div>
@@ -1196,53 +1359,16 @@
 
           <div class="ui-section">
             <div class="ui-section-title">
-              <span>Anti-Theft Watermark</span>
+              <span>Brand / Copyright Text</span>
               <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                 <input type="checkbox" id="checkWatermarkEnable" checked>
-                <span style="font-size:0.75rem;">Enabled</span>
+                <span style="font-size:0.75rem; font-weight:700;">Enabled</span>
               </label>
             </div>
 
             <div class="form-group">
-              <div class="form-label">Watermark / Channel Text</div>
+              <div class="form-label">Copyright / Channel Text</div>
               <input type="text" id="inputWatermarkText" class="form-input" value="SmartBrain Game">
-            </div>
-
-            <!-- Watermark Style Presets -->
-            <div class="form-group">
-              <div class="form-label">Watermark Design Preset</div>
-              <div class="watermark-style-grid">
-                <div class="watermark-style-card active" data-wmstyle="clean_glow">
-                  <span style="color:#ffffff; text-shadow:0 0 6px rgba(0,0,0,0.85);">
-                    <i class="fa-solid fa-sparkles"></i> Subtle Glow
-                  </span>
-                </div>
-                <div class="watermark-style-card" data-wmstyle="frosted_pill">
-                  <span style="color:#38bdf8; background:rgba(15,23,42,0.7); padding:2px 6px; border-radius:4px;">
-                    <i class="fa-solid fa-square-full"></i> Frosted Glass
-                  </span>
-                </div>
-                <div class="watermark-style-card" data-wmstyle="shadow_stroke">
-                  <span style="color:#ffffff; text-shadow:1px 1px 0 #000, -1px -1px 0 #000;">
-                    <i class="fa-solid fa-font"></i> 3D Outline
-                  </span>
-                </div>
-                <div class="watermark-style-card" data-wmstyle="neon_brand">
-                  <span style="color:#22d3ee; text-shadow:0 0 8px #06b6d4;">
-                    <i class="fa-solid fa-bolt"></i> Cyber Neon
-                  </span>
-                </div>
-                <div class="watermark-style-card" data-wmstyle="gold_brand">
-                  <span style="color:#fde047; text-shadow:1px 1px 0 #854d0e;">
-                    <i class="fa-solid fa-crown"></i> Royal Gold
-                  </span>
-                </div>
-                <div class="watermark-style-card" data-wmstyle="dark_pill">
-                  <span style="color:#f8fafc; background:#000000; padding:2px 6px; border-radius:4px;">
-                    <i class="fa-solid fa-shield"></i> Solid Dark Pill
-                  </span>
-                </div>
-              </div>
             </div>
 
             <div class="form-group">
@@ -1260,15 +1386,48 @@
               </select>
             </div>
 
+            <!-- Color & Transparency (Opacity) Customization -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
               <div class="form-group">
                 <div class="form-label">Text Color</div>
                 <input type="color" id="inputWatermarkColor" class="form-input" style="height:38px; padding:2px;" value="#ffffff">
               </div>
               <div class="form-group">
-                <div class="form-label">Pill / Backplate</div>
-                <input type="color" id="inputWatermarkPillColor" class="form-input" style="height:38px; padding:2px;" value="#000000">
+                <div class="form-label">
+                  <span>Transparency / Opacity</span>
+                  <span class="val-indicator" id="watermarkOpacityVal">65%</span>
+                </div>
+                <input type="range" id="sliderWatermarkOpacity" class="range-slider" min="5" max="100" value="65" style="margin-top:10px;">
               </div>
+            </div>
+
+            <!-- Rotation Angle for Brand Copyright Text -->
+            <div class="form-group">
+              <div class="form-label">
+                <span>Rotation Angle (-180° to +180°)</span>
+                <span class="val-indicator" id="wmRotationVal">0°</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderWatermarkRotation" class="range-slider" min="-180" max="180" value="0" style="flex:1;">
+                <input type="number" id="inputWatermarkRotationExact" class="form-input" min="-180" max="180" value="0" style="width:75px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Font Size (5px – 120px)</span>
+                <span class="val-indicator" id="watermarkSizeVal">24px</span>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <input type="range" id="sliderWatermarkSize" class="range-slider" min="10" max="120" value="24" style="flex:1;">
+                <input type="number" id="inputWatermarkSizeExact" class="form-input" min="5" max="120" value="24" style="width:75px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; cursor:pointer;">
+                <input type="checkbox" id="checkWatermarkShadow" checked> Subtle Soft Shadow (ensures legibility on any background)
+              </label>
             </div>
 
             <div class="form-group">
@@ -1304,25 +1463,6 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <div class="form-label">
-                <span>Opacity</span>
-                <span class="val-indicator" id="watermarkOpacityVal">65%</span>
-              </div>
-              <input type="range" id="sliderWatermarkOpacity" class="range-slider" min="5" max="100" value="65">
-            </div>
-
-            <div class="form-group">
-              <div class="form-label">
-                <span>Font Size (5px – 100px)</span>
-                <span class="val-indicator" id="watermarkSizeVal">24px</span>
-              </div>
-              <div style="display:flex; gap:0.5rem; align-items:center;">
-                <input type="range" id="sliderWatermarkSize" class="range-slider" min="10" max="100" value="24" style="flex:1;">
-                <input type="number" id="inputWatermarkSizeExact" class="form-input" min="5" max="100" value="24" style="width:75px;">
-              </div>
-            </div>
-
             <div class="form-group" style="margin-top: 0.75rem;">
               <button id="btnSaveWatermarkDefault" class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;">
                 <i class="fa-solid fa-bookmark" style="color:var(--accent-cyan);"></i> Remember My Branding (Auto-Apply Always)
@@ -1340,12 +1480,105 @@
               </label>
             </div>
 
+            <!-- Direct Canvas Drag Notice Banner -->
+            <div class="timer-drag-hint" style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(56, 189, 248, 0.08); border:1px dashed rgba(56, 189, 248, 0.45); border-radius:8px; font-size:0.76rem; color:#38bdf8; margin-bottom:12px;">
+              <i class="fa-solid fa-arrows-up-down-left-right" style="font-size:0.95rem;"></i>
+              <span><strong>Canvas Drag Enabled:</strong> Click & drag the timer directly on the video frame anytime to reposition it freely!</span>
+            </div>
+
+            <!-- Timer Timing Customization (Start time, Duration/Seconds, Active Window) -->
+            <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary); margin-right:4px;"></i> Timing & Display Window</span>
+                <span id="timerWindowBadge" style="font-size:0.72rem; padding:2px 8px; border-radius:12px; background:rgba(56,189,248,0.15); color:#38bdf8; font-family:monospace; font-weight:700;">0.0s ➔ 10.0s (10s)</span>
+              </div>
+
+              <!-- Start Time in Video -->
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label" style="display:flex; justify-content:space-between;">
+                  <span>When to Start (Video Seconds)</span>
+                  <span class="val-indicator" id="timerStartTimeVal">0.0s</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerStartTime" class="range-slider" min="0" max="60" step="0.5" value="0" style="flex:1;">
+                  <input type="number" id="inputTimerStartTimeExact" class="form-input" min="0" max="60" step="0.5" value="0" style="width:75px;">
+                </div>
+              </div>
+
+              <!-- Countdown Duration / Seconds to Show -->
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label" style="display:flex; justify-content:space-between;">
+                  <span>Countdown Seconds to Show</span>
+                  <span class="val-indicator" id="timerDurationVal">10s</span>
+                </div>
+                <div class="preset-button-row" style="margin-bottom:6px; flex-wrap:wrap; gap:4px;">
+                  <button type="button" class="preset-chip timer-dur-chip" data-dur="3">3s</button>
+                  <button type="button" class="preset-chip timer-dur-chip" data-dur="5">5s</button>
+                  <button type="button" class="preset-chip timer-dur-chip" data-dur="7">7s</button>
+                  <button type="button" class="preset-chip timer-dur-chip active" data-dur="10">10s</button>
+                  <button type="button" class="preset-chip timer-dur-chip" data-dur="15">15s</button>
+                  <button type="button" class="preset-chip timer-dur-chip" data-dur="20">20s</button>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerDuration" class="range-slider" min="1" max="60" step="1" value="10" style="flex:1;">
+                  <input type="number" id="inputTimerDurationExact" class="form-input" min="1" max="60" step="1" value="10" style="width:75px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Timer Visibility & Animation Behavior (3 Modes) -->
+            <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 12px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-eye" style="color:var(--primary); margin-right:4px;"></i> Visibility & Animation Behavior</span>
+              </div>
+
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label">When to Show the Timer</div>
+                <select id="selectTimerVisibilityMode" class="form-input">
+                  <option value="visible_on_start" selected>Visible When Time Starts (Smooth Fade In & Out)</option>
+                  <option value="transparent_idle">Transparent Stop Time (Standby Transparency, Full When Active)</option>
+                  <option value="full_visible">Fully Visible (Always Visible Throughout Entire Video)</option>
+                </select>
+              </div>
+
+              <!-- Standby / Idle Transparency Slider (Shown when 'transparent_idle' selected) -->
+              <div class="form-group" id="timerIdleOpacityGroup" style="display:none; margin-bottom:0;">
+                <div class="form-label" style="display:flex; justify-content:space-between;">
+                  <span>Idle Standby Transparency</span>
+                  <span class="val-indicator" id="timerIdleOpacityVal">30%</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerIdleOpacity" class="range-slider" min="5" max="90" value="30" style="flex:1;">
+                  <input type="number" id="inputTimerIdleOpacityExact" class="form-input" min="5" max="90" value="30" style="width:75px;">
+                </div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                  Timer stays subtle at this transparency, then smoothly ramps to 100% during countdown!
+                </div>
+              </div>
+            </div>
+
+            <!-- Clean Countdown Numbers Only Toggle (No Extra Text / Icons) -->
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:rgba(15, 23, 42, 0.4); border:1px solid rgba(255, 255, 255, 0.08); border-radius:8px; margin-bottom:12px;">
+              <label for="checkTimerNumbersOnly" style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-primary); width:100%;">
+                <input type="checkbox" id="checkTimerNumbersOnly">
+                <span>Only Countdown Numbers <span style="font-size:0.72rem; color:var(--text-muted); font-weight:normal;">(No extra text, SEC, emojis or tags)</span></span>
+              </label>
+            </div>
+
+            <!-- Timer Presentation Style (10+ Designs) -->
             <div class="form-group">
-              <div class="form-label">Timer Presentation Style</div>
+              <div class="form-label">Timer Design Style</div>
               <select id="selectTimerStyle" class="form-input">
-                <option value="radial_ring" selected>Radial Circular Ring Clock (Bold Ring)</option>
+                <option value="radial_ring" selected>Radial Neon Ring Clock (Bold Ring)</option>
                 <option value="analog_clock">Analog Clock Face (Ticking Hand & Ticks)</option>
                 <option value="digital_badge">Digital Stopwatch Badge (Neon Countdown)</option>
+                <option value="cyber_pill">Cyberpunk HUD Capsule (Sci-Fi Glass & Brackets)</option>
+                <option value="minimal_clean">Modern Minimalist Ring (Fine Stroke & Elegant)</option>
+                <option value="arcade_retro">8-Bit Pixel Arcade (Retro Game Box)</option>
+                <option value="bomb_fuse">Ticking Cartoon Bomb (Burning Sparking Fuse)</option>
+                <option value="hourglass">Neon Sand Hourglass (Falling Sand Particles)</option>
+                <option value="neon_speedometer">Cyber Speedometer (RPM Curved Gauge)</option>
+                <option value="split_flip">Mechanical Split-Flap Clock (3D Flip Tile)</option>
                 <option value="top_bar">Top Edge Shrinking Gradient Bar</option>
                 <option value="bottom_bar">Bottom Edge Shrinking Gradient Bar</option>
                 <option value="none">Disabled (No Timer)</option>
@@ -1408,6 +1641,55 @@
               <div class="form-group">
                 <div class="form-label">Timer Color</div>
                 <input type="color" id="inputTimerColor" class="form-input" style="height:38px; padding:2px;" value="#38bdf8">
+              </div>
+            </div>
+
+            <!-- Countdown Timer Sound Effects & Audio -->
+            <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-top: 12px; display:flex; flex-direction:column; gap:10px;">
+              <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-volume-high" style="color:var(--primary); margin-right:4px;"></i> Timer Audio Effects (SFX)</span>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                  <input type="checkbox" id="checkTimerSfxMute">
+                  <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Mute SFX</span>
+                </label>
+              </div>
+
+              <!-- Sound Effect Preset -->
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label">Sound Effect Preset</div>
+                <select id="selectTimerSfx" class="form-input">
+                  <option value="clock_tick" selected>Mechanical Clock Tick (Classic Escapement)</option>
+                  <option value="digital_beep">Retro Arcade Beep (8-Bit Pitch Rising)</option>
+                  <option value="heartbeat">Cinematic Heartbeat Thump (Tense Sub-Bass Pulse)</option>
+                  <option value="tension_click">High-Tension Metallic Click (Fast Escalation)</option>
+                  <option value="metronome">Studio Woodblock Metronome (Acoustic Strike)</option>
+                  <option value="radar_blip">Sci-Fi Radar Sonar Ping (Swept Echo)</option>
+                  <option value="none">Silent / None</option>
+                </select>
+              </div>
+
+              <!-- Volume Slider & Exact Input & Audition Button -->
+              <div class="form-group" style="margin-bottom:0;">
+                <div class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>Timer Sound Volume</span>
+                  <span class="val-indicator" id="timerSfxVolumeVal">80%</span>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                  <input type="range" id="sliderTimerSfxVolume" class="range-slider" min="0" max="150" value="80" style="flex:1;">
+                  <input type="number" id="inputTimerSfxVolumeExact" class="form-input" min="0" max="150" value="80" style="width:75px;" title="Volume percentage (0% to 150%)">
+                  <button type="button" id="btnTestTimerSfx" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:4px; white-space:nowrap;" title="Audition timer tick sound">
+                    <i class="fa-solid fa-volume-high"></i> Test Sound
+                  </button>
+                </div>
+                <!-- Quick Preset Chips to reduce or increase volume easily -->
+                <div class="preset-button-row" style="margin-top:0.4rem;" id="timerSfxVolChips">
+                  <button type="button" class="preset-chip timer-vol-chip" data-vol="0">Mute (0%)</button>
+                  <button type="button" class="preset-chip timer-vol-chip" data-vol="25">25% (Soft)</button>
+                  <button type="button" class="preset-chip timer-vol-chip" data-vol="50">50%</button>
+                  <button type="button" class="preset-chip timer-vol-chip active" data-vol="80">80%</button>
+                  <button type="button" class="preset-chip timer-vol-chip" data-vol="100">100%</button>
+                  <button type="button" class="preset-chip timer-vol-chip" data-vol="150">150% (Boost)</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1486,11 +1768,149 @@
               </select>
             </div>
 
-            <!-- Answer Key Ending -->
-            <div class="form-group" style="margin-top: 0.25rem;">
-              <label style="display:flex; align-items:center; gap:6px; font-size:0.76rem; cursor:pointer;">
-                <input type="checkbox" id="checkAppendReveal"> Append 3s "Answer Reveal" at end
-              </label>
+            <!-- Answer Key Reveal Ending Customization (Main Feature Update!) -->
+            <div class="ui-section" style="margin-top:0.5rem; background:rgba(15,23,42,0.6); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.75rem;">
+              <div class="ui-section-title" style="margin-bottom:0.5rem;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; font-size:0.84rem;">
+                  <input type="checkbox" id="checkAppendReveal">
+                  <span>🎯 Append "Answer Reveal" At End</span>
+                </label>
+                <span class="badge" id="revealDurationBadge" style="background:rgba(16,185,129,0.2); color:#10b981;">3s</span>
+              </div>
+
+              <div id="revealControlsGroup">
+                <!-- Customizable Reveal Duration: 3s, 5s, 7s or Custom Seconds -->
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                  <div class="form-label">
+                    <span>Reveal Duration</span>
+                    <span class="val-indicator" id="revealDurationVal">3s</span>
+                  </div>
+                  <div class="preset-button-row">
+                    <button class="preset-chip reveal-dur-chip active" data-reveal-dur="3">3s</button>
+                    <button class="preset-chip reveal-dur-chip" data-reveal-dur="5">5s</button>
+                    <button class="preset-chip reveal-dur-chip" data-reveal-dur="7">7s</button>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">
+                    <input type="number" id="inputRevealDurationExact" class="form-input" min="1" max="15" value="3" style="width: 80px;">
+                    <span style="font-size: 0.76rem; color: var(--text-muted);">custom reveal seconds</span>
+                  </div>
+                </div>
+
+                <!-- 7 Nice & Minimal Highlight Designs -->
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                  <div class="form-label">Highlight Design Style (7 Minimal Presets)</div>
+                  <div class="reveal-style-grid">
+                    <div class="reveal-style-card active" data-reveal-style="minimal_ring">
+                      <div class="reveal-card-icon">⭕</div>
+                      <div class="reveal-card-title">Minimal Ring</div>
+                      <div class="reveal-card-desc">Sleek glowing circle</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="pointer_arrow">
+                      <div class="reveal-card-icon">🔽</div>
+                      <div class="reveal-card-title">Pointer Arrow</div>
+                      <div class="reveal-card-desc">Animated drop arrow</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="focus_reticle">
+                      <div class="reveal-card-icon">🎯</div>
+                      <div class="reveal-card-title">Focus Reticle</div>
+                      <div class="reveal-card-desc">Camera viewfinder</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="map_pin">
+                      <div class="reveal-card-icon">📍</div>
+                      <div class="reveal-card-title">Marker Pin</div>
+                      <div class="reveal-card-desc">Floating beacon pin</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="numbered_badge">
+                      <div class="reveal-card-icon">🏷️</div>
+                      <div class="reveal-card-title">Badge Pin</div>
+                      <div class="reveal-card-desc">Hairline leader badge</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="spotlight_halo">
+                      <div class="reveal-card-icon">💡</div>
+                      <div class="reveal-card-title">Spotlight Halo</div>
+                      <div class="reveal-card-desc">Soft luminous halo</div>
+                    </div>
+                    <div class="reveal-style-card" data-reveal-style="radar_ping">
+                      <div class="reveal-card-icon">📡</div>
+                      <div class="reveal-card-title">Radar Ping</div>
+                      <div class="reveal-card-desc">Expanding sonar wave</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Number Toggle: With Number or Without Number -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; background:rgba(255,255,255,0.03); padding:0.4rem 0.6rem; border-radius:var(--radius-sm); border:1px solid var(--border-subtle);">
+                  <label style="display:flex; align-items:center; gap:6px; font-size:0.75rem; cursor:pointer;">
+                    <input type="checkbox" id="checkRevealShowNumbers" checked>
+                    <span>Show Animal Numbers (#1, #2...)</span>
+                  </label>
+                  <span style="font-size:0.7rem; color:var(--text-muted);">Uncheck for clean circle/point only</span>
+                </div>
+
+                <!-- Highlight Accent Color -->
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                  <div class="form-label">Highlight Accent Color</div>
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <input type="color" id="inputRevealColor" class="form-input" style="height:36px; width:50px; padding:2px;" value="#10b981">
+                    <div class="preset-button-row" style="flex:1;">
+                      <button class="preset-chip reveal-color-chip" data-color="#10b981" style="color:#10b981;">Emerald</button>
+                      <button class="preset-chip reveal-color-chip" data-color="#06b6d4" style="color:#06b6d4;">Cyan</button>
+                      <button class="preset-chip reveal-color-chip" data-color="#facc15" style="color:#facc15;">Yellow</button>
+                      <button class="preset-chip reveal-color-chip" data-color="#f43f5e" style="color:#f43f5e;">Coral</button>
+                      <button class="preset-chip reveal-color-chip" data-color="#ffffff" style="color:#ffffff;">White</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Answer Reveal Sound Effect (Main Feature Update: Crisp Ding / Pop SFX on Reveal) -->
+                <div style="background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px; margin-bottom: 0.75rem; display:flex; flex-direction:column; gap:10px;">
+                  <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fa-solid fa-bell" style="color:var(--primary); margin-right:4px;"></i> Answer Reveal Audio Effect</span>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                      <input type="checkbox" id="checkRevealSfxEnable" checked>
+                      <span style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">Enable SFX</span>
+                    </label>
+                  </div>
+
+                  <!-- Sound Effect Preset Selector -->
+                  <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-label">Reveal Sound Preset</div>
+                    <select id="selectRevealSfx" class="form-input">
+                      <option value="ding_bell" selected>🔔 Crisp "Ding!" Bell Chime (Recommended)</option>
+                      <option value="bubble_pop">🎈 Snappy Bubble Pop</option>
+                      <option value="magic_chime">✨ Magical Sparkle Chime</option>
+                      <option value="tada_fanfare">🎺 Celebratory Fanfare ("Ta-Da!")</option>
+                      <option value="marimba_knock">🪵 Warm Wooden Marimba</option>
+                      <option value="cyber_ping">⚡ Modern Cyber Ping</option>
+                      <option value="none">🔇 Silent / None</option>
+                    </select>
+                  </div>
+
+                  <!-- Volume Slider & Audition Test Button -->
+                  <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-label" style="display:flex; justify-content:space-between;">
+                      <span>SFX Volume</span>
+                      <span class="val-indicator" id="revealSfxVolumeVal">85%</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                      <input type="range" id="sliderRevealSfxVolume" class="range-slider" min="0" max="100" value="85" style="flex:1;">
+                      <button type="button" id="btnTestRevealSfx" class="btn btn-secondary btn-sm" style="display:flex; align-items:center; gap:4px; white-space:nowrap;">
+                        <i class="fa-solid fa-volume-high"></i> Test Sound
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Live Preview & Play Ending Buttons -->
+                <div class="reveal-btn-actions">
+                  <button type="button" id="btnPreviewRevealToggle" class="btn btn-secondary btn-sm" title="Toggle answer reveal rings preview directly on the canvas">
+                    <i class="fa-solid fa-eye"></i> <span id="previewRevealBtnText">Preview Highlight</span>
+                  </button>
+                  <button type="button" id="btnJumpToRevealEnding" class="btn btn-secondary btn-sm" title="Scrub playhead directly to ending reveal section and play">
+                    <i class="fa-solid fa-play"></i> <span>Play Ending Scene</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Big Export Action -->

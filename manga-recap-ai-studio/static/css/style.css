@@ -1,0 +1,126 @@
+/* MangaRecap AI Studio - Dark Glassmorphic Design System */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,800;0,900;1,800&family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-dark: #090a10;
+  --bg-card: rgba(18, 22, 36, 0.75);
+  --bg-card-hover: rgba(26, 32, 54, 0.85);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(234, 179, 8, 0.4);
+  --accent-gold: #facc15;
+  --accent-cyan: #38bdf8;
+  --accent-purple: #a855f7;
+  --accent-red: #ef4444;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(250, 204, 21, 0.02) 0%, transparent 60%);
+  color: var(--text-main);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  border-radius: 16px;
+}
+
+.glass-panel-accent {
+  background: rgba(22, 28, 48, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  box-shadow: 0 10px 40px 0 rgba(250, 204, 21, 0.06);
+  border-radius: 16px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #090a10;
+}
+::-webkit-scrollbar-thumb {
+  background: #232942;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b456e;
+}
+
+/* Pulse Glow Animations */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(250, 204, 21, 0.6);
+  }
+}
+
+.glow-gold {
+  animation: glowPulse 2.5s infinite;
+}
+
+@keyframes recordingPulse {
+  0%, 100% {
+    background-color: #ef4444;
+    transform: scale(1);
+  }
+  50% {
+    background-color: #b91c1c;
+    transform: scale(1.05);
+  }
+}
+
+.recording-dot {
+  animation: recordingPulse 1.2s infinite;
+}
+
+/* Stepper Active Indicators */
+.step-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-item.active {
+  border-color: #facc15;
+  background: rgba(250, 204, 21, 0.1);
+  color: #facc15;
+}
+.step-item.completed {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+/* Code & Text Area */
+textarea:focus, input:focus, select:focus {
+  outline: none;
+  border-color: #facc15 !important;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2);
+}
+
+/* Thumbnail Display Font */
+.thumbnail-hook-text {
+  font-family: 'Montserrat', 'Impact', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+/* Range Sliders */
+input[type="range"] {
+  accent-color: #facc15;
+}

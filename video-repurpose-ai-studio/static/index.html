@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoRepurpose AI Studio | Anti-Copyright Remaster & Multilingual Re-Voice Suite</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="logo-badge">🎬</div>
+      <div>
+        <h1 class="brand-title">VideoRepurpose AI Studio</h1>
+        <p class="brand-sub">Copyright-Safe Video Remaster & Multilingual Re-Voice</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <select id="select-recent-projects" class="form-select form-select-sm" style="width: auto; max-width: 220px; font-size: 12px; padding: 5px 8px; background: var(--bg-secondary); border: 1px solid var(--border-color); display: none;">
+        <option value="">📂 Switch Project...</option>
+      </select>
+      <span id="badge-active-project" class="step-pill" style="display:none; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd;">
+        📁 Project: <strong id="lbl-active-project-title" style="margin-left: 4px;">-</strong>
+      </span>
+      <button id="btn-open-settings" class="btn btn-secondary btn-sm">⚙️ API & Settings</button>
+      <button id="btn-new-project" class="btn btn-primary btn-sm">➕ New Project</button>
+    </div>
+  </header>
+
+  <!-- Step Navigation Stepper -->
+  <nav class="stepper-nav">
+    <button class="step-pill active" data-step="1">
+      <span class="step-num">1</span> 📤 Upload & Directives
+    </button>
+    <button class="step-pill" data-step="2">
+      <span class="step-num">2</span> 📝 Transcript & Rewrite
+    </button>
+    <button class="step-pill" data-step="3">
+      <span class="step-num">3</span> 🎙️ Voice & Audio Studio
+    </button>
+    <button class="step-pill" data-step="4">
+      <span class="step-num">4</span> 🛡️ Anti-Copyright & Delogo
+    </button>
+    <button class="step-pill" data-step="5">
+      <span class="step-num">5</span> ⏱️ Timeline & Overlays
+    </button>
+    <button class="step-pill" data-step="6">
+      <span class="step-num">6</span> 🚀 Render & Publish
+    </button>
+  </nav>
+
+  <!-- Main Workspace Container -->
+  <main class="main-container">
+
+    <!-- STEP 1: UPLOAD & DIRECTIVES -->
+    <section id="step-1" class="step-pane active">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Upload Video & Configure Directives</h2>
+            <p class="card-desc">Upload any video from another channel or blog (movie recap, manga explained, commentary). The tool will transform it into 100% original, copyright-safe content.</p>
+          </div>
+        </div>
+
+        <!-- Video Upload Dropzone -->
+        <div id="dropzone-video" class="dropzone">
+          <div class="dropzone-icon">📥</div>
+          <h3 style="font-size: 16px; margin-bottom: 6px;">Drag and drop video here, or click to browse</h3>
+          <p style="font-size: 13px; color: var(--text-secondary);">Supports MP4, MKV, WebM, MOV, AVI (up to 30GB Cinema Master Files)</p>
+          <input type="file" id="input-video-file" accept="video/*" style="display: none;">
+          <div id="upload-file-info" style="margin-top: 14px; font-weight: 600; color: var(--accent-cyan); display: none;"></div>
+        </div>
+
+        <!-- Configuration Grid -->
+        <div class="grid-2" style="margin-top: 24px;">
+          <div class="form-group">
+            <label class="form-label">Project Title</label>
+            <input type="text" id="input-project-title" class="form-input" placeholder="e.g., Death Note Episode 1 Epic Remaster">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Storytelling Pacing & Tone</label>
+            <select id="select-tone" class="form-select">
+              <option value="storyteller" selected>Warm Charismatic Storyteller (Top Recap Style)</option>
+              <option value="suspense">Dark Suspenseful & Thrilling (Mystery / Plot Twists)</option>
+              <option value="casual">Casual & Energetic Commentary (Anime & Pop Culture)</option>
+              <option value="fast_paced">High-Retention Fast-Paced (Viral Shorts / Speed Recap)</option>
+              <option value="cinematic">Cinematic Movie-Trailer Tone (Deep Emotional Gravity)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Source Video Audio Language</label>
+            <select id="select-source-lang" class="form-select">
+              <option value="auto" selected>🌐 Auto-Detect Language (Waveform + Speech STT)</option>
+              <option value="en">English (US/UK/International)</option>
+              <option value="hi">Hindi (हिन्दी)</option>
+              <option value="bn">Bengali (বাংলা)</option>
+              <option value="ur">Urdu (اردو)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="ja">Japanese (日本語)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Target Commentary & Voice Language</label>
+            <select id="select-target-lang" class="form-select">
+              <option value="en" selected>🇺🇸 English (100% Paraphrased & Re-Voiced Storyteller)</option>
+              <option value="hi">🇮🇳 Hindi (हिन्दी - YouTube Recap Style)</option>
+              <option value="same_rewrite">🔄 Same Language (100% Re-write & Paraphrase)</option>
+              <option value="bn">🇧🇩 Bengali (বাংলা - Recapper)</option>
+              <option value="ur">🇵🇰 Urdu (اردو - Narrator)</option>
+              <option value="es">🇪🇸 Spanish (Resumen / Español)</option>
+              <option value="ja">🇯🇵 Japanese (日本語)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Instructions Textarea -->
+        <div class="form-group">
+          <label class="form-label">
+            Custom Story & Style Directives (Injected into Narration & Pacing)
+          </label>
+          <textarea id="textarea-custom-instructions" class="form-textarea" rows="3" placeholder="e.g., Explain the plot twists clearly; focus on main character decisions; keep tone dark and suspenseful; remove any sponsor plugs or channel intros; describe the scene with charismatic authority..."></textarea>
+        </div>
+
+        <!-- Action Button -->
+        <div style="display: flex; justify-content: flex-end; margin-top: 14px;">
+          <button id="btn-start-upload-process" class="btn btn-primary" style="padding: 12px 28px; font-size: 15px;">
+            ⚡ Upload & Start Video Processing
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: TRANSCRIPT & REWRITE -->
+    <section id="step-2" class="step-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Transcript & Anti-Plagiarism Script Rewrite</h2>
+            <p class="card-desc">Review original dialogue and AI rewritten narration. Every sentence is reformulated to avoid copyright while keeping exact scene events.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-transcribe-audio" class="btn btn-secondary btn-sm">🔄 Re-Transcribe Audio</button>
+            <button id="btn-rewrite-all" class="btn btn-primary btn-sm">✨ Rewrite All Commentary</button>
+            <button id="btn-add-segment-modal" class="btn btn-secondary btn-sm">➕ Add Segment</button>
+          </div>
+        </div>
+
+        <!-- Status Banner -->
+        <div id="transcript-status-banner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--bg-tertiary); padding: 12px 18px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span id="badge-detected-lang" class="segment-badge">Auto Detected: English</span>
+            <span id="lbl-step2-src-dur" class="segment-badge" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);">⏱️ Source: --:--</span>
+            <span id="lbl-step2-target-badge" class="segment-badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); font-weight: 700;">🎯 Target Video: --:-- (~0 words @ 1.0x)</span>
+            <span id="lbl-segments-count" style="font-size: 13px; color: var(--text-secondary); display: none;">0 segments detected</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Anti-Copyright Duration:</label>
+            <select id="select-step2-duration-shift" class="form-select" style="padding: 5px 10px; font-size: 13px; width: auto; background: var(--bg-secondary); border-color: var(--accent-cyan);">
+              <option value="-3.0" selected>✂️ Remove 3s (Trim Intro/Outro) — Recommended</option>
+              <option value="-2.0">✂️ Remove 2s</option>
+              <option value="-4.0">✂️ Remove 4s</option>
+              <option value="-5.0">✂️ Remove 5s</option>
+              <option value="3.0">➕ Expand 3s (Tail Pad)</option>
+              <option value="5.0">➕ Expand 5s (Tail Pad)</option>
+              <option value="0.0">⏱️ Keep Exact (0s)</option>
+            </select>
+            <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Target Language:</label>
+            <select id="select-step2-target-lang" class="form-select" style="padding: 5px 12px; font-size: 13px; width: auto; background: var(--bg-secondary); border-color: var(--accent-emerald);">
+              <option value="en" selected>🇺🇸 English (Paraphrase & Storyteller)</option>
+              <option value="hi">🇮🇳 Hindi (हिन्दी Recap)</option>
+              <option value="same_rewrite">🔄 Same Language (100% Re-write)</option>
+              <option value="bn">🇧🇩 Bengali (বাংলা Narrator)</option>
+              <option value="ur">🇵🇰 Urdu (اردو Storyteller)</option>
+              <option value="es">🇪🇸 Spanish (Español Resumen)</option>
+              <option value="ja">🇯🇵 Japanese (日本語)</option>
+            </select>
+            <span id="lbl-target-rewrite-info" style="font-size: 13px; color: var(--accent-emerald); font-weight: 600;">Target: English Re-Voice</span>
+          </div>
+        </div>
+
+        <!-- Continuous Script Story Editor Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 15px; font-weight: 700; color: var(--accent-emerald);">📝 Full Continuous Story Script</span>
+            <span style="font-size: 12px; color: var(--text-muted);">(Unified Story Flow with Natural Breath Pauses & Live Synchronized Narration)</span>
+          </div>
+        </div>
+
+        <!-- FULL CONTINUOUS SCRIPT VIEW (Unified Sole Editor) -->
+        <div id="full-script-container" style="display: block;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 16px;">
+            
+            <!-- Left: Original Audio Speech -->
+            <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  🎙️ Original Audio Spoken Text (All Together)
+                </span>
+                <div style="display: flex; gap: 6px;">
+                  <button id="btn-save-full-original" class="btn btn-secondary btn-sm">💾 Save Original</button>
+                  <button class="btn btn-secondary btn-sm" onclick="App.copyText('textarea-full-original-script')">📋 Copy</button>
+                </div>
+              </div>
+              <textarea id="textarea-full-original-script" class="form-textarea" rows="22" style="width: 100%; font-size: 14px; line-height: 1.7; font-family: inherit; background: var(--bg-secondary); color: var(--text-primary); resize: vertical; white-space: pre-wrap;" placeholder="Transcribing full audio into complete continuous text with punctuation... You can edit and add missed words directly here!"></textarea>
+            </div>
+
+            <!-- Right: Rewritten / Translated Story Script -->
+            <div style="background: var(--bg-tertiary); border: 1px solid var(--accent-emerald); border-radius: var(--radius-md); padding: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px; color: var(--accent-emerald); display: flex; align-items: center; gap: 6px;">
+                  ✨ Remastered & Translated Story Script
+                </span>
+                <div style="display: flex; gap: 6px;">
+                  <button id="btn-save-full-script" class="btn btn-emerald btn-sm">💾 Save Script</button>
+                  <button class="btn btn-secondary btn-sm" onclick="App.copyText('textarea-full-rewritten-script')">📋 Copy</button>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                🎙️ Teleprompter voiceover layout: Natural breath pauses (<code style="color: var(--accent-emerald); background: rgba(16,185,129,0.1); padding: 1px 4px; border-radius: 3px;">,</code>), sentence stops (<code style="color: var(--accent-emerald); background: rgba(16,185,129,0.1); padding: 1px 4px; border-radius: 3px;">। / .</code>), and double line gaps between spoken blocks.
+              </p>
+              <textarea id="textarea-full-rewritten-script" class="form-textarea" rows="20" style="width: 100%; font-size: 14.5px; line-height: 1.85; font-family: inherit; background: var(--bg-secondary); color: var(--text-primary); resize: vertical; white-space: pre-wrap;" placeholder="AI rewritten commentary script in selected target language... You can also edit this text directly!"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Hidden segments container for seamless background DOM compatibility -->
+        <div id="segments-container" style="display: none;"></div>
+
+        <!-- Navigation Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+          <button class="btn btn-secondary" onclick="App.goToStep(1)">◀ Back to Upload</button>
+          <button class="btn btn-primary" onclick="App.goToStep(3)">Proceed to Voice Studio ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: VOICE & AUDIO STUDIO -->
+    <section id="step-3" class="step-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">AI Voiceover & Background Music Studio</h2>
+            <p class="card-desc">Zero robotic voices. Select top human narrator voices and add an atmospheric background bed with vocal ducking.</p>
+          </div>
+          <button id="btn-generate-full-audio" class="btn btn-primary btn-sm">🎵 Synthesize All Voice & Music</button>
+        </div>
+
+        <div class="grid-2">
+          <!-- Voice Settings Card -->
+          <div class="glass-card" style="margin-bottom: 0;">
+            <h3 style="font-size: 16px; margin-bottom: 14px; color: var(--accent-cyan);">🎙️ Voice Narrator Engine</h3>
+            
+            <div class="form-group">
+              <label class="form-label">Voice Provider</label>
+              <select id="select-voice-provider" class="form-select">
+                <option value="edge_tts" selected>Edge-TTS Neural (Free, High Retention Studio Voices)</option>
+                <option value="elevenlabs">ElevenLabs Multilingual v2 (Ultra-Realistic Human)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Narrator Voice</label>
+              <select id="select-narrator-voice" class="form-select">
+                <!-- Dynamically populated based on provider and target language -->
+              </select>
+            </div>
+
+            <!-- Custom Voice ID Box (Shows when ElevenLabs selected or Custom Voice chosen) -->
+            <div id="elevenlabs-custom-voice-box" class="form-group" style="display: none; background: rgba(56, 189, 248, 0.06); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px dashed var(--accent-cyan); margin-top: -4px;">
+              <label class="form-label" style="font-size: 11px; color: var(--accent-cyan); margin-bottom: 4px;">Custom ElevenLabs Voice ID (Paste your cloned voice ID):</label>
+              <input type="text" id="input-elevenlabs-custom-voice-id" class="form-input" style="font-size: 13px;" placeholder="e.g. pNInz6obpgDQGcFmaJgB">
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 14px;">
+              <button id="btn-test-voice-sample" class="btn btn-secondary btn-sm">🔊 Test Voice Sample</button>
+              <audio id="audio-player-sample" controls style="height: 34px; display: none;"></audio>
+            </div>
+          </div>
+
+          <!-- BGM & Audio Mastering Card -->
+          <div class="glass-card" style="margin-bottom: 0;">
+            <h3 style="font-size: 16px; margin-bottom: 14px; color: var(--accent-emerald);">🎵 Background Bed & Audio Mastering</h3>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="margin-bottom: 0;">Background Ambient Bed Mood</label>
+                <button type="button" id="btn-play-bgm-demo" class="btn btn-secondary btn-sm" style="padding: 3px 10px; font-size: 12px;">
+                  ▶ Play BGM Demo
+                </button>
+              </div>
+              <select id="select-bgm-preset" class="form-select">
+                <option value="suspense" selected>Cinematic Suspense (Dark Tension & Sub-Bass)</option>
+                <option value="action">Driving Action (Rhythmic Pulse & Swells)</option>
+                <option value="lofi">Lo-Fi Commentary (Warm Analog Chords)</option>
+                <option value="ambient">Ethereal Ambient (Floating Cinematic Drone)</option>
+                <option value="none">No Background Music (Voice Only)</option>
+              </select>
+              <audio id="audio-bgm-demo-player" controls style="height: 32px; width: 100%; margin-top: 8px; display: none;"></audio>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                BGM Volume Level: <span id="lbl-bgm-volume">-26 dB</span>
+              </label>
+              <input type="range" id="range-bgm-volume" min="-38" max="-14" step="1" value="-26" style="width: 100%;">
+              <small style="color: var(--text-muted);">Automatically ducked under voiceover for broadcast clarity.</small>
+            </div>
+
+            <div class="switch-card" style="margin-top: 14px;">
+              <div class="switch-label-group">
+                <span class="switch-title">Vocal Compressor & Highpass 80Hz</span>
+                <span class="switch-subtitle">Removes digital rumble and normalizes loudness to -16 LUFS</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-audio-mastering" checked disabled>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Generation Status & Player -->
+        <div id="audio-gen-status-box" style="margin-top: 20px; display: none;" class="switch-card">
+          <span id="audio-gen-status-msg">Synthesizing audio clips...</span>
+          <audio id="audio-master-player" controls style="height: 32px;"></audio>
+        </div>
+
+        <!-- Video-Voice Intelligent Synchronization Card -->
+        <div id="box-video-voice-sync" style="display: block; margin-top: 18px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12)); border: 1px solid var(--accent-emerald); border-radius: var(--radius-md); padding: 16px 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <div style="font-weight: 700; font-size: 15px; color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
+                ⚡ Audio-Video Timeline Synchronization
+                <span id="badge-sync-speed" class="segment-badge" style="background: var(--accent-emerald); color: #000; font-weight: 700; font-size: 13px;">Auto-Fit Active</span>
+              </div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;" id="lbl-sync-details">
+                Auto-fit scales narration tempo so 100% of your explanation is cleanly spoken concurrently with the video. Zero sentences dropped.
+              </div>
+            </div>
+            <div id="box-sync-stats" style="font-size: 12px; color: var(--accent-cyan); background: rgba(0,0,0,0.3); padding: 6px 12px; border-radius: 6px; font-weight: 600;">
+              ⏱️ Video: <span id="lbl-sync-vid-dur">--:--</span> • Voice: <span id="lbl-sync-voice-dur">--:--</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.08); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
+              <input type="radio" name="audio-sync-mode" id="sync-mode-fit-voice" value="fit_to_video" checked>
+              <strong>📖 Continuous Remastered Story Script (Zero Pauses & 100% Smooth)</strong>
+              <span style="font-size: 11px; color: var(--text-primary);">— Voices your complete Step 2 story script continuously from start to finish without halts or pauses.</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-muted);">
+              <input type="radio" name="audio-sync-mode" id="sync-mode-exact-timeline" value="exact_timeline">
+              <strong>⏱️ 1:1 Timestamp Scene Dubbing (Segment by Segment)</strong>
+              <span style="font-size: 11px; color: var(--text-muted);">— Dubs individual transcribed subtitle slices at exact original seconds.</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-primary);">
+              <input type="radio" name="audio-sync-mode" id="sync-mode-keep-voice" value="keep_voice">
+              <strong>🎬 Keep Voice at 1.0x (Adjust Video Playback Speed Instead)</strong>
+              <span style="font-size: 11px; color: var(--text-muted);">— Stretches or compresses video frames to match narration duration.</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-primary);">
+              <input type="radio" name="audio-sync-mode" id="sync-mode-custom" value="custom">
+              <strong>🎚️ Custom Voice Speed:</strong>
+              <input type="range" id="range-custom-voice-speed" min="0.80" max="2.20" step="0.05" value="1.00" style="width: 140px;">
+              <span id="lbl-custom-voice-speed-val" style="font-weight: 700; color: var(--accent-amber);">1.00x</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 24px;">
+          <button class="btn btn-secondary" onclick="App.goToStep(2)">◀ Back to Transcript</button>
+          <button class="btn btn-primary" onclick="App.goToStep(4)">Proceed to Anti-Copyright Visuals ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4: ANTI-COPYRIGHT & DELOGO -->
+    <section id="step-4" class="step-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Anti-Copyright Visual Engine & Watermark Removal</h2>
+            <p class="card-desc">Bypasses automated perceptual video hash matching (Content ID) and seamlessly removes the original channel's watermark.</p>
+          </div>
+          <button id="btn-live-preview-frame" class="btn btn-primary btn-sm">👁️ Live Frame Preview</button>
+        </div>
+
+        <!-- Quick 1:1 vs Anti-Copyright Presets -->
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-emerald btn-sm" id="btn-preset-exact-original" onclick="App.applyExactOriginalPreset()">
+            🎯 1:1 Exact Original Video (1.0x Speed, 0s Shift, Clean Frames, No Mirror)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-preset-anti-copyright" onclick="App.applyAntiCopyrightPreset()">
+            🛡️ Anti-Copyright Remaster (Mirror, 1.03x Speed, -3s Shift, Blur Framing)
+          </button>
+        </div>
+
+        <div class="grid-2">
+          <!-- Left Column: Anti-Copyright Hash Breakers -->
+          <div>
+            <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--accent-purple);">🛡️ Perceptual Hash Breakers</h3>
+
+            <div class="switch-card">
+              <div class="switch-label-group">
+                <span class="switch-title">Horizontal Flip (Mirroring)</span>
+                <span class="switch-subtitle">Inverts video horizontally to defeat automated visual crawler matching</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-mirror" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="switch-card" style="margin-bottom: 8px;">
+              <div class="switch-label-group">
+                <span class="switch-title">Anti-Copyright Speed Shift (<span id="lbl-step4-speed-display" style="color: var(--accent-cyan); font-weight: 700;">1.00x</span>)</span>
+                <span class="switch-subtitle">Alters video playback tempo (Keep OFF / 1.00x for 100% exact scene sync)</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-speed">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div id="box-speed-control" style="background: var(--bg-secondary); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 14px; border: 1px solid var(--border-color); display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="font-size: 11px; margin: 0; color: var(--text-secondary);">Video Pacing Multiplier:</label>
+                <span id="lbl-val-speed" style="font-weight: 700; color: var(--accent-cyan); font-size: 13px;">1.00x (Exact Timeline Sync)</span>
+              </div>
+              <input type="range" id="range-speed-factor" min="1.00" max="1.15" step="0.01" value="1.00" style="width: 100%;">
+              <div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 2px 8px; background: rgba(16, 185, 129, 0.15); border-color: var(--accent-emerald); color: var(--accent-emerald);" onclick="App.setSpeedFactor(1.00)">1.00x (Exact Sync) ⭐</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" onclick="App.setSpeedFactor(1.02)">1.02x</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" onclick="App.setSpeedFactor(1.03)">1.03x</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" onclick="App.setSpeedFactor(1.05)">1.05x</button>
+              </div>
+            </div>
+
+            <!-- Anti-Copyright Video Duration Shift Control -->
+            <div class="switch-card" style="margin-bottom: 8px;">
+              <div class="switch-label-group">
+                <span class="switch-title">Anti-Copyright Duration Shift (<span id="lbl-step4-duration-shift-display" style="color: var(--accent-emerald); font-weight: 700;">-3.0s</span>)</span>
+                <span class="switch-subtitle">Offsets video length by 2–5s to break YouTube/TikTok Content ID length fingerprint</span>
+              </div>
+            </div>
+
+            <div id="box-duration-shift-control" style="background: var(--bg-secondary); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 14px; border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" style="font-size: 11px; margin: 0; color: var(--text-secondary);">Duration Offset Strategy:</label>
+                <span id="lbl-val-duration-target" style="font-weight: 700; color: var(--accent-emerald); font-size: 12px;">Target Video: --:--</span>
+              </div>
+              <select id="select-duration-shift" class="form-select" style="width: 100%; font-size: 13px; padding: 6px 10px;">
+                <option value="-3.0" selected>✂️ Remove 3 seconds (Trim 1.5s Intro + 1.5s Outro) — Recommended</option>
+                <option value="-2.0">✂️ Remove 2 seconds (Trim 1.0s Intro + 1.0s Outro)</option>
+                <option value="-4.0">✂️ Remove 4 seconds (Trim 2.0s Intro + 2.0s Outro)</option>
+                <option value="-5.0">✂️ Remove 5 seconds (Trim 2.5s Intro + 2.5s Outro)</option>
+                <option value="3.0">➕ Expand 3 seconds (Hold Tail Frame & Ambient Outro)</option>
+                <option value="5.0">➕ Expand 5 seconds (Hold Tail Frame & Ambient Outro)</option>
+                <option value="0.0">⏱️ Keep Exact Original Duration (0s Offset)</option>
+              </select>
+            </div>
+
+            <div class="switch-card">
+              <div class="switch-label-group">
+                <span class="switch-title">Micro-Zoom Anti-Hash Crop (3%)</span>
+                <span class="switch-subtitle">Applies a 2-3% center crop to shift pixel boundary alignment</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-micro-crop" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="switch-card">
+              <div class="switch-label-group">
+                <span class="switch-title">Film Grain & Digital Noise Overlay</span>
+                <span class="switch-subtitle">Injects subtle 1-2% grain to defeat exact byte fingerprinting</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-grain" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="switch-card">
+              <div class="switch-label-group">
+                <span class="switch-title">Radial Dark Vignette</span>
+                <span class="switch-subtitle">Darkens periphery corners for dramatic cinematic look</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="chk-vignette" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label class="form-label">Visual Atmosphere & Color Grading</label>
+              <select id="select-color-grade" class="form-select">
+                <option value="cinematic_warm" selected>✨ Cinematic Warm (Hollywood Golden Hour & Rich Shadows)</option>
+                <option value="teal_orange">🎬 Teal & Orange (Blockbuster Action Grade)</option>
+                <option value="vibrant">🔥 Vibrant Pop (Punchy Anime & High Saturation)</option>
+                <option value="retro_film">📼 Retro 90s Film / VHS (Warm Nostalgic Tone)</option>
+                <option value="cyberpunk">⚡ Cyberpunk Neon (Cool Blues & Electric Highlights)</option>
+                <option value="noir">🌑 Moody Dramatic Noir (High Contrast Black & White)</option>
+                <option value="none">🌿 Clean Original (Natural Colors)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Right Column: Framing & Watermark Removal / Channel Logo -->
+          <div>
+            <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--accent-cyan);">🎨 Canvas Framing & Visual Effects</h3>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Aspect Ratio</label>
+                <select id="select-aspect-ratio" class="form-select">
+                  <option value="16:9" selected>16:9 (YouTube Standard Horizontal)</option>
+                  <option value="9:16">9:16 (YouTube Shorts / TikTok / Reels Vertical)</option>
+                  <option value="1:1">1:1 (Instagram / Square Post)</option>
+                  <option value="4:5">4:5 (Social Feed Portrait)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Visual Transformation & Framing</label>
+                <select id="select-framing-style" class="form-select">
+                  <option value="original">🎯 Exact Original Video (No Framing/Letterbox, 100% Original Canvas)</option>
+                  <option value="blur_fit" selected>✨ Smart Blur Fill (100% Full Video Visible + Real-Time Blurred Background)</option>
+                  <option value="recap_ambient_glow">💫 Recap Studio Frame (92% Inset + Glowing Motion-Blur Border)</option>
+                  <option value="cinematic_bars">🎞️ Cinematic Widescreen Letterbox (2.35:1 Movie)</option>
+                  <option value="mirror_blur_wings">🪞 Mirror Side Wings + Dynamic Ambient Blur</option>
+                  <option value="full_screen_zoom">🔍 Dynamic Full-Screen (Micro-Zoomed Edge-to-Edge)</option>
+                  <option value="gradient_ambient">🌌 Dark Vignette Gradient Canvas</option>
+                  <option value="black_bars">🎬 Clean Black Canvas Letterbox</option>
+                </select>
+              </div>
+            </div>
+            <p style="color: var(--accent-emerald); font-size: 12px; margin-top: -6px; margin-bottom: 12px;">
+              🛡️ <strong>Anti-Copyright Remaster:</strong> Applies transformative visual framing and color grading so your video is never an identical copy. <span style="color: var(--accent-cyan);">⚡ Ultra-Fast GPU Acceleration enabled (120–160 FPS).</span>
+            </p>
+
+            <!-- Delogo Watermark Removal Tool -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px; color: var(--accent-rose);">🚫 Remove Original Watermark (Delogo)</span>
+                <label class="toggle">
+                  <input type="checkbox" id="chk-enable-delogo">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">
+                Blurs and blends surrounding pixels over the original logo with custom coordinates.
+              </p>
+              
+              <div id="delogo-preset-buttons" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="App.setDelogoPreset('top_right')">Top Right</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="App.setDelogoPreset('top_left')">Top Left</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="App.setDelogoPreset('bottom_right')">Bottom Right</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="App.setDelogoPreset('bottom_left')">Bottom Left</button>
+              </div>
+
+              <!-- Interactive Delogo Sliders -->
+              <div id="box-delogo-sliders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: var(--bg-secondary); padding: 10px; border-radius: var(--radius-sm);">
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Position X: <span id="lbl-val-delogo-x">80%</span></label>
+                  <input type="range" id="range-delogo-x" min="0" max="95" step="1" value="80" style="width: 100%;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Position Y: <span id="lbl-val-delogo-y">3%</span></label>
+                  <input type="range" id="range-delogo-y" min="0" max="95" step="1" value="3" style="width: 100%;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Width: <span id="lbl-val-delogo-w">18%</span></label>
+                  <input type="range" id="range-delogo-w" min="5" max="45" step="1" value="18" style="width: 100%;">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Height: <span id="lbl-val-delogo-h">12%</span></label>
+                  <input type="range" id="range-delogo-h" min="3" max="35" step="1" value="12" style="width: 100%;">
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent-amber); cursor: pointer;">
+                  <input type="checkbox" id="chk-highlight-delogo" checked> Highlight Delogo Box in Red on Preview
+                </label>
+                <span id="lbl-delogo-coords" style="font-size: 11px; color: var(--text-muted); font-family: monospace;">x=80%, y=3%, w=18%, h=12%</span>
+              </div>
+            </div>
+
+            <!-- Custom Channel Watermark / Logo Branding -->
+            <div class="glass-card" style="padding: 16px; margin-bottom: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 600; font-size: 14px; color: var(--accent-emerald);">✨ Custom Channel Brand Overlay</span>
+                <label class="toggle">
+                  <input type="checkbox" id="chk-enable-watermark">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div id="box-watermark-options" style="display: none; margin-top: 10px;">
+                <!-- Watermark Type Toggle -->
+                <div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 13px;">
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="wm-type-radio" id="wm-type-text" value="text" checked> Text Handle
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="radio" name="wm-type-radio" id="wm-type-image" value="image"> 🖼️ Image Logo (.PNG/.JPG)
+                  </label>
+                </div>
+
+                <!-- Text Handle Input -->
+                <div id="wm-field-text" class="form-group" style="margin-bottom: 10px;">
+                  <label class="form-label">Watermark Text / Channel Handle</label>
+                  <input type="text" id="input-watermark-text" class="form-input" value="@MyRecapChannel">
+                </div>
+
+                <!-- Image Logo Upload -->
+                <div id="wm-field-image" class="form-group" style="display: none; margin-bottom: 10px;">
+                  <label class="form-label">Upload Channel Watermark Logo (Transparent PNG recommended)</label>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="file" id="input-watermark-image-file" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('input-watermark-image-file').click()">
+                      📁 Choose Logo Image
+                    </button>
+                    <span id="lbl-uploaded-logo-name" style="font-size: 12px; color: var(--accent-cyan);">No file chosen</span>
+                  </div>
+                </div>
+
+                <!-- Position Preset Quick Buttons -->
+                <div style="margin-bottom: 10px;">
+                  <label class="form-label" style="font-size: 12px; margin-bottom: 6px;">Position Presets (or Click / Drag on Preview Frame Below):</label>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="App.setWatermarkPreset('top_right')">Top Right</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="App.setWatermarkPreset('top_left')">Top Left</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="App.setWatermarkPreset('bottom_right')">Bottom Right</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="App.setWatermarkPreset('bottom_left')">Bottom Left</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="App.setWatermarkPreset('center')">Center</button>
+                  </div>
+                </div>
+
+                <!-- Custom Position X & Y Coordinates (0% to 100%) -->
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border-color);">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 6px;">
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label class="form-label" style="font-size: 11px; margin: 0;">Horizontal (X): <span id="lbl-val-wm-x" style="color: var(--accent-emerald); font-weight: bold;">92%</span></label>
+                        <input type="number" id="num-watermark-x" min="0" max="100" value="92" style="width: 55px; padding: 2px 4px; font-size: 11px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; text-align: center;">
+                      </div>
+                      <input type="range" id="range-watermark-x" min="0" max="100" step="1" value="92" style="width: 100%;">
+                    </div>
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <label class="form-label" style="font-size: 11px; margin: 0;">Vertical (Y): <span id="lbl-val-wm-y" style="color: var(--accent-emerald); font-weight: bold;">4%</span></label>
+                        <input type="number" id="num-watermark-y" min="0" max="100" value="4" style="width: 55px; padding: 2px 4px; font-size: 11px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; text-align: center;">
+                      </div>
+                      <input type="range" id="range-watermark-y" min="0" max="100" step="1" value="4" style="width: 100%;">
+                    </div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted);">
+                    <span id="lbl-wm-coords-display">Position: X=92%, Y=4%</span>
+                    <span style="color: var(--accent-cyan);">🎯 Tip: Click directly on the preview image below to reposition</span>
+                  </div>
+                </div>
+
+                <!-- Size, Font & Opacity Customization -->
+                <div class="grid-3" style="gap: 12px; margin-bottom: 12px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Opacity: <span id="lbl-val-wm-opacity">70%</span></label>
+                    <input type="range" id="range-watermark-opacity" min="10" max="100" step="5" value="70" style="width: 100%;">
+                  </div>
+
+                  <!-- Image Logo Scale (shown when Image is selected) -->
+                  <div id="box-wm-image-scale" class="form-group" style="margin-bottom: 0; display: none;">
+                    <label class="form-label">Logo Width Size: <span id="lbl-val-wm-size">18%</span></label>
+                    <input type="range" id="range-watermark-size" min="2" max="100" step="1" value="18" style="width: 100%;">
+                  </div>
+
+                  <!-- Text Font Size (shown when Text is selected) -->
+                  <div id="box-wm-font-size" class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Font Size: <span id="lbl-val-wm-font-size">34px</span></label>
+                    <input type="range" id="range-watermark-font-size" min="10" max="140" step="2" value="34" style="width: 100%;">
+                  </div>
+
+                  <!-- Text Color -->
+                  <div id="box-wm-text-color" class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Text Color</label>
+                    <select id="select-watermark-color" class="form-select" style="padding: 6px 10px; font-size: 13px;">
+                      <option value="white" selected>⚪ White</option>
+                      <option value="yellow">🟡 Bright Yellow</option>
+                      <option value="gold">🟠 Gold / Amber</option>
+                      <option value="cyan">🔵 Cyan / Light Blue</option>
+                      <option value="lime">🟢 Neon Lime</option>
+                      <option value="pink">🌸 Rose Pink</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Watermark Display Duration / Timing Option -->
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                  <label class="form-label" style="font-size: 12px; margin-bottom: 8px; font-weight: 600;">⏱️ Watermark Display Duration:</label>
+                  <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                      <input type="radio" name="wm-timing-radio" value="full" checked id="radio-wm-timing-full">
+                      <span>Full Video Duration (Entire Video - Default)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px;">
+                      <input type="radio" name="wm-timing-radio" value="custom" id="radio-wm-timing-custom">
+                      <span>Custom Time Window</span>
+                    </label>
+                  </div>
+                  <div id="box-wm-timing-custom" style="display: none; padding-top: 6px; border-top: 1px dashed var(--border-color); margin-top: 6px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                      <div>
+                        <label class="form-label" style="font-size: 11px;">Start Time (Sec):</label>
+                        <input type="number" id="input-wm-start-sec" min="0" step="0.5" value="0" class="form-input" style="padding: 5px 8px; font-size: 12px;">
+                      </div>
+                      <div>
+                        <label class="form-label" style="font-size: 11px;">End Time (Sec - 0 for full video):</label>
+                        <input type="number" id="input-wm-end-sec" min="0" step="0.5" value="0" class="form-input" style="padding: 5px 8px; font-size: 12px;">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Frame Preview Display with Interactive Drag & Click Watermark Positioning -->
+        <div id="preview-frame-container" style="margin-top: 24px; background: var(--bg-tertiary); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 15px; color: var(--accent-cyan); margin-bottom: 4px;">👁️ Live Frame Preview (Real-Time Filter, Delogo & Brand Simulation)</h3>
+              <p style="font-size: 12px; color: var(--text-secondary);">Move the seeker to test any second in your video. Click or drag directly on the preview to position your watermark anywhere!</p>
+            </div>
+            <button id="btn-live-preview-frame-refresh" class="btn btn-primary btn-sm" onclick="App.renderLivePreviewFrame()">
+              ⚡ Refresh Preview Frame
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+            <label style="font-size: 13px; font-weight: 600; min-width: 100px;">Seek Time: <span id="lbl-preview-seek-time" style="color: var(--accent-amber);">00:05</span></label>
+            <input type="range" id="range-preview-seek" min="1" max="180" step="1" value="5" style="flex: 1;">
+          </div>
+
+          <div style="text-align: center;">
+            <div id="preview-image-wrapper" style="position: relative; display: inline-block; line-height: 0; max-width: 100%; user-select: none; -webkit-user-select: none;">
+              <img id="img-preview-frame" src="" alt="Frame Preview" style="max-width: 100%; max-height: 480px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg); display: none; cursor: crosshair;">
+              
+              <!-- Interactive Visual Draggable Bounding Box for Watermark / Logo -->
+              <div id="wm-interactive-overlay" style="display: none; position: absolute; box-sizing: border-box; cursor: grab; z-index: 25; touch-action: none; border: 2px dashed #10b981; background: rgba(16, 185, 129, 0.16); border-radius: 4px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); pointer-events: auto;">
+                <div id="wm-overlay-badge" style="position: absolute; top: -24px; left: 0; white-space: nowrap; font-size: 11px; color: #fff; background: #10b981; padding: 2px 7px; border-radius: 3px; font-weight: 700; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,0.6); line-height: 1.4;">
+                  🏷️ Watermark Box (92%, 4%)
+                </div>
+              </div>
+            </div>
+            <p id="lbl-preview-empty" style="color: var(--text-muted); padding: 40px; font-size: 13px;">Click '⚡ Refresh Preview Frame' above to generate an instant frame preview.</p>
+            <p id="lbl-preview-drag-hint" style="display: none; font-size: 12px; color: var(--accent-cyan); margin-top: 8px;">
+              🎯 <strong>Smooth Drag & Drop:</strong> Drag the green box to place your brand anywhere. Box position and width match the rendered video 1:1!
+            </p>
+          </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 24px;">
+          <button class="btn btn-secondary" onclick="App.goToStep(3)">◀ Back to Voice Studio</button>
+          <button class="btn btn-primary" onclick="App.goToStep(5)">Proceed to Timeline & Overlays ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5: TIMELINE & OVERLAYS -->
+    <section id="step-5" class="step-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Interactive Video Timeline & Text Callouts</h2>
+            <p class="card-desc">Preview video playback, cut unwanted sections (intros/sponsor plugs), and add stylish chapter title callouts.</p>
+          </div>
+          <button id="btn-add-text-overlay" class="btn btn-primary btn-sm">➕ Add Text Callout</button>
+        </div>
+
+        <!-- Video Player & Scrub Controls -->
+        <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 380px;">
+            <div style="position: relative; border-radius: var(--radius-md); overflow: hidden; background: #000; box-shadow: var(--shadow-lg);">
+              <video id="video-player-main" controls style="width: 100%; display: block;"></video>
+              <div id="video-live-overlay-box" style="position: absolute; bottom: 38px; left: 0; right: 0; text-align: center; pointer-events: none; display: none;">
+                <span id="video-live-overlay-text" style="display: inline-block; background: rgba(0,0,0,0.75); color: #facc15; font-size: 20px; font-weight: 700; padding: 6px 18px; border-radius: 6px; text-shadow: 1px 1px 3px #000; border: 1px solid rgba(255,255,255,0.2);"></span>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <span id="lbl-video-current-time" style="font-family: monospace; font-size: 13px; color: var(--accent-cyan);">00:00 / 00:00</span>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="App.markCutIn()">✂️ Cut Start (In)</button>
+                <button class="btn btn-secondary btn-sm" onclick="App.markCutOut()">✂️ Cut End (Out)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Text Overlays List -->
+          <div style="flex: 1; min-width: 320px;">
+            <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--accent-amber);">📝 Active Text Callouts & Chapters</h3>
+            <div id="text-overlays-list" style="max-height: 280px; overflow-y: auto;">
+              <p style="color: var(--text-muted); font-size: 13px;">No text callouts added. Click '+ Add Text Callout' above.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Timeline Tracks -->
+        <div class="timeline-container">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Visual Timeline Tracks</div>
+          <!-- Video track -->
+          <div id="timeline-video-track" class="timeline-track">
+            <div class="timeline-clip-block" style="left: 0%; width: 100%;">🎬 Source Video Track</div>
+          </div>
+          <!-- Narration track -->
+          <div id="timeline-narration-track" class="timeline-track" style="height: 30px;">
+            <div class="timeline-clip-block" style="left: 0%; width: 100%; background: linear-gradient(90deg, #10b981 0%, #06b6d4 100%);">🎙️ AI Narration Voiceover</div>
+          </div>
+          <!-- Callout track -->
+          <div id="timeline-callout-track" class="timeline-track" style="height: 28px; background: rgba(245, 158, 11, 0.1);">
+            <div style="font-size: 11px; color: var(--accent-amber); padding: 4px 8px; font-weight: 600;">🏷️ Text Callouts Track</div>
+          </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 24px;">
+          <button class="btn btn-secondary" onclick="App.goToStep(4)">◀ Back to Visuals</button>
+          <button class="btn btn-primary" onclick="App.goToStep(6)">Proceed to Render & Publish ➔</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6: RENDER & PUBLISH -->
+    <section id="step-6" class="step-pane">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Render Repurposed Video & YouTube Publishing Kit</h2>
+            <p class="card-desc">Export your mastered video in high resolution, download click-magnet thumbnails, and copy viral titles.</p>
+          </div>
+        </div>
+
+        <!-- Render Settings Bar -->
+        <div class="grid-3" style="margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Export Resolution</label>
+            <select id="select-export-quality" class="form-select">
+              <option value="1080p" selected>1080p Full HD (Recommended)</option>
+              <option value="720p">720p HD (Faster Export)</option>
+              <option value="2k">2K Quad HD (High Fidelity)</option>
+              <option value="4k">4K Ultra HD (Maximum Quality)</option>
+              <option value="480p">480p SD (Draft)</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Framerate</label>
+            <select id="select-export-fps" class="form-select">
+              <option value="30" selected>30 FPS (Standard YouTube)</option>
+              <option value="60">60 FPS (Ultra Smooth)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: flex-end;">
+            <button id="btn-start-final-render" class="btn btn-primary" style="width: 100%; height: 42px; font-size: 15px;">
+              🚀 Render Repurposed Video
+            </button>
+          </div>
+        </div>
+
+        <!-- Render Progress Box -->
+        <div id="render-progress-box" style="display: none; background: var(--bg-tertiary); padding: 18px; border-radius: var(--radius-md); margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span id="render-status-title" style="font-weight: 600; font-size: 14px;">Rendering Video...</span>
+            <span id="render-status-pct" style="font-weight: 700; color: var(--accent-purple); font-size: 16px;">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="render-progress-fill" class="progress-bar-fill"></div>
+          </div>
+          <p id="render-status-log" style="font-size: 12px; color: var(--text-muted); font-family: monospace;">Initializing FFmpeg filtergraph...</p>
+        </div>
+
+        <!-- Output Downloads Section -->
+        <div id="render-results-box" style="display: none;">
+          <div class="glass-card" style="border-color: rgba(16, 185, 129, 0.4); margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h3 style="color: var(--accent-emerald); font-size: 18px; margin-bottom: 4px;">✅ Master Video Ready to Publish</h3>
+                <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+                  Rendered with complete anti-copyright transformations, 100% complete story explanation, and custom branding.
+                </p>
+              </div>
+              <a id="btn-download-video-file" href="#" class="btn btn-emerald" style="padding: 12px 28px; font-size: 15px; font-weight: 700;">
+                ⬇ Download Master Video (MP4)
+              </a>
+            </div>
+          </div>
+
+          <!-- In-Browser Master Video Player -->
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="color: var(--accent-cyan); font-size: 16px; margin: 0;">🎬 Watch Repurposed Master Video</h3>
+              <span id="lbl-master-video-info" style="font-size: 13px; color: var(--accent-emerald); font-weight: 600;">1080p • 100% Synced Narration</span>
+            </div>
+            <video id="video-player-final" controls style="width: 100%; max-height: 520px; border-radius: var(--radius-md); background: #000; box-shadow: var(--shadow-lg); display: block;"></video>
+          </div>
+        </div>
+
+        <!-- Navigation Footer -->
+        <div style="display: flex; justify-content: space-between; margin-top: 24px;">
+          <button class="btn btn-secondary" onclick="App.goToStep(5)">◀ Back to Timeline</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Quick Settings Modal -->
+  <div id="modal-settings" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="card-header">
+        <h3 class="card-title">⚙️ API Keys & Preferences</h3>
+        <button class="btn btn-secondary btn-sm" onclick="App.closeSettingsModal()">✕</button>
+      </div>
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label class="form-label" style="margin-bottom: 0;">Google Gemini API Key (Speech Transcription & Script Rewrite)</label>
+          <span id="gemini-test-status" style="font-size: 11.5px; font-weight: 600;"></span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="position: relative; flex: 1;">
+            <input type="password" id="cfg-gemini-key" class="form-input" placeholder="AIzaSy..." style="padding-right: 42px; width: 100%;">
+            <button type="button" id="btn-toggle-gemini-key" class="btn btn-secondary btn-sm" style="position: absolute; right: 4px; top: 3px; bottom: 3px; padding: 0 10px; background: transparent; border: none; font-size: 16px; cursor: pointer;" title="Toggle Password Visibility">👁️</button>
+          </div>
+          <button type="button" id="btn-test-gemini-key" class="btn btn-secondary btn-sm" style="white-space: nowrap;">🔌 Test Connection</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gemini Model</label>
+        <select id="cfg-gemini-model" class="form-select">
+          <option value="gemini-4-argon" selected>gemini-4-argon (Gemini 4 Argon - Next-Gen Flagship)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash (Gemini 3.8 Flash - High Speed &amp; Intelligence)</option>
+          <option value="gemini-3.5-flash">gemini-3.5-flash (Gemini 3.5 Flash - Multimodal Audio/STT)</option>
+          <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Gemini 3.5 Flash Lite - Ultra-Fast)</option>
+          <option value="gemini-3.5-transcribe">gemini-3.5-transcribe (Gemini 3.5 Dedicated Transcribe)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label class="form-label" style="margin-bottom: 0;">ElevenLabs API Key (Ultra-Realistic Human Voice)</label>
+          <span id="elevenlabs-test-status" style="font-size: 11.5px; font-weight: 600;"></span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="position: relative; flex: 1;">
+            <input type="password" id="cfg-elevenlabs-key" class="form-input" placeholder="xi-api-key..." style="padding-right: 42px; width: 100%;">
+            <button type="button" id="btn-toggle-elevenlabs-key" class="btn btn-secondary btn-sm" style="position: absolute; right: 4px; top: 3px; bottom: 3px; padding: 0 10px; background: transparent; border: none; font-size: 16px; cursor: pointer;" title="Toggle Password Visibility">👁️</button>
+          </div>
+          <button type="button" id="btn-test-elevenlabs-key" class="btn btn-secondary btn-sm" style="white-space: nowrap;">🔌 Test Connection</button>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="App.closeSettingsModal()">Cancel</button>
+        <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Segment Modal -->
+  <div id="modal-add-segment" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="card-header">
+        <h3 class="card-title">➕ Add Custom Commentary Segment</h3>
+        <button class="btn btn-secondary btn-sm" onclick="App.closeAddSegmentModal()">✕</button>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Start Time (seconds)</label>
+          <input type="number" id="new-seg-start" class="form-input" step="0.1" value="0.0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time (seconds)</label>
+          <input type="number" id="new-seg-end" class="form-input" step="0.1" value="5.0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Original Speech Reference</label>
+        <textarea id="new-seg-orig" class="form-textarea" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rewritten / Translated Narration</label>
+        <textarea id="new-seg-rewritten" class="form-textarea" rows="3"></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+        <button class="btn btn-secondary" onclick="App.closeAddSegmentModal()">Cancel</button>
+        <button id="btn-save-new-segment" class="btn btn-primary">Add Segment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Text Callout Modal -->
+  <div id="modal-add-callout" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="card-header">
+        <h3 id="modal-callout-title" class="card-title">➕ Add Styled Text Callout & Chapter</h3>
+        <button class="btn btn-secondary btn-sm" onclick="App.closeAddCalloutModal()">✕</button>
+      </div>
+      <input type="hidden" id="callout-edit-index" value="-1">
+      <div class="form-group">
+        <label class="form-label">Overlay Text (e.g. CHAPTER 1: THE DISCOVERY)</label>
+        <input type="text" id="callout-input-text" class="form-input" placeholder="CHAPTER 1: THE DISCOVERY">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Start Time (sec)</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="number" id="callout-input-start" class="form-input" step="0.1" value="0.0">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="App.setCalloutCurrentTime()">⏱️ Now</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time (sec)</label>
+          <input type="number" id="callout-input-end" class="form-input" step="0.1" value="5.0">
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label class="form-label">Text Color</label>
+          <select id="callout-input-color" class="form-select">
+            <option value="yellow" selected>Vibrant Yellow</option>
+            <option value="white">Crisp White</option>
+            <option value="cyan">Electric Cyan</option>
+            <option value="#f43f5e">Neon Red</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Font Size</label>
+          <select id="callout-input-size" class="form-select">
+            <option value="28">28px (Subtitle)</option>
+            <option value="38" selected>38px (Standard)</option>
+            <option value="50">50px (Massive Chapter)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Screen Position</label>
+          <select id="callout-input-pos" class="form-select">
+            <option value="bottom" selected>Bottom</option>
+            <option value="top">Top Banner</option>
+            <option value="center">Center Stage</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+        <button class="btn btn-secondary" onclick="App.closeAddCalloutModal()">Cancel</button>
+        <button id="btn-save-new-callout" class="btn btn-primary" onclick="App.saveNewCallout()">Add Callout</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

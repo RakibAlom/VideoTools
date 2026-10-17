@@ -1,0 +1,15 @@
+{
+  "name": "easyloopcast-rtmp-bridge",
+  "version": "1.0.0",
+  "description": "EasyLoop Cast - Direct WebSocket to RTMP Live Streaming Bridge for YouTube & Facebook",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "keywords": ["loopcast", "rtmp", "youtube-live", "facebook-live", "ffmpeg", "websocket"],
+  "author": "EasyLoop Cast",
+  "license": "MIT"
+}

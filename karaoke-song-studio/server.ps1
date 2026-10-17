@@ -1,6 +1,6 @@
-﻿# Karaoke Video Studio - Zero-Dependency Local HTTP Server with Universal MP4 Optimizer
+# Karaoke Video Studio - Zero-Dependency Local HTTP Server with Universal MP4 Optimizer
 param(
-    [int]$port = 5502
+    [int]$port = 5505
 )
 
 $root = $PSScriptRoot
@@ -119,6 +119,18 @@ try {
 
             if ($request.HttpMethod -eq "OPTIONS") {
                 $response.StatusCode = 200
+                $response.Close()
+                continue
+            }
+
+            # Server status endpoint
+            if ($request.HttpMethod -eq "GET" -and $request.Url.LocalPath -eq "/api/status") {
+                $hasFfmpeg = if (Find-FFmpeg) { "true" } else { "false" }
+                $statusJson = "{" + "`"status`":`"active`",`"port`":$port,`"ffmpeg`":$hasFfmpeg" + "}"
+                $respBytes = [System.Text.Encoding]::UTF8.GetBytes($statusJson)
+                $response.ContentType = "application/json"
+                $response.ContentLength64 = $respBytes.Length
+                $response.OutputStream.Write($respBytes, 0, $respBytes.Length)
                 $response.Close()
                 continue
             }

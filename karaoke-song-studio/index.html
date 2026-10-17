@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karaoke Song Studio 2.0 - Viral Social Video Maker</title>
+  <meta name="description" content="Zero-Python automated viral karaoke video studio. Create synchronized animated karaoke reels, shorts, and TikToks with vocal isolation, anti-copyright DSP, and multi-format subtitle import.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bangers&family=Bebas+Neue&family=Cinzel:wght@600;700;800;900&family=Fredoka:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Luckiest+Guy&family=Montserrat:wght@700;800;900&family=Outfit:wght@600;800;900&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@700;800;900&family=Press+Start+2P&family=Righteous&family=Rubik+Glitch&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ========================================================================
+       TOP HEADER BAR
+       ======================================================================== -->
+  <header class="header-bar studio-header">
+    <div class="brand">
+      <div class="brand-icon-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h1 class="brand-title">Karaoke Song Studio</h1>
+          <span class="brand-badge">2.0</span>
+        </div>
+        <div class="brand-tagline">VIRAL REELS &bull; TIKTOK &bull; ZERO-PYTHON DSP &bull; YOUTUBE TRANSCRIPT SYNC</div>
+      </div>
+    </div>
+
+    <!-- Header Center: Demos & Aspect Ratio -->
+    <div class="header-center header-demos">
+      <button class="btn-demo-trigger" id="btnOpenDemos" title="Choose from 4 viral ready-to-play karaoke songs">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        <span>Demo Songs</span>
+      </button>
+
+      <div class="pill-group">
+        <button class="pill-btn btn-load-demo" data-demo="neon_cyber" title="Synthwave 9:16 Vertical">Cyber 9:16</button>
+        <button class="pill-btn btn-load-demo" data-demo="midnight_groove" title="Pop Funk 16:9 Landscape">Funk 16:9</button>
+        <button class="pill-btn btn-load-demo" data-demo="starlight" title="Lo-Fi Chill 1:1 Square">Lo-Fi 1:1</button>
+        <button class="pill-btn btn-load-demo" data-demo="viral_hook" title="15s Duet Hook Challenge">15s Hook</button>
+      </div>
+
+      <div class="pill-group">
+        <button class="pill-btn btn-aspect active" data-aspect="9:16" title="Shorts, TikTok, Reels (1080x1920)">9:16</button>
+        <button class="pill-btn btn-aspect" data-aspect="16:9" title="YouTube, TVs (1920x1080)">16:9</button>
+        <button class="pill-btn btn-aspect" data-aspect="1:1" title="Instagram Square (1080x1080)">1:1</button>
+        <button class="pill-btn btn-aspect" data-aspect="4:5" title="Portrait Feed (1080x1350)">4:5</button>
+      </div>
+    </div>
+
+    <!-- Header Right: Server Badge, Guide, Export -->
+    <div class="header-right header-actions">
+      <span class="server-badge" id="serverStatusBadge">Local Server Active</span>
+      <button class="btn-guide-trigger" id="btnOpenGuide" title="Studio Walkthrough & Shortcuts Guide">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Guide</span>
+      </button>
+            <button class="btn-secondary" id="btnResetSettings" style="font-size: 11px; padding: 6px 10px;" title="Reset all studio customization to clean defaults">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        <span>Reset Settings</span>
+      </button>
+      <button class="btn-primary" id="btnOpenExport">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export Video</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       MASTER 3-COLUMN STUDIO LAYOUT
+       ======================================================================== -->
+  <main class="studio-layout studio-workspace">
+
+    <!-- LEFT SIDEBAR: Audio, Title/Subtitle, Crop, Vocal Processor & Anti-Copyright DSP -->
+    <aside class="sidebar panel-left">
+      <div class="panel-scroll">
+
+        <!-- CARD 1: Audio & Music Track -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">Audio & Music Track</span>
+          </div>
+
+          <div class="file-dropzone dropzone" id="audioDropzone">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+            <div class="drop-text dropzone-text">Drop Audio or Video File (MP3, WAV, MP4)</div>
+            <div class="drop-subtext dropzone-sub">Zero-Python Web Audio decoder &bull; Backing track ready</div>
+            <input type="file" id="audioFileInput" accept="audio/*,video/*" style="display: none;">
+          </div>
+
+          <div class="track-info" id="trackInfoBlock">
+            <div class="track-name" id="trackNameDisplay">Spotify Studio (Clean Funk Demo)</div>
+            <div class="track-meta">
+              <span id="trackDurationDisplay">00:22.0</span>
+              <span class="badge-builtin" id="trackSourceBadge">Built-In DSP</span>
+            </div>
+          </div>
+          <button class="btn-secondary" id="btnRemoveAudio" style="font-size: 11px; padding: 5px 10px; width: 100%; justify-content: center; color: #ff5e62; border-color: rgba(255, 94, 98, 0.35); margin-top: 6px; display: none;" title="Remove uploaded audio and return to default audio track">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Remove Custom Audio</span>
+          </button>
+
+          <!-- Trimmer & Waveform -->
+          <div class="trimmer-block">
+            <div class="trimmer-header">
+              <span>Trim Audio Selection</span>
+              <span id="trimDuration" style="color: var(--accent-cyan); font-weight: 700;">22.0s</span>
+            </div>
+            <div class="waveform-container waveform-box">
+              <canvas id="waveformCanvas" width="300" height="55"></canvas>
+            </div>
+            <div class="trim-inputs">
+              <div class="trim-input-group">
+                <label>Start (s):</label>
+                <input type="number" id="trimStart" class="num-input" value="0.0" min="0" step="0.1">
+              </div>
+              <div class="trim-input-group">
+                <label>End (s):</label>
+                <input type="number" id="trimEnd" class="num-input" value="22.0" min="1" step="0.1">
+              </div>
+            </div>
+
+            <div class="trim-actions" style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <button class="btn-secondary" id="btnRandomHook" style="justify-content: center;" title="Picks an exciting 15s slice and syncs lyrics">
+                <span>Dice 15s Hook</span>
+              </button>
+              <button class="btn-secondary" id="btnCropLyrics" style="justify-content: center;" title="Crops lyrics to current audio selection">
+                <span>Crop Lyrics</span>
+              </button>
+            </div>
+
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; margin-top: 6px; cursor: pointer; color: var(--accent-cyan);">
+              <input type="checkbox" id="checkAutoCropLyrics" checked>
+              <span>Auto-Crop Subtitles with Audio Trim</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- CARD 2: Title & Sub-Title Customizer -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">Title & Sub-Title Customizer</span>
+          </div>
+
+          <div style="font-size: 11px; color: var(--accent-cyan); font-weight: 600; line-height: 1.4;">
+            Tip: Drag & drop Title and Sub-title directly on the video canvas!
+          </div>
+
+          <!-- Main Title Box -->
+          <div style="margin-top: 8px; padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 700; font-size: 12px; color: var(--accent-cyan);">
+                <input type="checkbox" id="checkShowTitle">
+                <span>Main Title</span>
+              </label>
+              <button class="pill-btn" id="btnCenterTitle" style="font-size: 10px; padding: 2px 8px;">Center X</button>
+            </div>
+
+            <!-- Title Style Preset -->
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Style Preset</span></div>
+              <select id="titleStyleSelect" class="select-styled" style="width: 100%;">
+                <option value="cyber_neon" selected>Cyber Neon (Glow Cyan)</option>
+                <option value="viral_reel">Viral Reel 3D (Gold 3D Extrusion)</option>
+                <option value="golden_3d">Golden Metallic 3D</option>
+                <option value="danger_alert">Danger Alert Hook</option>
+                <option value="frosted_glass">Frosted Glass Backplate</option>
+                <option value="flame_gradient">Flame Gradient (Orange & Pink)</option>
+                <option value="royal_purple">Royal Ultraviolet Glow</option>
+                <option value="retro_synthwave">Retro Synthwave 80s</option>
+                <option value="bold_impact">Bold Heavy Impact</option>
+                <option value="minimal_clean">Minimal Clean Modern</option>
+              </select>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Title Text</span></div>
+              <input type="text" id="inputTitleText" class="text-input" value="NEON CYBER DRIVE" placeholder="e.g. SONG TITLE">
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Title Font Family</span></div>
+              <select id="titleFontFamilySelect" class="select-styled" style="width: 100%;">
+                <option value="Montserrat" selected>Montserrat (Modern Clean)</option>
+                <option value="Outfit">Outfit (Viral Geometric)</option>
+                <option value="Bebas Neue">Bebas Neue (Cinematic Bold)</option>
+                <option value="Space Grotesk">Space Grotesk (Cyber Tech)</option>
+                <option value="Syne">Syne (High-Fashion Pop)</option>
+                <option value="Playfair Display">Playfair Display (Luxury Serif)</option>
+                <option value="Cinzel">Cinzel (Epic Luxury)</option>
+                <option value="Righteous">Righteous (Synthwave 80s)</option>
+                <option value="Anton">Anton (Heavy Impact)</option>
+                <option value="Permanent Marker">Permanent Marker (Graffiti)</option>
+                <option value="Bangers">Bangers (Comic Action)</option>
+                <option value="Luckiest Guy">Luckiest Guy (Bold Comic)</option>
+                <option value="Archivo Black">Archivo Black (Heavy Rap)</option>
+                <option value="Fredoka">Fredoka (Rounded Pop)</option>
+                <option value="Pacifico">Pacifico (Neon Script)</option>
+                <option value="Press Start 2P">Press Start 2P (8-Bit Pixel)</option>
+                <option value="Rubik Glitch">Rubik Glitch (Glitch EDM)</option>
+                <option value="Inter">Inter (Studio Clean)</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Size (px)</span></div>
+                <input type="range" id="titleFontSizeSlider" min="24" max="90" value="54">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Rotation</span></div>
+                <input type="range" id="titleRotationSlider" min="-30" max="30" value="0">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Pos X (%)</span></div>
+                <input type="range" id="titleXSlider" min="10" max="90" value="50">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Pos Y (%)</span></div>
+                <input type="range" id="titleYSlider" min="5" max="95" value="12">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Color</span></div>
+                <input type="color" id="titleColorInput" class="color-picker-input" value="#ffffff" style="width: 100%; height: 26px;">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Glow</span></div>
+                <input type="color" id="titleGlowInput" class="color-picker-input" value="#00f2fe" style="width: 100%; height: 26px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Title Box -->
+          <div style="margin-top: 8px; padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 700; font-size: 12px; color: var(--accent-yellow);">
+                <input type="checkbox" id="checkShowSubtitle">
+                <span>Sub-Title / Sub-Text</span>
+              </label>
+              <button class="pill-btn" id="btnCenterSubtitle" style="font-size: 10px; padding: 2px 8px;">Center X</button>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Subtitle Text (Hook)</span></div>
+              <input type="text" id="inputSubtitleText" class="text-input" value="CAN YOU SING THIS? DUET CHALLENGE" placeholder="e.g. Duet Challenge | 99% Fail">
+            </div>
+
+            <div style="display: flex; gap: 14px; font-size: 11px; margin-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" id="checkSubPillBg" checked>
+                <span>Frosted Pill Backdrop</span>
+              </label>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Subtitle Font</span></div>
+              <select id="subFontFamilySelect" class="select-styled" style="width: 100%;">
+                <option value="Montserrat" selected>Montserrat (Modern Clean)</option>
+                <option value="Outfit">Outfit (Viral Geometric)</option>
+                <option value="Bebas Neue">Bebas Neue (Cinematic Bold)</option>
+                <option value="Space Grotesk">Space Grotesk (Cyber Tech)</option>
+                <option value="Syne">Syne (High-Fashion Pop)</option>
+                <option value="Playfair Display">Playfair Display (Luxury Serif)</option>
+                <option value="Cinzel">Cinzel (Epic Luxury)</option>
+                <option value="Righteous">Righteous (Synthwave 80s)</option>
+                <option value="Anton">Anton (Heavy Impact)</option>
+                <option value="Permanent Marker">Permanent Marker (Graffiti)</option>
+                <option value="Bangers">Bangers (Comic Action)</option>
+                <option value="Luckiest Guy">Luckiest Guy (Bold Comic)</option>
+                <option value="Archivo Black">Archivo Black (Heavy Rap)</option>
+                <option value="Fredoka">Fredoka (Rounded Pop)</option>
+                <option value="Pacifico">Pacifico (Neon Script)</option>
+                <option value="Press Start 2P">Press Start 2P (8-Bit Pixel)</option>
+                <option value="Rubik Glitch">Rubik Glitch (Glitch EDM)</option>
+                <option value="Inter">Inter (Studio Clean)</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Size (px)</span></div>
+                <input type="range" id="subFontSizeSlider" min="14" max="48" value="24">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Color</span></div>
+                <input type="color" id="subColorInput" class="color-picker-input" value="#00f2fe" style="width: 100%; height: 26px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Pos X (%)</span></div>
+                <input type="range" id="subXSlider" min="10" max="90" value="50">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Pos Y (%)</span></div>
+                <input type="range" id="subYSlider" min="5" max="95" value="19">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: Visual Crop & Framing -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <span class="panel-title">Visual Crop & Framing</span>
+            <button class="pill-btn" id="btnToggleCropInline" style="font-size: 10px;">Visual Handles</button>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+            Drag corner/edge handles directly on canvas to crop, drag inside to pan, wheel to zoom.
+          </div>
+
+          <!-- Quick Aspect Crop Presets -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+            <button class="pill-btn" id="btnCropAspect916" style="font-size: 10px; padding: 4px;">9:16 Vert</button>
+            <button class="pill-btn" id="btnCropAspect11" style="font-size: 10px; padding: 4px;">1:1 Sq</button>
+            <button class="pill-btn" id="btnCropAspect169" style="font-size: 10px; padding: 4px;">16:9 Wide</button>
+            <button class="pill-btn" id="btnCropReset" style="font-size: 10px; padding: 4px;">Reset</button>
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Zoom / Scale</span>
+              <span id="cropScaleVal">1.0x</span>
+            </div>
+            <input type="range" id="cropScaleSlider" min="0.5" max="3.0" step="0.05" value="1.0">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Pan X (%)</span></div>
+              <input type="range" id="cropPanXSlider" min="-50" max="50" step="1" value="0">
+            </div>
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Pan Y (%)</span></div>
+              <input type="range" id="cropPanYSlider" min="-50" max="50" step="1" value="0">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Crop Left (%)</span></div>
+              <input type="range" id="cropLeftSlider" min="0" max="45" step="1" value="0">
+            </div>
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Crop Right (%)</span></div>
+              <input type="range" id="cropRightSlider" min="0" max="45" step="1" value="0">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Crop Top (%)</span></div>
+              <input type="range" id="cropTopSlider" min="0" max="45" step="1" value="0">
+            </div>
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Crop Bottom (%)</span></div>
+              <input type="range" id="cropBottomSlider" min="0" max="45" step="1" value="0">
+            </div>
+          </div>
+
+          <!-- Background Media Overlay Quick Control in Left Panel -->
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-glass);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">Background Overlay &amp; Transparency</span>
+              <span id="bgOverlayOpacityValLeft" style="font-size: 11px; font-weight: 700; color: #fff;">45%</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="bgOverlayOpacitySliderLeft" min="0" max="100" value="45" title="Darkens background image/video so lyrics are 100% visible">
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+              <span style="font-size: 10px; color: var(--text-muted);">Overlay Tint Color:</span>
+              <input type="color" id="bgOverlayColorInputLeft" class="color-picker-input" value="#000000" style="width: 50px; height: 22px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: Vocal Processor (Singer Voice Mute) -->
+        <div class="glass-panel" id="panelVocalProcessor">
+          <div class="panel-header">
+            <span class="panel-title" style="color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              Vocal Processor &amp; Singer Mute
+            </span>
+            <span id="vocalStatusIndicator" class="format-badge" style="background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan);">Full Mix</span>
+          </div>
+
+          <button class="btn-primary" id="btnToggleMuteSinger" style="width: 100%; justify-content: center; margin-bottom: 8px; transition: all 0.25s ease;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            <span id="btnToggleMuteSingerText">Mute Singer Voice (Music Only)</span>
+          </button>
+
+          <div id="vocalDetectBadge" class="format-badge" style="display: block; text-align: center; margin-bottom: 8px; background: rgba(255, 255, 255, 0.05); padding: 6px; border: 1px solid var(--border-subtle); border-radius: 6px; font-size: 11px;">
+            Mix Mode: Singer Voice &amp; Music Playing
+          </div>
+
+          <div class="btn-group-row">
+            <button class="btn-vocal-mode active" data-mode="original" title="Full original track with singer voice">Original Mix</button>
+            <button class="btn-vocal-mode" data-mode="instrumental" title="Center singer voice muted, background music kept">Backing Track</button>
+            <button class="btn-vocal-mode" data-mode="vocals" title="Isolate vocals only (acapella)">Vocals Solo</button>
+          </div>
+
+          <div class="slider-row" style="margin-top: 8px;">
+            <div class="slider-label-row">
+              <span>Singer Cancellation Depth</span>
+              <span id="vocalAttenVal">95%</span>
+            </div>
+            <input type="range" id="vocalAttenuationSlider" min="50" max="100" value="95">
+          </div>
+
+          <div class="slider-row" style="margin-top: 8px;">
+            <div class="slider-label-row">
+              <span title="Control mix balance: 100% = Full Original Mix, 0% = Backing Track (Muted Singer), 50% = Guide Vocals">Song &amp; Music Mix Blend</span>
+              <span id="vocalMixVal">100% Full Song</span>
+            </div>
+            <input type="range" id="vocalMixSlider" min="0" max="100" value="100">
+          </div>
+        </div>
+
+        <!-- CARD 5: Studio Audio FX & Mastering Rack -->
+        <div class="glass-panel" id="panelAudioFX">
+          <div class="panel-header">
+            <span class="panel-title" style="color: var(--accent-magenta); display: flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+              Studio Audio FX &amp; Mastering
+            </span>
+            <button class="pill-btn" id="btnResetFX" style="font-size: 10px;" title="Reset all audio FX to clean">Reset FX</button>
+          </div>
+
+          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 6px;">25+ Popular Voice Changers &amp; Audio DSP Effects:</div>
+          <div class="voice-fx-category-chips">
+            <button class="voice-chip active" data-filter="all">All (32)</button>
+            <button class="voice-chip" data-filter="lofi_sleep" style="color: #ff9a8b; border-color: rgba(255, 154, 139, 0.4);">Lo-Fi &amp; Sleep</button>
+            <button class="voice-chip" data-filter="cats">Cat Voices</button>
+            <button class="voice-chip" data-filter="kids">Kid Voices</button>
+            <button class="voice-chip" data-filter="characters">Characters</button>
+            <button class="voice-chip" data-filter="mastering">Mastering &amp; Solo</button>
+          </div>
+          <select id="audioFxSelect" class="form-select" style="width: 100%; margin-bottom: 8px; font-weight: 600;">
+            <optgroup label="Cat Voice Changers (Vocal Pitch &amp; Formant)">
+              <option value="cat_voice">Cat Voice (+7.0st Kitten Formant)</option>
+              <option value="cat_baby">Baby Cat Voice (+9.5st Tiny Kitten)</option>
+              <option value="cat_anime_neko">Anime Neko Voice (+6.5st Kawaii)</option>
+              <option value="cat_tomcat">Tomcat Voice (+3.0st Raspy Feline)</option>
+              <option value="cat_meow_choir">Cat Choir Voice (+7.5st Multi-Voice)</option>
+              <option value="cat_purr_lofi">Purring Cat Voice (+5.5st Warm Formant)</option>
+            </optgroup>
+            <optgroup label="Kids Voice Changers (Child Vocal Pitch &amp; Formant)">
+              <option value="kids_tone">Kid Voice (+4.5st Cheerful Child)</option>
+              <option value="kid_toddler">Toddler Voice (+6.0st Sweet Child)</option>
+              <option value="kid_choir">Kid Choir (+4.0st Children Harmonizer)</option>
+              <option value="kid_cartoon">Cartoon Kid (+5.2st Character)</option>
+              <option value="kid_lullaby">Lullaby Child (+3.8st Soft Kid)</option>
+              <option value="kid_popstar">Junior Pop Star (+4.8st Bright Kid)</option>
+            </optgroup>
+            <optgroup label="Popular Voice Changers &amp; Characters">
+              <option value="chipmunk">Chipmunk Voice (+10.0st Squeaky)</option>
+              <option value="deep_monster">Deep Voice / Monster (-8.0st Titan)</option>
+              <option value="robot_vocoder">Robot / Vocoder (Metallic)</option>
+              <option value="helium_voice">Helium Voice (+6.5st Airy Treble)</option>
+              <option value="alien_scifi">Alien / Sci-Fi Warp (Modulated)</option>
+              <option value="telephone">Vintage Telephone (300Hz-3.4kHz)</option>
+              <option value="megaphone">Megaphone Voice (Projected)</option>
+            </optgroup>
+            <optgroup label="Karaoke &amp; Solo Modes">
+              <option value="clean_original" selected>Clean Studio Master (Original Voice)</option>
+              <option value="karaoke_mute">Karaoke Mode (Singer Muted, Music Only)</option>
+              <option value="acapella_solo">Acapella Solo (Singer Voice Only)</option>
+            </optgroup>
+            <optgroup label="Lo-Fi &amp; Sleep Modes (Cozy Chill &amp; Slumber)">
+              <option value="lofi_chill">Lo-Fi Chill Tape (Pure Analog Warmth &bull; 0.94x)</option>
+              <option value="lofi_study_vinyl">Lo-Fi Study Vinyl (Crackle &bull; Low-Pass &bull; 0.93x)</option>
+              <option value="lofi_midnight_rain">Lo-Fi Midnight Rain (Sub-Bass &bull; Deep Reverb &bull; 0.91x)</option>
+              <option value="lofi_tape_nostalgia">Lo-Fi Cassette Nostalgia (Analog Flutter &bull; 0.95x)</option>
+              <option value="sleep_deep_lullaby">Deep Sleep Lullaby (Ultra-Soft Harmonics &bull; 0.85x)</option>
+              <option value="sleep_ambient_dream">Sleeping Dream Cloud (Ethereal Reverb &bull; 0.82x)</option>
+              <option value="sleep_cozy_whisper">Cozy ASMR Whisper (Intimate Soft Resonance &bull; 0.88x)</option>
+              <option value="sleep_delta_relax">Delta Wave Slumber (Deep Spatial Drift &bull; 0.80x)</option>
+            </optgroup>
+            <optgroup label="Creative Audio Effects &amp; Mastering">
+              <option value="nightcore">Nightcore (+3.5st, 1.15x Speed)</option>
+              <option value="slowed_reverb">Slowed + Reverb (-2.0st, Aesthetic Hall)</option>
+              <option value="spatial_8d">Spatial 8D Audio (360 Panner)</option>
+              <option value="vocal_exciter">Pop Vocal Exciter (Crystal Air)</option>
+              <option value="club_bass">Club Bass Boost (+5.5dB Punch)</option>
+              <option value="stadium_echo">Concert Arena / Stadium Echo</option>
+              <option value="dreamy_chorus">Dreamy Chorus / Shimmer</option>
+              <option value="radio_vintage">Vintage AM Radio Broadcast</option>
+              <option value="underwater">Underwater / Submerged (Deep Muffled)</option>
+              <option value="anti_copyright_safe">Anti-Copyright Safe (+1.5st)</option>
+            </optgroup>
+          </select>
+          <div style="font-size: 10px; color: var(--text-dim); margin-bottom: 4px;">Quick Favorite Voice Changers:</div>
+          <div class="fx-presets-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <button class="pill-btn fx-preset-btn active" data-preset="clean_original">Clean Master</button>
+            <button class="pill-btn fx-preset-btn" data-preset="karaoke_mute" style="color: var(--accent-cyan); font-weight: 700;">Karaoke Mute</button>
+            <button class="pill-btn fx-preset-btn" data-preset="cat_voice" style="color: var(--accent-magenta); font-weight: 700;">Cat Voice</button>
+            <button class="pill-btn fx-preset-btn" data-preset="cat_baby">Baby Cat</button>
+            <button class="pill-btn fx-preset-btn" data-preset="kids_tone" style="color: var(--accent-yellow); font-weight: 700;">Kid Voice</button>
+            <button class="pill-btn fx-preset-btn" data-preset="kid_choir">Kid Choir</button>
+            <button class="pill-btn fx-preset-btn" data-preset="chipmunk">Chipmunk</button>
+            <button class="pill-btn fx-preset-btn" data-preset="deep_monster">Deep Voice</button>
+            <button class="pill-btn fx-preset-btn" data-preset="robot_vocoder">Robot</button>
+            <button class="pill-btn fx-preset-btn" data-preset="helium_voice">Helium</button>
+            <button class="pill-btn fx-preset-btn" data-preset="spatial_8d">8D Audio</button>
+            <button class="pill-btn fx-preset-btn" data-preset="anti_copyright_safe">Anti-Copy</button>
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Pitch Shift (Semitones)</span>
+              <span id="pitchVal">0.0 st</span>
+            </div>
+            <input type="range" id="pitchSlider" min="-6.0" max="6.0" step="0.5" value="0.0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Playback Tempo / Speed</span>
+              <span id="speedVal">1.00x</span>
+            </div>
+            <input type="range" id="speedSlider" min="0.75" max="1.35" step="0.01" value="1.00">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Club Bass Booster (100Hz)</span>
+              <span id="bassBoostVal">0 dB</span>
+            </div>
+            <input type="range" id="bassBoostSlider" min="-6" max="14" step="1" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Studio Treble / Clarity (6.5kHz)</span>
+              <span id="trebleVal">0 dB</span>
+            </div>
+            <input type="range" id="trebleSlider" min="-12" max="12" step="1" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Tape Echo / Delay Wet</span>
+              <span id="echoWetVal">0%</span>
+            </div>
+            <input type="range" id="echoWetSlider" min="0" max="80" step="2" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Haas Stereo Decorrelation</span>
+              <span id="stereoWidthVal">0%</span>
+            </div>
+            <input type="range" id="stereoWidthSlider" min="0" max="100" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Concert Reverb Wet</span>
+              <span id="reverbWetVal">0%</span>
+            </div>
+            <input type="range" id="reverbWetSlider" min="0" max="80" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Lo-Fi Tape Warmth &amp; Flutter</span>
+              <span id="lofiWarmthVal">0%</span>
+            </div>
+            <input type="range" id="lofiWarmthSlider" min="0" max="100" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>8D Spatial Audio (Headphones)</span>
+              <span id="spatial8DVal">0%</span>
+            </div>
+            <input type="range" id="spatial8DSlider" min="0" max="100" value="0">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Vintage Radio Filter</span>
+              <span id="radioFilterVal">0%</span>
+            </div>
+            <input type="range" id="radioFilterSlider" min="0" max="100" value="0">
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CENTER STAGE: Canvas Preview & Transport -->
+    <section class="stage-workspace panel-center">
+      <div class="stage-top-bar">
+        <div class="stage-tools">
+          <button class="btn-secondary" id="btnToggleCrop" title="Toggle Visual Crop & Framing mode with draggable handles on canvas">Visual Crop</button>
+          <button class="btn-secondary" id="btnSafeZones" title="Toggle 9:16 Mobile UI Safe Zone Margin">Safe Zones</button>
+          <button class="btn-secondary" id="btnUndo" title="Undo (Ctrl+Z)">Undo</button>
+          <button class="btn-secondary" id="btnRedo" title="Redo (Ctrl+Y)">Redo</button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-dim);" id="stageAspectIndicator">9:16 Vertical (1080x1920)</div>
+      </div>
+
+      <div class="stage-container canvas-stage-wrapper" id="stageWrapper">
+        <div class="canvas-viewport" id="canvasViewport">
+          <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+          <div class="canvas-overlay-play" id="canvasOverlayPlay" title="Click or Spacebar to Play/Pause">
+            <div class="overlay-play-disc">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-bottom-bar transport-dock">
+        <div class="timeline-row">
+          <span class="timecode" id="timeCurrent">00:00.0</span>
+          <input type="range" id="timelineSlider" min="0" max="1000" value="0" class="timeline-slider">
+          <span class="timecode" id="timeTotal">00:22.0</span>
+        </div>
+        <div class="playback-controls-row">
+          <button class="btn-secondary" id="btnRestart" title="Restart to start of song">Restart</button>
+          <button class="btn-play-master" id="btnPlay" title="Play or Pause Song (Spacebar)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="8 5 19 12 8 19 8 5"/></svg>
+            <span>Play</span>
+          </button>
+          <button class="btn-secondary" id="btnLoop" title="Toggle song looping">Loop</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: Subtitles, Lyrics Studio & Visual Styling -->
+    <aside class="sidebar right-sidebar panel-right">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" data-tab="tabLyrics">STEP 3: Lyrics Studio</button>
+        <button class="tab-btn" data-tab="tabVisuals">Visual Styling</button>
+      </nav>
+
+      <!-- TAB 1: Lyrics Studio & Subtitle Import -->
+      <div class="tab-content active" id="tabLyrics">
+                <!-- AI Voice-to-Subtitle Auto Transcriber Banner -->
+        <div style="background: linear-gradient(135deg, rgba(0, 242, 254, 0.15) 0%, rgba(254, 9, 121, 0.15) 100%); border: 1px solid rgba(0, 242, 254, 0.45); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <span style="font-size: 12px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">AI Voice-to-Lyrics Transcriber</span>
+            </div>
+            <span class="brand-badge" style="background: var(--accent-magenta); color: #fff; font-size: 9px; padding: 2px 6px;">100% AUTO</span>
+          </div>
+
+          <button class="btn-primary" id="btnOpenAutoTranscribeModal" style="width: 100%; justify-content: center; gap: 8px; font-size: 11px; font-weight: 800; padding: 8px; background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #000; box-shadow: 0 4px 14px rgba(0, 242, 254, 0.35);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Auto-Transcribe Audio (AI Voice to Subtitle)</span>
+          </button>
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; text-align: center;">
+            Listens carefully to singer audio &amp; creates synced karaoke lyrics with timestamps
+          </div>
+        </div>
+
+        <!-- Quick Background & Overlay Jump Button -->
+        <button class="btn-secondary" id="btnGoToVisualStyling" style="font-size: 11px; padding: 7px 10px; width: 100%; justify-content: center; gap: 6px; margin-bottom: 10px; border-color: rgba(0, 242, 254, 0.35); color: #00f2fe; cursor: pointer;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Background Media &amp; Overlay Contrast Settings &rarr;</span>
+        </button>
+
+
+        <!-- Subtitle Import Banner -->
+        <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.25); border-radius: var(--radius-sm); padding: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">Import Subtitles / YouTube Transcript</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <button class="btn-primary" id="btnOpenImportModal" style="font-size: 11px; padding: 6px;" title="Paste YouTube transcript (0:05 text) or raw lyrics">
+              <span>Paste YouTube / Text</span>
+            </button>
+            <label class="btn-secondary" style="font-size: 11px; padding: 6px; cursor: pointer; justify-content: center;" title="Upload .srt, .vtt, .sbv, .lrc, .txt file">
+              <span>Upload Sub File</span>
+              <input type="file" id="subtitleFileInput" accept=".srt,.vtt,.sbv,.lrc,.txt,.json" style="display: none;">
+            </label>
+          </div>
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 6px; text-align: center;">
+            Supports .srt, .vtt, .sbv, YouTube transcript copy-paste, .lrc & plain text
+          </div>
+        </div>
+
+                <!-- Master Subtitle / Lyrics Visibility Switch (Disable to export clean video + audio FX) -->
+        <div class="subtitle-visibility-card" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 12px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Show Lyrics &amp; Subtitles
+            </span>
+            <span style="font-size: 10px; color: var(--text-dim);">Turn OFF to export clean background video with Audio FX only</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggleShowLyrics" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Inactive Lyrics Visibility Quick Bar in Lyrics Studio -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">Inactive Lyrics Visibility</span>
+            <span id="unsungOpacityValLyrics" style="font-size: 11px; font-weight: 700; color: #fff;">82%</span>
+          </div>
+          <input type="range" id="unsungOpacitySliderLyrics" min="0" max="100" value="82" style="width: 100%;" title="0% = Active line only, 100% = Full solid brightness">
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button class="overlay-chip unsung-chip" data-unsung-op="0" style="flex: 1; padding: 2px 0; font-size: 10px;">0% (Solo)</button>
+            <button class="overlay-chip unsung-chip" data-unsung-op="25" style="flex: 1; padding: 2px 0; font-size: 10px;">25%</button>
+            <button class="overlay-chip unsung-chip" data-unsung-op="50" style="flex: 1; padding: 2px 0; font-size: 10px;">50%</button>
+            <button class="overlay-chip unsung-chip active" data-unsung-op="82" style="flex: 1; padding: 2px 0; font-size: 10px;">82%</button>
+            <button class="overlay-chip unsung-chip" data-unsung-op="100" style="flex: 1; padding: 2px 0; font-size: 10px;">100%</button>
+          </div>
+        </div>
+
+        <div class="lyrics-toolbar" style="flex-wrap: wrap;">
+          <button class="btn-secondary" id="btnAddLine" style="font-size: 11px;">+ Add Line</button>
+          <button class="btn-secondary" id="btnAlignLyricsStart" style="font-size: 11px; color: var(--accent-cyan); border-color: rgba(0, 242, 254, 0.4);" title="Align 1st lyric line to audio start (removes delay)">Sync to Start</button>
+          <button class="btn-secondary" id="btnFitLyricsDuration" style="font-size: 11px; color: var(--accent-yellow); border-color: rgba(255, 230, 0, 0.4);" title="Proportionally scale all subtitle lines across audio duration">Fit to Audio</button>
+          <button class="btn-secondary" id="btnShiftBack" style="font-size: 11px;" title="Shift all -0.5s">-0.5s</button>
+          <button class="btn-secondary" id="btnShiftForward" style="font-size: 11px;" title="Shift all +0.5s">+0.5s</button>
+          <button class="btn-secondary" id="btnClearLyrics" style="font-size: 11px; color: #ff5e62; border-color: rgba(255, 94, 98, 0.35);" title="Clear and remove all current lyrics">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Clear Lyrics</span>
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-dim);">
+          <span>Active Lyric Lines:</span>
+          <span id="lyricsCount" style="font-weight: 700; color: var(--accent-cyan);">4</span>
+        </div>
+
+        <div class="lyrics-list" id="lyricsList"></div>
+      </div>
+
+      <!-- TAB 2: Visual Styling -->
+      <div class="tab-content" id="tabVisuals">
+        <!-- Visual Theme Selector -->
+        <div class="glass-panel">
+          <div class="panel-header">
+            <span class="panel-title" style="color: #1ed760;">Visual Themes & Styling</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 8px;">
+            1-Click professional styles trusted by creators & streaming platforms:
+          </div>
+          <div class="theme-cards-grid">
+            <div class="theme-card active" data-theme="spotify_clean">
+              <div class="theme-card-tag">Verified &bull; Clean</div>
+              <div class="theme-card-title">Spotify Dark</div>
+              <div class="theme-card-desc">Obsidian dark, crisp white & emerald accent</div>
+            </div>
+            <div class="theme-card" data-theme="apple_sing">
+              <div class="theme-card-tag">Luxury &bull; Frosted</div>
+              <div class="theme-card-title">Apple Music Sing</div>
+              <div class="theme-card-desc">Iridescent glow & ambient frosted glass</div>
+            </div>
+            <div class="theme-card" data-theme="cinema_gold">
+              <div class="theme-card-tag">Filmic &bull; Warm</div>
+              <div class="theme-card-title">Cinema Gold Luxe</div>
+              <div class="theme-card-desc">Metallic champagne gold & bokeh warmth</div>
+            </div>
+            <div class="theme-card" data-theme="minimalist_studio">
+              <div class="theme-card-tag">Editorial &bull; Sharp</div>
+              <div class="theme-card-title">Minimalist Studio</div>
+              <div class="theme-card-desc">High-contrast monochrome typography</div>
+            </div>
+            <div class="theme-card" data-theme="pastel_lofi">
+              <div class="theme-card-tag">Dreamy &bull; Lo-Fi</div>
+              <div class="theme-card-title">Sunset Lo-Fi</div>
+              <div class="theme-card-desc">Pastel coral, peach & lavender waves</div>
+            </div>
+            <div class="theme-card" data-theme="cyber_neon">
+              <div class="theme-card-tag">EDM &bull; Synthwave</div>
+              <div class="theme-card-title">Cyber Neon</div>
+              <div class="theme-card-desc">Electric cyan, hot pink & synthwave grid</div>
+            </div>
+            <div class="theme-card" data-theme="lofi_cozy">
+              <div class="theme-card-tag" style="color: #ff9a8b;">Aesthetic &bull; Vinyl</div>
+              <div class="theme-card-title">Lo-Fi Cozy Chill</div>
+              <div class="theme-card-desc">Warm amber desk lamp, retro vinyl & soft beige</div>
+            </div>
+            <div class="theme-card" data-theme="sleep_dream">
+              <div class="theme-card-tag" style="color: #c084fc;">Slumber &bull; Ambient</div>
+              <div class="theme-card-title">Deep Sleep Slumber</div>
+              <div class="theme-card-desc">Midnight moonlight, drifting clouds & ethereal glow</div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <span class="panel-title">Typography & Sizing</span>
+
+          <div class="slider-row">
+            <div class="slider-label-row"><span>Font Family</span></div>
+            <select id="fontFamilySelect" class="select-styled" style="width: 100%;">
+              <option value="Montserrat" selected>Montserrat (Modern Clean Sans)</option>
+              <option value="Outfit">Outfit (Viral Geometric - TikTok / Reels)</option>
+              <option value="Bebas Neue">Bebas Neue (Cinematic Bold Headline)</option>
+              <option value="Space Grotesk">Space Grotesk (Cyber Tech / EDM)</option>
+              <option value="Syne">Syne (High-Fashion Indie Pop)</option>
+              <option value="Playfair Display">Playfair Display (Aesthetic Ballad Serif)</option>
+              <option value="Cinzel">Cinzel (Epic Luxury & Film)</option>
+              <option value="Permanent Marker">Permanent Marker (Street Graffiti Rock)</option>
+              <option value="Righteous">Righteous (80s Synthwave Retro)</option>
+              <option value="Anton">Anton (Heavy Impact Punch)</option>
+              <option value="Bangers">Bangers (Comic Book Action)</option>
+              <option value="Luckiest Guy">Luckiest Guy (Bold Comic Cartoon)</option>
+              <option value="Archivo Black">Archivo Black (Heavy Rap & Hip-Hop)</option>
+              <option value="Fredoka">Fredoka (Rounded Soft Pop)</option>
+              <option value="Pacifico">Pacifico (Smooth Neon Script)</option>
+              <option value="Press Start 2P">Press Start 2P (Retro 8-Bit Pixel)</option>
+              <option value="Rubik Glitch">Rubik Glitch (Digital Glitch EDM)</option>
+              <option value="Inter">Inter (Studio Neutral Sans)</option>
+            </select>
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Lyric Font Size</span>
+              <span><input type="number" id="fontSizeNum" class="num-input" style="width: 45px; height: 22px;" value="58">px</span>
+            </div>
+            <input type="range" id="fontSizeSlider" min="28" max="120" value="58">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Lyrics Vertical Position (Y%)</span>
+            </div>
+            <input type="range" id="lyricYSlider" min="20" max="80" value="52">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label-row">
+              <span>Inactive Lyrics Visibility</span>
+              <span id="unsungOpacityVal">82%</span>
+            </div>
+            <input type="range" id="unsungOpacitySlider" min="0" max="100" value="82" title="Adjust visibility of upcoming and past lyric sentences (0% = Active line only, 100% = Full solid brightness)">
+            <div style="display: flex; gap: 4px; margin-top: 5px;">
+              <button class="overlay-chip unsung-chip" data-unsung-op="0" style="flex: 1; padding: 3px 0; font-size: 10px;">0% (Solo)</button>
+              <button class="overlay-chip unsung-chip" data-unsung-op="25" style="flex: 1; padding: 3px 0; font-size: 10px;">25%</button>
+              <button class="overlay-chip unsung-chip" data-unsung-op="50" style="flex: 1; padding: 3px 0; font-size: 10px;">50%</button>
+              <button class="overlay-chip unsung-chip active" data-unsung-op="82" style="flex: 1; padding: 3px 0; font-size: 10px;">82%</button>
+              <button class="overlay-chip unsung-chip" data-unsung-op="100" style="flex: 1; padding: 3px 0; font-size: 10px;">100%</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12 Advanced Animation Styles -->
+        <div class="glass-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span class="panel-title" style="margin-bottom: 0;">12 Animation Styles</span>
+            <span style="font-size: 10px; color: var(--accent-cyan); font-weight: 700;">PRO FX</span>
+          </div>
+
+          <div class="style-cards-grid">
+            <div class="style-card active" data-wipe="gradient_wipe">
+              <div class="style-card-title">Gradient Wipe</div>
+              <div class="style-card-desc">Smooth neon sweep across singing syllables</div>
+            </div>
+            <div class="style-card" data-wipe="bouncing_ball">
+              <div class="style-card-title">Bouncing Ball</div>
+              <div class="style-card-desc">Animated bouncing follower ball over words</div>
+            </div>
+            <div class="style-card" data-wipe="word_pop">
+              <div class="style-card-title">Word Pop</div>
+              <div class="style-card-desc">Energetic viral pop-in scale animation</div>
+            </div>
+            <div class="style-card" data-wipe="neon_box">
+              <div class="style-card-title">Neon Box</div>
+              <div class="style-card-desc">Glowing pill box framing active singing words</div>
+            </div>
+            <div class="style-card" data-wipe="karaoke_gold">
+              <div class="style-card-title">3D Gold</div>
+              <div class="style-card-desc">Rich metallic gold fill with gleam flare</div>
+            </div>
+            <div class="style-card" data-wipe="fire_flame">
+              <div class="style-card-title">Fire &amp; Flame</div>
+              <div class="style-card-desc">Fiery flame embers rising from sung words</div>
+            </div>
+            <div class="style-card" data-wipe="glitch_cyber">
+              <div class="style-card-title">Cyber Glitch</div>
+              <div class="style-card-desc">RGB chromatic split &amp; digital glitch jitter</div>
+            </div>
+            <div class="style-card" data-wipe="liquid_fill">
+              <div class="style-card-title">Liquid Wave</div>
+              <div class="style-card-desc">Dynamic fluid wave rising inside letters</div>
+            </div>
+            <div class="style-card" data-wipe="typewriter_glow">
+              <div class="style-card-title">Typewriter Caret</div>
+              <div class="style-card-desc">Blinking cyber cursor tracking words</div>
+            </div>
+            <div class="style-card" data-wipe="sparkle_star">
+              <div class="style-card-title">Starburst Sparkle</div>
+              <div class="style-card-desc">Twinkling starburst sparkles on sung syllables</div>
+            </div>
+            <div class="style-card" data-wipe="kinetic_pulse">
+              <div class="style-card-title">Kinetic Pulse</div>
+              <div class="style-card-desc">Audio-reactive heartbeat throb &amp; bounce</div>
+            </div>
+            <div class="style-card" data-wipe="rainbow_wave">
+              <div class="style-card-title">Rainbow Wave</div>
+              <div class="style-card-desc">Continuous cycling RGB chroma spectrum</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Sung Color</span></div>
+              <input type="color" id="sungColorInput" class="color-picker-input" value="#00f2fe" style="width: 100%; height: 26px;">
+            </div>
+            <div class="slider-row">
+              <div class="slider-label-row"><span>Glow Color</span></div>
+              <input type="color" id="glowColorInput" class="color-picker-input" value="#00f2fe" style="width: 100%; height: 26px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Background Video / Image / Procedural & Contrast Overlay -->
+        <div class="glass-panel">
+          <span class="panel-title">Background &amp; Visual Themes</span>
+
+          <div class="slider-row">
+            <div class="slider-label-row"><span>18 Procedural Visualizers</span></div>
+            <select id="bgPresetSelect" class="select-styled" style="width: 100%;">
+              <optgroup label="Lo-Fi &amp; Study Beats">
+                <option value="lofi_rain">Lo-Fi Rainy Window Panes</option>
+                <option value="lofi_cozy_bedroom">Lo-Fi Cozy Bedroom &amp; Amber Lamp</option>
+                <option value="lofi_vinyl_coffee">Lo-Fi Coffee Shop &amp; Vinyl Grooves</option>
+              </optgroup>
+              <optgroup label="Deep Sleep &amp; Meditation">
+                <option value="sleep_moonlight_clouds">Sleeping Moonlight &amp; Drifting Clouds</option>
+                <option value="sleep_floating_dreams">Deep Sleep Floating Dream Orbs</option>
+                <option value="sleep_night_ocean">Midnight Sleeping Ocean Waves</option>
+              </optgroup>
+              <optgroup label="Ambient &amp; Relaxing">
+                <option value="sunset_waves">Sunset Ambient Color Waves</option>
+                <option value="bokeh_particles">Warm Bokeh Floating Orbs</option>
+                <option value="fireflies_magic">Enchanted Magic Fireflies</option>
+                <option value="studio_dark">Studio Dark Obsidian Vignette</option>
+              </optgroup>
+              <optgroup label="Atmosphere &amp; Space">
+                <option value="aurora_borealis">Aurora Borealis Polar Ribbons</option>
+                <option value="galaxy_nebula">Cosmic Galaxy Nebula Clouds</option>
+                <option value="retro_sunset">Retro 80s Synthwave Sunset</option>
+                <option value="starfield">Warp Starfield Hyperspace</option>
+              </optgroup>
+              <optgroup label="Cyber &amp; Stage">
+                <option value="cyber_grid" selected>Cyber Grid Synthwave 3D</option>
+                <option value="neon_matrix">Neon Matrix Digital Rain</option>
+                <option value="audio_spectrum">Audio Spectrum Dancing EQ</option>
+                <option value="disco_lasers">Nightclub Sweeping Lasers</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="slider-row" style="margin-top: 8px;">
+            <div class="slider-label-row"><span>Upload Background Photo or Video</span></div>
+            <input type="file" id="bgMediaInput" accept="image/*,video/*" class="select-styled" style="width: 100%; font-size: 11px;">
+          </div>
+          <button class="btn-secondary" id="btnRemoveBgMedia" style="font-size: 11px; padding: 5px 10px; width: 100%; justify-content: center; color: #ff5e62; border-color: rgba(255, 94, 98, 0.35); margin-top: 6px; display: none;" title="Remove uploaded background media and return to procedural style">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            <span>Remove Background Media</span>
+          </button>
+
+          <!-- Background Media Overlay & Transparency Controls -->
+          <div class="overlay-controls-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 800; color: var(--accent-cyan);">Background Overlay &amp; Contrast Tint</span>
+              <span id="bgOverlayOpacityVal" style="font-size: 11px; font-weight: 700; color: #fff;">45%</span>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label-row">
+                <span>Overlay Transparency / Darkness</span>
+              </div>
+              <input type="range" id="bgOverlayOpacitySlider" min="0" max="100" value="45" title="Darkens or tints background image/video so lyrics &amp; subtitles remain 100% readable">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Tint Color</span></div>
+                <input type="color" id="bgOverlayColorInput" class="color-picker-input" value="#000000" style="width: 100%; height: 26px;">
+              </div>
+              <div class="slider-row">
+                <div class="slider-label-row"><span>Quick Density</span></div>
+                <div style="display: flex; gap: 4px; height: 26px;">
+                  <button class="overlay-chip" data-overlay-op="0" style="flex: 1; padding: 0;">0%</button>
+                  <button class="overlay-chip" data-overlay-op="25" style="flex: 1; padding: 0;">25%</button>
+                  <button class="overlay-chip active" data-overlay-op="45" style="flex: 1; padding: 0;">45%</button>
+                  <button class="overlay-chip" data-overlay-op="70" style="flex: 1; padding: 0;">70%</button>
+                  <button class="overlay-chip" data-overlay-op="90" style="flex: 1; padding: 0;">90%</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="overlay-chip-row">
+              <button class="overlay-chip" data-tint="#000000">Pure Black</button>
+              <button class="overlay-chip" data-tint="#06101e">Midnight Navy</button>
+              <button class="overlay-chip" data-tint="#180629">Cyber Violet</button>
+              <button class="overlay-chip" data-tint="#221204">Warm Amber</button>
+              <button class="overlay-chip" data-tint="#031610">Deep Emerald</button>
+            </div>
+          </div>
+
+          <!-- Video Audio Volume & Mute Option -->
+          <div class="video-audio-controls" style="margin-top: 10px; padding: 10px; background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--accent-cyan);">
+                <input type="checkbox" id="checkMuteBgVideo" checked>
+                <span>Mute Background Video Audio</span>
+              </label>
+              <button class="pill-btn active" id="btnToggleMuteVideo" style="font-size: 10px; padding: 2px 8px;">Muted</button>
+            </div>
+            <div class="slider-row">
+              <div class="slider-label-row">
+                <span>Video Audio Volume</span>
+                <span id="bgVideoVolVal">0%</span>
+              </div>
+              <input type="range" id="bgVideoVolSlider" min="0" max="100" value="0">
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- ========================================================================
+       MODAL 1: Ready-to-Play Viral Demos
+       ======================================================================== -->
+  <div class="modal-backdrop" id="demosModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">Ready-to-Play Viral Demos</h2>
+        <button class="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="demos-grid">
+          <div class="demo-card" data-demo="spotify_clean">
+            <div class="demo-card-tag">9:16 Vertical &bull; Clean Studio</div>
+            <div class="demo-card-title">Spotify Dark Studio</div>
+            <div class="demo-card-desc">Clean obsidian dark backdrop, crisp emerald highlights, and smooth vertical scrolling lyrics.</div>
+            <button class="btn-primary" style="margin-top: 10px; width: 100%; justify-content: center;">Load Demo 1</button>
+          </div>
+
+          <div class="demo-card" data-demo="apple_sing">
+            <div class="demo-card-tag">9:16 Vertical &bull; Frosted Glass</div>
+            <div class="demo-card-title">Apple Music Sing</div>
+            <div class="demo-card-desc">Luxury ambient glow, smooth kinetic typography, and fluid multi-line bottom-to-top scroll.</div>
+            <button class="btn-primary" style="margin-top: 10px; width: 100%; justify-content: center;">Load Demo 2</button>
+          </div>
+
+          <div class="demo-card" data-demo="midnight_groove">
+            <div class="demo-card-tag">16:9 Landscape &bull; 116 BPM</div>
+            <div class="demo-card-title">Midnight Funk Groove</div>
+            <div class="demo-card-desc">Catchy modern pop funk with bouncing ball lyric wiper and audio spectrum visualizer.</div>
+            <button class="btn-primary" style="margin-top: 10px; width: 100%; justify-content: center;">Load Demo 3</button>
+          </div>
+
+          <div class="demo-card" data-demo="starlight">
+            <div class="demo-card-tag">1:1 Square &bull; 88 BPM</div>
+            <div class="demo-card-title">Starlight Serenade</div>
+            <div class="demo-card-desc">Dreamy chill lo-fi track with slowed reverb FX and golden 3D typography.</div>
+            <button class="btn-primary" style="margin-top: 10px; width: 100%; justify-content: center;">Load Demo 4</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: Universal Subtitle & YouTube Transcript Import
+       ======================================================================== -->
+  <div class="modal-backdrop" id="lyricsModal">
+    <div class="modal-dialog" style="max-width: 640px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Import Subtitles / YouTube Transcript</h2>
+        <button class="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+          Paste YouTube transcripts (from video player or YouTube Studio), standard SRT/VTT subtitles, LRC synced lines, or plain lyrics text:
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+          <span class="format-badge">[SRT / VTT]</span>
+          <span class="format-badge">[YouTube SBV]</span>
+          <span class="format-badge">[YouTube 0:05 Text]</span>
+          <span class="format-badge">[LRC [00:12.30]]</span>
+          <span class="format-badge">[Plain Text Lines]</span>
+        </div>
+
+        <textarea id="importTextArea" class="select-styled" style="width: 100%; height: 220px; font-family: monospace; font-size: 12px; padding: 10px; resize: vertical;" placeholder="Example 1 (YouTube Transcript):&#10;0:00 Can you hit this viral note&#10;0:04 Sing it right from your throat&#10;0:08 Drop a duet show your skill&#10;&#10;Example 2 (SRT):&#10;1&#10;00:00:01,000 --> 00:00:04,500&#10;Welcome to the studio&#10;&#10;Or paste any raw lyrics here!"></textarea>
+
+        <div id="importDetectedInfo" style="margin-top: 8px; font-size: 11px; color: var(--accent-cyan); font-weight: 600;">
+          Ready to parse and auto-sync.
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-top: 10px; font-size: 11px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--accent-cyan);">
+            <input type="checkbox" id="checkImportAutoAlign" checked>
+            <span>Auto-align 1st line to audio start</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--accent-yellow);">
+            <input type="checkbox" id="checkImportFitDuration">
+            <span>Auto-fit to full audio length</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary btn-close-modal">Cancel</button>
+        <button class="btn-primary" id="btnApplyImport">Auto-Detect & Sync to Video</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: Studio Guide & Shortcuts
+       ======================================================================== -->
+    <!-- ========================================================================
+       MODAL 5: AI Voice-to-Subtitle Auto Transcriber
+       ======================================================================== -->
+  <div class="modal-backdrop" id="transcribeModal">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta)); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <div>
+            <h2 class="modal-title">AI Voice-to-Subtitle Transcriber</h2>
+            <div style="font-size: 11px; color: var(--text-dim);">Converts singing voice in audio to 100% synchronized karaoke lyrics</div>
+          </div>
+        </div>
+        <button class="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+          The system extracts the singer's vocal audio, analyzes voice frequencies, and generates timed subtitle lines with word-accurate synchronization.
+        </div>
+
+        <!-- Engine Select -->
+        <div class="slider-row">
+          <div class="slider-label-row"><span>Select AI Recognition Engine:</span></div>
+          <select id="transcribeEngineSelect" class="select-styled" style="width: 100%;">
+            <option value="groq" selected>Instant Whisper AI (Groq Whisper-large-v3, ~1s, 100% Accurate)</option>
+            <option value="openai">OpenAI Whisper API (Standard Whisper-1)</option>
+            <option value="transformers">In-Browser Local AI (Transformers.js Whisper WebAssembly)</option>
+            <option value="browser_speech">Live Speech Recognition (Browser Web Speech API)</option>
+            <option value="vad_cadence">Smart Vocal Activity Slicer (VAD Energy Cadence - Instant Offline)</option>
+          </select>
+        </div>
+
+        <!-- API Key Box (for Cloud Whisper engines) -->
+        <div id="transcribeKeyBox" style="margin-top: 10px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border: 1px solid var(--border-glass);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label for="inputTranscribeApiKey" style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">API Key:</label>
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener" id="apiKeyHelperLink" style="font-size: 10px; color: var(--accent-cyan); text-decoration: underline;">Get Free Groq Key (100% Free, Zero Wait)</a>
+          </div>
+          <input type="password" id="inputTranscribeApiKey" class="text-input" placeholder="Paste your API key (e.g. gsk_...)" style="width: 100%; font-family: monospace; font-size: 11px;">
+          <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">
+            Saved locally in browser storage. Never sent to any 3rd party.
+          </div>
+        </div>
+
+        <!-- Options checkboxes -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; font-size: 11px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="checkTranscribeReplace" checked>
+            <span>Replace current lyrics</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="checkTranscribeWordTiming" checked>
+            <span>Word-by-word karaoke wipe</span>
+          </label>
+        </div>
+
+        <!-- Live Status & Progress Bar -->
+        <div id="transcribeProgressContainer" style="margin-top: 14px; display: none;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <span id="transcribeStatusLabel" style="color: var(--accent-cyan); font-weight: 600;">Processing audio...</span>
+            <span id="transcribeProgressPct" style="font-weight: 700;">0%</span>
+          </div>
+          <div style="height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden;">
+            <div id="transcribeProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta)); transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary btn-close-modal">Cancel</button>
+        <button class="btn-primary" id="btnStartAutoTranscribe" style="gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span id="btnStartTranscribeText">Start AI Audio Transcription</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="guideModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">Studio Walkthrough & Shortcuts</h2>
+        <button class="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="guide-section">
+          <h3 style="color: var(--accent-cyan); margin-bottom: 6px;">Interactive Canvas Controls</h3>
+          <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong>Drag Main Title:</strong> Click and drag the cyan Title directly on canvas to reposition.</li>
+            <li><strong>Drag Sub-Title:</strong> Click and drag the yellow Sub-title directly on canvas to reposition independently.</li>
+            <li><strong>Visual Crop Mode:</strong> Click "Visual Crop" in the top bar to display interactive crop handles. Drag corner/edge handles to resize, drag inside to pan, and scroll mouse wheel over canvas to zoom!</li>
+            <li><strong>Click Canvas:</strong> Click anywhere on the video preview canvas to toggle Play / Pause!</li>
+            <li><strong>Spacebar:</strong> Toggle Play / Pause instantly.</li>
+          </ul>
+        </div>
+
+        <div class="guide-section" style="margin-top: 14px;">
+          <h3 style="color: var(--accent-magenta); margin-bottom: 6px;">Vocal Muting & Subtitle Import</h3>
+          <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong>Mute Singer Voice:</strong> Click "Mute Singer Voice (Music Only)" to mute the singer and keep the backing track. The system also detects lead vocals automatically!</li>
+            <li><strong>Auto-Crop Subtitles:</strong> Changing the audio trim automatically crops the subtitles and lyrics to match the cut.</li>
+            <li><strong>YouTube Transcript:</strong> Open any YouTube video with captions, open transcript, copy lines, and paste into the Import modal.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary btn-close-modal">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: Export Video
+       ======================================================================== -->
+    <div class="modal-backdrop" id="exportModal">
+    <div class="modal-dialog" style="max-width: 580px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Video Master
+          </h2>
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Optimized Universal MP4 with FastStart header &amp; zero trailing blank space</div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseExportX">&times;</button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Hidden select inputs for programmatic compatibility -->
+        <select id="exportQualitySelect" style="display: none;">
+          <option value="1080p" selected>1080p</option>
+          <option value="720p">720p</option>
+          <option value="2k">2k</option>
+          <option value="4k">4k</option>
+        </select>
+        <select id="exportFpsSelect" style="display: none;">
+          <option value="60" selected>60</option>
+          <option value="30">30</option>
+        </select>
+
+        <!-- 1. Interactive Resolution Cards Grid -->
+        <div>
+          <label style="font-size: 12px; color: #fff; display: block; margin-bottom: 8px; font-weight: 700;">Select Export Resolution:</label>
+          <div class="export-res-grid">
+            <div class="export-res-card active" data-res="1080p">
+              <div class="res-header">
+                <span class="res-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  1080p Full HD
+                </span>
+                <span class="res-badge res-badge-recommended">Recommended</span>
+              </div>
+              <div class="res-desc">1080x1920 --- Ultra Crisp &amp; Optimized for Shorts / Reels / TikTok</div>
+            </div>
+
+            <div class="export-res-card" data-res="720p">
+              <div class="res-header">
+                <span class="res-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  720p Fast HD
+                </span>
+                <span class="res-badge res-badge-standard">Fast Render</span>
+              </div>
+              <div class="res-desc">720x1280 --- Lightweight file size &amp; quickest encoding</div>
+            </div>
+
+            <div class="export-res-card" data-res="2k">
+              <div class="res-header">
+                <span class="res-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  2K Quad HD
+                </span>
+                <span class="res-badge res-badge-standard">Ultra Sharp</span>
+              </div>
+              <div class="res-desc">1440x2560 --- High-end display fidelity &amp; razor sharp text</div>
+            </div>
+
+            <div class="export-res-card" data-res="4k">
+              <div class="res-header">
+                <span class="res-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                  4K Ultra HD
+                </span>
+                <span class="res-badge res-badge-cinema">Cinema Pro</span>
+              </div>
+              <div class="res-desc">2160x3840 --- Studio mastergrade resolution for big screens</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Frame Rate Pills & Universal Format Pill -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div>
+            <label style="font-size: 12px; color: #fff; display: block; margin-bottom: 6px; font-weight: 700;">Frame Rate (FPS):</label>
+            <div class="export-fps-pills">
+              <div class="export-fps-pill active" data-fps="60">60 FPS Smooth</div>
+              <div class="export-fps-pill" data-fps="30">30 FPS Standard</div>
+            </div>
+          </div>
+          <div>
+            <label style="font-size: 12px; color: #fff; display: block; margin-bottom: 6px; font-weight: 700;">Global Format:</label>
+            <div style="background: rgba(0, 242, 254, 0.08); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 12px; font-weight: 700; color: var(--accent-cyan); display: flex; align-items: center; justify-content: space-between;">
+              <span>MP4 (H.264 + AAC)</span>
+              <span class="badge" style="background: rgba(0, 242, 254, 0.25); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 4px;">Universal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Smart Duration & Export Range Section (Prevents Blank Video) -->
+        <div class="export-range-box">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-yellow)" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Smart Export Duration &amp; Outro Cut
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="pill-btn" id="btnSnapLyricsEnd" style="font-size: 10px; color: var(--accent-cyan);" title="Snap export end exactly to last lyric">Snap to Lyrics</button>
+              <button type="button" class="pill-btn" id="btnSnapAudioEnd" style="font-size: 10px; color: var(--accent-yellow);" title="Snap export end to audio track duration">Snap to Audio</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+            <div style="background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: var(--text-dim);">Audio Length:</span>
+              <strong id="exportAudioLengthLabel" style="color: #fff; margin-left: 4px;">22.0s</strong>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="color: var(--text-dim);">Lyrics End:</span>
+              <strong id="exportLyricsEndLabel" style="color: var(--accent-cyan); margin-left: 4px;">12.5s</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 2px;">
+            <label style="font-size: 11px; color: #fff; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="checkAutoStopExport" checked style="accent-color: var(--accent-cyan); cursor: pointer;">
+              <span>Auto-stop immediately when audio &amp; lyrics end (No empty video)</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input type="number" id="exportDurationInput" step="0.1" min="1.0" max="600.0" value="22.0" class="form-input" style="width: 70px; padding: 4px 6px; font-size: 12px; font-weight: 700; text-align: center;">
+              <span style="font-size: 11px; color: var(--text-dim);">sec</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: var(--text-dim); line-height: 1.4; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.06);">
+          FastStart Universal MP4 is 100% compatible with iPhone, Android, Mac, Windows, TikTok, Instagram Reels, YouTube Shorts, Premiere Pro, and DaVinci Resolve.
+        </div>
+
+        <div id="exportRenderState" style="margin-top: 4px;">
+          <div style="background: rgba(0, 0, 0, 0.5); border-radius: var(--radius-pill); height: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);">
+            <div id="exportProgressFill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta)); transition: width 0.15s;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div id="exportStatusText" style="font-size: 12px; color: var(--text-dim);">
+              Ready to render universal MP4...
+            </div>
+            <div id="exportFrameCounter" style="font-size: 11px; font-family: monospace; color: var(--accent-cyan);"></div>
+          </div>
+        </div>
+
+        <div id="exportVideoResult" style="display: none; margin-top: 8px;">
+          <video id="exportVideoPlayer" controls playsinline style="width: 100%; max-height: 280px; border-radius: var(--radius-sm); background: #000; border: 1px solid rgba(255,255,255,0.1);"></video>
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            <button class="btn-primary" id="btnDownloadVideo" style="flex: 1; justify-content: center; font-weight: 600; padding: 12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Universal MP4 Video
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary btn-close-modal" id="btnCloseExport">Cancel</button>
+        <button class="btn-primary" id="btnStartExport" style="min-width: 160px; justify-content: center;">Start Smooth Export</button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Toast Notification -->
+  <div class="toast" id="studioToast">Toast message</div>
+
+  <!-- Pure JavaScript Engines (Zero Python) -->
+  <script src="lib/db.js"></script>
+  <script src="lib/fix-webm-duration.js"></script>
+  <script src="lib/mp4-muxer.min.js"></script>
+  <script src="js/audio-engine.js"></script>
+  <script src="js/lyrics-engine.js"></script>
+  <script src="js/karaoke-renderer.js"></script>
+  <script src="js/ai-transcriber.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

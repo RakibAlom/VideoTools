@@ -1,4 +1,4 @@
-﻿/**
+/**
  * KaraokeStorageManager - IndexedDB wrapper for persistent storage of karaoke songs, custom lyrics, audio, and background assets
  */
 class KaraokeStorageManager {
