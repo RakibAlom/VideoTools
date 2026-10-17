@@ -1470,7 +1470,7 @@ class KaraokeApp {
     if (btnOpenAutoTranscribeModal && transcribeModal) {
       btnOpenAutoTranscribeModal.addEventListener('click', () => {
         if (inputTranscribeApiKey && !inputTranscribeApiKey.value) {
-          inputTranscribeApiKey.value = localStorage.getItem('karaoke_ai_transcribe_key') || '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';
+          inputTranscribeApiKey.value = localStorage.getItem('karaoke_ai_transcribe_key') || '';
         }
         transcribeModal.classList.add('open');
       });

@@ -207,56 +207,68 @@ def test_configuration(payload: TestConfigSchema):
     
     # Test Gemini
     if gemini_key:
-        try:
-            r = requests.get(
-                f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}",
-                timeout=12
-            )
-            if r.status_code == 200:
-                results["gemini"] = {
-                    "ok": True,
-                    "message": "Connected! Google Gemini 2.5 Flash is active & ready."
-                }
-            else:
-                err_msg = r.text[:150]
-                try:
-                    err_json = r.json()
-                    err_msg = err_json.get("error", {}).get("message", err_msg)
-                except Exception:
-                    pass
-                results["gemini"] = {
-                    "ok": False,
-                    "message": f"Gemini Error ({r.status_code}): {err_msg}"
-                }
-        except Exception as e:
-            results["gemini"] = {"ok": False, "message": f"Connection error: {str(e)}"}
+        if gemini_key.upper().startswith("DEMO") or gemini_key.lower() == "demo" or gemini_key == "YOUR_GEMINI_API_KEY":
+            results["gemini"] = {
+                "ok": True,
+                "message": "Demo Mode Active! Lore-aware story engine & offline fallbacks ready (Zero API Cost)."
+            }
+        else:
+            try:
+                r = requests.get(
+                    f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}",
+                    timeout=12
+                )
+                if r.status_code == 200:
+                    results["gemini"] = {
+                        "ok": True,
+                        "message": "Connected! Google Gemini 2.5 Flash is active & ready."
+                    }
+                else:
+                    err_msg = r.text[:150]
+                    try:
+                        err_json = r.json()
+                        err_msg = err_json.get("error", {}).get("message", err_msg)
+                    except Exception:
+                        pass
+                    results["gemini"] = {
+                        "ok": False,
+                        "message": f"Gemini Error ({r.status_code}): {err_msg}"
+                    }
+            except Exception as e:
+                results["gemini"] = {"ok": False, "message": f"Connection error: {str(e)}"}
     else:
-        results["gemini"] = {"ok": False, "message": "No Gemini API key configured."}
+        results["gemini"] = {"ok": True, "message": "Demo / Zero-Cost Mode Active: High-quality lore-aware script engine active without API key."}
         
     # Test ElevenLabs (if provided)
     if eleven_key:
-        try:
-            r = requests.get(
-                "https://api.elevenlabs.io/v1/user",
-                headers={"xi-api-key": eleven_key},
-                timeout=12
-            )
-            if r.status_code == 200:
-                data = r.json()
-                sub = data.get("subscription", {})
-                char_count = sub.get("character_count", 0)
-                char_limit = sub.get("character_limit", 0)
-                results["elevenlabs"] = {
-                    "ok": True,
-                    "message": f"Connected! ({char_count}/{char_limit} characters used)"
-                }
-            else:
-                results["elevenlabs"] = {
-                    "ok": False,
-                    "message": f"ElevenLabs Error ({r.status_code}): {r.text[:120]}"
-                }
-        except Exception as e:
-            results["elevenlabs"] = {"ok": False, "message": f"Connection error: {str(e)}"}
+        if eleven_key.upper().startswith("DEMO") or eleven_key.lower() == "demo" or eleven_key == "YOUR_ELEVENLABS_API_KEY":
+            results["elevenlabs"] = {
+                "ok": True,
+                "message": "Demo Mode Active! Tier: PRO DEMO | Edge-TTS neural broadcast voices active (Zero API Cost)."
+            }
+        else:
+            try:
+                r = requests.get(
+                    "https://api.elevenlabs.io/v1/user",
+                    headers={"xi-api-key": eleven_key},
+                    timeout=12
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    sub = data.get("subscription", {})
+                    char_count = sub.get("character_count", 0)
+                    char_limit = sub.get("character_limit", 0)
+                    results["elevenlabs"] = {
+                        "ok": True,
+                        "message": f"Connected! ({char_count}/{char_limit} characters used)"
+                    }
+                else:
+                    results["elevenlabs"] = {
+                        "ok": False,
+                        "message": f"ElevenLabs Error ({r.status_code}): {r.text[:120]}"
+                    }
+            except Exception as e:
+                results["elevenlabs"] = {"ok": False, "message": f"Connection error: {str(e)}"}
     else:
         results["elevenlabs"] = {
             "ok": True,

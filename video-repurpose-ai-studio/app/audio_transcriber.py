@@ -438,9 +438,10 @@ def transcribe_audio_pipeline(
 
         window_segments: List[Dict[str, Any]] = []
 
-        # 1. Try Gemini API first
-        if api_key:
-            gemini_res = _transcribe_window_gemini(chunk_file, api_key, unique_models, language_hint=detected_lang)
+        # 1. Try Gemini API first (if valid non-demo key provided)
+        clean_key = (api_key or "").strip()
+        if clean_key and not clean_key.upper().startswith("DEMO") and clean_key != "YOUR_GEMINI_API_KEY":
+            gemini_res = _transcribe_window_gemini(chunk_file, clean_key, unique_models, language_hint=detected_lang)
             if gemini_res:
                 g_segs, g_lang = gemini_res
                 for s in g_segs:

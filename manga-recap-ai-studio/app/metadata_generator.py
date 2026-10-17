@@ -124,8 +124,9 @@ Generate the viral metadata package now in 100% English conforming to the Zero-M
         api_key = os.getenv("GEMINI_API_KEY", "")
 
     raw_json = None
-    if api_key:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    clean_key = (api_key or "").strip()
+    if clean_key and not clean_key.upper().startswith("DEMO") and clean_key != "YOUR_GEMINI_API_KEY":
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={clean_key}"
         headers = {"Content-Type": "application/json"}
         payload = {
             "system_instruction": {"parts": [{"text": system_instruction}]},

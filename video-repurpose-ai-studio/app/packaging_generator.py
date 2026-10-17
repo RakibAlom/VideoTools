@@ -130,7 +130,8 @@ def generate_youtube_packaging_metadata(
     target_language: str = "en"
 ) -> Dict[str, Any]:
     """Generates viral titles, SEO description, and tags via Gemini."""
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_GEMINI_API_KEY":
         return _fallback_metadata()
 
     sys_prompt = """

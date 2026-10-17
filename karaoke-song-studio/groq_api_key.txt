@@ -1,1 +1,2 @@
-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
+gsk_DEMO_GROQ_API_KEY_PLACEHOLDER
+# Get your 100% free Whisper API key at https://console.groq.com/keys

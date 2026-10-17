@@ -147,7 +147,8 @@ def synthesize_gemini_tts(
     Generates human narrator voice directly using Google Gemini's native Audio TTS API.
     Converts 24kHz raw PCM into broadcast 48kHz mastered MP3.
     """
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_GEMINI_API_KEY":
         return False
         
     v_name = GEMINI_VOICES.get(voice_name, voice_name)
@@ -221,7 +222,8 @@ def synthesize_elevenlabs(
     """
     Generates human narrator voice using ElevenLabs API with human breathing settings.
     """
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_ELEVENLABS_API_KEY":
         return False
         
     voice_id = ELEVENLABS_VOICES.get(voice_name_or_id, voice_name_or_id)

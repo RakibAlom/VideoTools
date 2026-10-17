@@ -77,11 +77,17 @@ class AppConfig(BaseModel):
 
     @property
     def has_gemini_key(self) -> bool:
-        return bool(self.gemini_api_key and len(self.gemini_api_key.strip()) > 8)
+        if not self.gemini_api_key:
+            return False
+        k = self.gemini_api_key.strip().upper()
+        return bool(len(k) > 8 and not k.startswith("DEMO") and k != "YOUR_GEMINI_API_KEY")
 
     @property
     def has_elevenlabs_key(self) -> bool:
-        return bool(self.elevenlabs_api_key and len(self.elevenlabs_api_key.strip()) > 8)
+        if not self.elevenlabs_api_key:
+            return False
+        k = self.elevenlabs_api_key.strip().upper()
+        return bool(len(k) > 8 and not k.startswith("DEMO") and k != "YOUR_ELEVENLABS_API_KEY")
 
     @property
     def gemini_api_key_masked(self) -> str:

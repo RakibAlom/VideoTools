@@ -35,7 +35,8 @@ def generate_script_with_gemini(
     lang_native = lang_info["native_name"]
     lang_hint = lang_info["script_hint"]
 
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_GEMINI_API_KEY":
         return generate_fallback_script(panels, custom_instructions, internal_manga_ref, language=language)
 
     # Master YouTube Manga Recapper System Prompt

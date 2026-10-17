@@ -101,9 +101,9 @@ def fallback_paraphrase_and_translate(
             orig = seg.get("original_text", "").strip()
             if not orig or orig.startswith("["):
                 out.append({
-                    "segment_id": seg["segment_id"],
-                    "start": seg["start"],
-                    "end": seg["end"],
+                    "segment_id": seg.get("segment_id", i + 1),
+                    "start": seg.get("start", 0.0),
+                    "end": seg.get("end", 0.0),
                     "original_text": orig,
                     "rewritten_text": orig,
                     "tone_note": "Action / Music"
@@ -118,9 +118,9 @@ def fallback_paraphrase_and_translate(
                 rewritten = polish_recapper_cadence(raw_trans, lang=tl, tone=tone)
 
             out.append({
-                "segment_id": seg["segment_id"],
-                "start": seg["start"],
-                "end": seg["end"],
+                "segment_id": seg.get("segment_id", i + 1),
+                "start": seg.get("start", 0.0),
+                "end": seg.get("end", 0.0),
                 "original_text": orig,
                 "rewritten_text": rewritten,
                 "tone_note": "Recapper Storytelling"
@@ -145,7 +145,8 @@ def rewrite_script_with_gemini(
     if not segments:
         return []
 
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_GEMINI_API_KEY":
         return fallback_paraphrase_and_translate(segments, source_language, target_language, tone)
 
     is_same_rewrite = (target_language == "same_rewrite" or target_language == source_language)
@@ -220,13 +221,13 @@ CRITICAL RULES:
     def _process_one_batch(b_idx: int, batch: List[Dict[str, Any]]) -> Dict[int, str]:
         batch_input_list = [
             {
-                "segment_id": seg["segment_id"],
-                "start": seg["start"],
-                "end": seg["end"],
-                "duration": round(float(seg.get("end", 0)) - float(seg.get("start", 0)), 1),
+                "segment_id": seg.get("segment_id", i + 1),
+                "start": seg.get("start", 0.0),
+                "end": seg.get("end", 0.0),
+                "duration": round(float(seg.get("end", 0.0)) - float(seg.get("start", 0.0)), 1),
                 "original_text": seg.get("original_text", "")
             }
-            for seg in batch
+            for i, seg in enumerate(batch)
         ]
 
         user_prompt = f"""
@@ -295,7 +296,8 @@ def build_teleprompter_script_from_segments(segments: List[Dict[str, Any]]) -> s
 
 
 def _call_gemini_rewrite_batch(sys_prompt: str, user_prompt: str, api_key: str, model_name: str) -> Optional[List[Dict[str, Any]]]:
-    if not api_key:
+    clean_key = (api_key or "").strip()
+    if not clean_key or clean_key.upper().startswith("DEMO") or clean_key == "YOUR_GEMINI_API_KEY":
         return None
 
     candidate_models = [
