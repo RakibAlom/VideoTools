@@ -60,18 +60,8 @@ args = [
 ]
 
 print("Launching FFmpeg with bridge args...")
-proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-# Feed chunks simulating 500ms intervals
-chunk_size = len(webm_bytes) // 6
-for i in range(0, len(webm_bytes), chunk_size):
-    chunk = webm_bytes[i:i+chunk_size]
-    proc.stdin.write(chunk)
-    proc.stdin.flush()
-    time.sleep(0.1)
-
-proc.stdin.close()
-stdout, stderr = proc.communicate()
+proc = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+stdout, stderr = proc.communicate(input=webm_bytes)
 print(f"FFmpeg exit code: {proc.returncode}")
-print("FFmpeg stderr:")
-print(stderr.decode('utf-8', errors='ignore'))
+print("FFmpeg stderr (last 300 chars):")
+print(stderr.decode('utf-8', errors='ignore')[-300:])

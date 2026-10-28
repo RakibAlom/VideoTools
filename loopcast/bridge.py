@@ -210,9 +210,10 @@ async def websocket_rtmp_bridge(websocket: WebSocket):
                         # Fast bilinear scaling and SAR=1 (eliminates 100% CPU bottleneck from Lanczos)
                         scale_filter = f"setpts=PTS-STARTPTS,scale={width}:{height}:flags=bilinear,setsar=1"
 
+                        # libx264 with veryfast preset is 100% compliant with YouTube & Facebook RTMP specifications
                         encoder, pix_fmt = detect_hardware_encoder()
-                        # Facebook Live strictly enforces 2.0s IDR keyframes, constant frame rate (CBR/CFR), and 48kHz stereo AAC
-                        active_encoder = "libx264" if has_facebook else encoder
+                        # Prefer NVENC if NVIDIA or libx264 (avoids AMF SPS/PPS FLV header issues on YouTube)
+                        active_encoder = "h264_nvenc" if encoder == "h264_nvenc" else "libx264"
                         active_pix_fmt = "yuv420p"
 
                         print(f"\n[Bridge] 🔴 STARTING BROADCAST: {width}x{height} @ {fps}fps | Bitrate: {bitrate} kbps | Engine: {active_encoder.upper()}", flush=True)
@@ -251,7 +252,8 @@ async def websocket_rtmp_bridge(websocket: WebSocket):
                                 "-fps_mode", "cfr",
                                 "-g", str(fps * 2),
                                 "-keyint_min", str(fps * 2),
-                                "-sc_threshold", "0"
+                                "-sc_threshold", "0",
+                                "-x264-params", "repeat-headers=1:nal-hrd=cbr:force-cfr=1"
                             ])
                         elif active_encoder == "h264_amf":
                             args.extend([
@@ -415,7 +417,7 @@ async def websocket_rtmp_bridge(websocket: WebSocket):
 
 if __name__ == "__main__":
     print("===========================================================")
-    print("   StreamFlow Studio - Multi-Platform RTMP Live Bridge")
+    print("   EasyLoop Cast - Multi-Platform RTMP Live Bridge")
     print("   (YouTube * Facebook * Instagram * TikTok * Custom)")
     print("===========================================================")
     print(">> Bridge Server listening on ws://localhost:3000")
@@ -435,4 +437,10 @@ if __name__ == "__main__":
             )
             time.sleep(1)
 
-    uvicorn.run(app, host="0.0.0.0", port=3000, log_level="warning")
+    ssl_key = os.environ.get("SSL_KEY_PATH", os.path.join(os.path.dirname(__file__), "key.pem"))
+    ssl_cert = os.environ.get("SSL_CERT_PATH", os.path.join(os.path.dirname(__file__), "cert.pem"))
+    if os.path.exists(ssl_key) and os.path.exists(ssl_cert):
+        print(">> 🔐 Native SSL certificate found. Starting secure HTTPS/WSS bridge on port 3000...")
+        uvicorn.run(app, host="0.0.0.0", port=3000, ssl_keyfile=ssl_key, ssl_certfile=ssl_cert, log_level="warning")
+    else:
+        uvicorn.run(app, host="0.0.0.0", port=3000, log_level="warning")

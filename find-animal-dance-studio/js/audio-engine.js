@@ -52,6 +52,13 @@ class AudioEngine {
     this.revealSfxVolume = 0.85;
     this.revealSfxMuted = false;
 
+    // Track 5: Video Backdrop Audio
+    this.videoAudioBuffer = null;
+    this.videoAudioVolume = 1.0;
+    this.videoAudioMuted = true;
+    this.activeVideoSource = null;
+    this.videoGainNode = null;
+
     // Playback state
     this.isPlaying = false;
     this.playbackStartTime = 0;
@@ -81,6 +88,11 @@ class AudioEngine {
       this.voiceGainNode = this.ctx.createGain();
       this.voiceGainNode.gain.value = this.voiceMuted ? 0 : this.voiceVolume;
       this.voiceGainNode.connect(this.masterGainNode);
+
+      // Dedicated Video Backdrop Gain Node
+      this.videoGainNode = this.ctx.createGain();
+      this.videoGainNode.gain.value = this.videoAudioMuted ? 0 : this.videoAudioVolume;
+      this.videoGainNode.connect(this.masterGainNode);
 
       // Alias legacy gainNode to bgmGainNode for backwards compatibility
       this.gainNode = this.bgmGainNode;
@@ -139,7 +151,28 @@ class AudioEngine {
     const hasVoice = !this.voiceMuted && voiceBuf && this.voiceVolume > 0;
     const hasTimerSfx = !this.timerSfxMuted && this.timerSfx && this.timerSfx !== 'none' && this.timerSfxVolume > 0;
     const hasRevealSfx = !this.revealSfxMuted && this.revealSfx && this.revealSfx !== 'none' && this.revealSfxVolume > 0;
-    return !!(hasBgm || hasVoice || hasTimerSfx || hasRevealSfx);
+    const hasVideoAudio = !this.videoAudioMuted && this.videoAudioBuffer && this.videoAudioVolume > 0;
+    return !!(hasBgm || hasVoice || hasTimerSfx || hasRevealSfx || hasVideoAudio);
+  }
+
+  setVideoAudioBuffer(buffer) {
+    this.videoAudioBuffer = buffer;
+  }
+
+  setVideoAudioMuted(muted) {
+    this.videoAudioMuted = !!muted;
+    if (this.videoGainNode && this.ctx) {
+      const targetGain = this.videoAudioMuted ? 0 : this.videoAudioVolume;
+      this.videoGainNode.gain.setValueAtTime(targetGain, this.ctx.currentTime);
+    }
+  }
+
+  setVideoAudioVolume(vol) {
+    this.videoAudioVolume = Math.max(0, Math.min(2.0, vol));
+    if (this.videoGainNode && this.ctx) {
+      const targetGain = this.videoAudioMuted ? 0 : this.videoAudioVolume;
+      this.videoGainNode.gain.setValueAtTime(targetGain, this.ctx.currentTime);
+    }
   }
 
   setVolume(val) {
@@ -614,7 +647,46 @@ class AudioEngine {
         voiceSource.onended = () => {
           if (this.activeVoiceSource === voiceSource) {
             this.activeVoiceSource = null;
-            if (!this.activeSource) this.isPlaying = false;
+            if (!this.activeSource && !this.activeVideoSource) this.isPlaying = false;
+          }
+        };
+      }
+    }
+
+    // 3. Play Video Backdrop Audio if active, unmuted, and loaded
+    if (!this.videoAudioMuted && this.videoAudioBuffer && this.videoAudioVolume > 0 && this.videoGainNode) {
+      const videoSource = this.ctx.createBufferSource();
+      videoSource.buffer = this.videoAudioBuffer;
+      const vidDur = Math.max(0.1, this.videoAudioBuffer.duration);
+
+      this.videoGainNode.gain.cancelScheduledValues(now);
+      this.videoGainNode.gain.setValueAtTime(this.videoAudioVolume, now);
+      videoSource.connect(this.videoGainNode);
+
+      if (shouldLoop) {
+        videoSource.loop = true;
+        videoSource.loopStart = 0;
+        videoSource.loopEnd = vidDur;
+        const actualStart = (offsetSeconds % vidDur);
+        videoSource.start(0, actualStart);
+        this.activeVideoSource = videoSource;
+        anyStarted = true;
+      } else {
+        videoSource.loop = false;
+        if (offsetSeconds < vidDur) {
+          const actualStart = offsetSeconds;
+          const remaining = vidDur - offsetSeconds;
+          videoSource.start(0, actualStart, remaining);
+          this.activeVideoSource = videoSource;
+          anyStarted = true;
+        }
+      }
+
+      if (this.activeVideoSource === videoSource) {
+        videoSource.onended = () => {
+          if (this.activeVideoSource === videoSource) {
+            this.activeVideoSource = null;
+            if (!this.activeSource && !this.activeVoiceSource) this.isPlaying = false;
           }
         };
       }
@@ -638,6 +710,13 @@ class AudioEngine {
         this.activeVoiceSource.disconnect();
       } catch (e) {}
       this.activeVoiceSource = null;
+    }
+    if (this.activeVideoSource) {
+      try {
+        this.activeVideoSource.stop();
+        this.activeVideoSource.disconnect();
+      } catch (e) {}
+      this.activeVideoSource = null;
     }
     this.isPlaying = false;
   }
@@ -678,9 +757,9 @@ class AudioEngine {
   }
 
   /**
-   * Produces a synchronized multi-track AudioBuffer mixing BGM and Voice for WebCodecs export
+   * Produces a synchronized multi-track AudioBuffer mixing BGM, Voice, Timer SFX, Reveal SFX, and Video Backdrop Audio for WebCodecs export
    */
-  async getMixedAudioBuffer(totalSeconds, timerConfig = null, revealConfig = null) {
+  async getMixedAudioBuffer(totalSeconds, timerConfig = null, revealConfig = null, videoAudioConfig = null) {
     this.ensureContext();
     const sampleRate = 44100;
     const offlineCtx = new OfflineAudioContext(2, Math.round(sampleRate * totalSeconds), sampleRate);
@@ -770,6 +849,35 @@ class AudioEngine {
       const revTime = Math.max(0, rCfg.startTime || 0);
       if (revTime < totalSeconds) {
         this.synthesizeRevealSfx(offlineCtx, offlineCtx.destination, revType, revTime, revVol);
+      }
+    }
+
+    // 5. Render Video Backdrop Audio if active, unmuted, and loaded
+    const vidCfg = videoAudioConfig || (window.studio && {
+      muted: window.studio.bg?.videoMuted !== false,
+      volume: window.studio.bg?.videoVolume ?? 1.0,
+      buffer: window.studio.bg?.audioBuffer || this.videoAudioBuffer
+    });
+
+    const isVidMuted = (vidCfg && typeof vidCfg.muted === 'boolean') ? vidCfg.muted : this.videoAudioMuted;
+    const vidVol = (vidCfg && typeof vidCfg.volume === 'number') ? vidCfg.volume : this.videoAudioVolume;
+    const vidBuf = (vidCfg && vidCfg.buffer) ? vidCfg.buffer : this.videoAudioBuffer;
+
+    if (!isVidMuted && vidBuf && vidVol > 0) {
+      try {
+        const videoSource = offlineCtx.createBufferSource();
+        videoSource.buffer = vidBuf;
+        videoSource.loop = true;
+        videoSource.loopStart = 0;
+        videoSource.loopEnd = Math.max(0.1, vidBuf.duration);
+
+        const videoGain = offlineCtx.createGain();
+        videoGain.gain.value = vidVol;
+        videoSource.connect(videoGain);
+        videoGain.connect(offlineCtx.destination);
+        videoSource.start(0, 0);
+      } catch (e) {
+        console.warn('Video audio offline rendering notice:', e);
       }
     }
 

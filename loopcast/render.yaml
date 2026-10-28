@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: streamflow-rtmp-bridge
+    name: easyloopcast-rtmp-bridge
     env: docker
     plan: free
     region: oregon

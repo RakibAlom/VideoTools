@@ -1,0 +1,41 @@
+# Apache / LiteSpeed Web Server Configuration for EasyLoop Cast
+# 100% Compatible with Hostinger, cPanel, Plesk, LiteSpeed, CloudLinux, Apache 2.4+
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 1. Route /api/* endpoints directly to api.php
+  RewriteRule ^api/status/?$ api.php?action=status [L,QSA]
+  RewriteRule ^api/stream/?$ api.php?action=stream [L,QSA]
+  RewriteRule ^api/chunk/?$ api.php?action=chunk [L,QSA]
+  RewriteRule ^api/stop/?$ api.php?action=stop [L,QSA]
+  RewriteRule ^api/(.*)$ api.php?action=$1 [L,QSA]
+
+  # 2. WebSocket Reverse Proxy for cPanel/Hostinger VPS or Node.js Selector
+  # Proxies wss://yourdomain.com/ws to local WebSocket server on port 3000
+  RewriteCond %{HTTP:Upgrade} =websocket [NC]
+  RewriteRule ^ws/?(.*) ws://127.0.0.1:3000/$1 [P,L]
+</IfModule>
+
+# LiteSpeed & CloudLinux: Disable Connection Timeout & Output Buffering for Live Streaming
+<IfModule Litespeed>
+  RewriteEngine On
+  RewriteRule .* - [E=noconntimeout:1,E=noabort:1]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Enable CORS for live streaming, MediaRecorder chunks, and WebSockets
+  Header set Access-Control-Allow-Origin "*"
+  Header set Access-Control-Allow-Private-Network "true"
+  Header set Access-Control-Allow-Methods "GET, POST, OPTIONS, HEAD"
+  Header set Access-Control-Allow-Headers "*"
+  Header set Access-Control-Expose-Headers "Content-Length, Content-Type, X-Stream-Status, X-FFmpeg-Version"
+</IfModule>
+
+# MIME Types for Video/Audio Media
+<IfModule mod_mime.c>
+  AddType audio/mpeg .mp3
+  AddType audio/aac .aac
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
+</IfModule>

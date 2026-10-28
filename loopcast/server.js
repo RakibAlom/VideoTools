@@ -1,5 +1,5 @@
 /**
- * StreamFlow Studio — Multi-Platform Live Streaming Bridge
+ * EasyLoop Cast — Multi-Platform Live Streaming Bridge
  * (YouTube, Facebook, Instagram, TikTok & Custom RTMP)
  * WebSocket to FFmpeg RTMP Ingestion Server
  */
@@ -7,27 +7,112 @@
 const { WebSocketServer } = require('ws');
 const { spawn } = require('child_process');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 
-// Create standard HTTP server for health check & WebSocket handshake
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+// Request handler: serves index.html, static files, and /health API
+const requestHandler = (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsedUrl.pathname;
+
+  // 1. Health Check Endpoint
+  if (pathname === '/health' || pathname === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      service: 'EasyLoop Cast Multi-Platform RTMP Bridge',
+      status: 'online',
+      protocol: isSsl ? 'https / wss' : 'http / ws',
+      port: PORT,
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+
+  // 2. Serve index.html on root / or /index.html
+  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+  const targetFile = (safePath === '/' || safePath === '\\' || safePath === '/index.html')
+    ? path.join(__dirname, 'index.html')
+    : path.join(__dirname, safePath);
+
+  if (fs.existsSync(targetFile) && fs.statSync(targetFile).isFile()) {
+    const ext = path.extname(targetFile).toLowerCase();
+    const mimeTypes = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'application/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.svg': 'image/svg+xml'
+    };
+    res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+    fs.createReadStream(targetFile).pipe(res);
+    return;
+  }
+
+  // 3. Fallback: serve index.html if present, else JSON health
+  const defaultIndex = path.join(__dirname, 'index.html');
+  if (fs.existsSync(defaultIndex)) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    fs.createReadStream(defaultIndex).pipe(res);
+    return;
+  }
+
+  res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
-    service: 'StreamFlow Studio Multi-Platform RTMP Bridge',
+    service: 'EasyLoop Cast Multi-Platform RTMP Bridge',
     status: 'online',
     port: PORT,
     timestamp: new Date().toISOString()
   }));
-});
+};
+
+// Check for optional SSL certificates for native WSS support
+const sslKeyPath = process.env.SSL_KEY_PATH || path.join(__dirname, 'key.pem');
+const sslCertPath = process.env.SSL_CERT_PATH || path.join(__dirname, 'cert.pem');
+let isSsl = false;
+let server;
+
+if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+  try {
+    const sslOptions = {
+      key: fs.readFileSync(sslKeyPath),
+      cert: fs.readFileSync(sslCertPath)
+    };
+    server = https.createServer(sslOptions, requestHandler);
+    isSsl = true;
+  } catch (err) {
+    console.warn(`[Bridge] ⚠️ Failed loading SSL certificate files: ${err.message}. Running HTTP.`);
+    server = http.createServer(requestHandler);
+  }
+} else {
+  server = http.createServer(requestHandler);
+}
 
 const wss = new WebSocketServer({ server });
 
 console.log('===========================================================');
-console.log('   📺 StreamFlow Studio — Multi-Platform RTMP Live Bridge   ');
+console.log('   📺 EasyLoop Cast — Multi-Platform RTMP Live Bridge      ');
 console.log('   (YouTube • Facebook • Instagram • TikTok • Custom)      ');
 console.log('===========================================================');
-console.log(`🚀 Bridge Server is listening on ws://localhost:${PORT}`);
+console.log(`🚀 Bridge Server is listening on ${isSsl ? 'wss' : 'ws'}://0.0.0.0:${PORT}`);
+if (isSsl) {
+  console.log(`🔐 Native SSL active (HTTPS / WSS supported).`);
+} else {
+  console.log(`💡 Running HTTP/WS mode (Use directly or behind Nginx/Cloudflare reverse proxy with SSL).`);
+}
 console.log('💡 Keep this terminal open while live streaming.\n');
 
 wss.on('connection', (ws, req) => {

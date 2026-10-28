@@ -1,54 +1,61 @@
-with open('d:/VideoTools/StreamFlow Studio/index.html', 'r', encoding='utf-8') as f:
-    content = f.read()
+import re
 
-script_start = content.find('<script>')
-script_end = content.rfind('</script>')
-js_code = content[script_start+8:script_end]
+with open('loopcast/index.html', 'r', encoding='utf-8') as f:
+    text = f.read()
 
-stack = []
-pairs = {'{': '}', '(': ')', '[': ']'}
-in_string = None
-escaped = False
+scripts = re.findall(r'<script>(.*?)</script>', text, re.DOTALL)
+print(f"Found {len(scripts)} inline script tag(s).")
 
-i = 0
-n = len(js_code)
-while i < n:
-    ch = js_code[i]
-    if in_string:
-        if escaped:
-            escaped = False
-        elif ch == '\\':
-            escaped = True
-        elif ch == in_string:
-            in_string = None
-    else:
-        # Check comments
-        if ch == '/' and i + 1 < n and js_code[i+1] == '/':
-            # Single line comment, skip to newline
-            next_nl = js_code.find('\n', i)
-            if next_nl == -1: break
-            i = next_nl
-            continue
-        elif ch == '/' and i + 1 < n and js_code[i+1] == '*':
-            # Multi-line comment, skip to */
-            end_c = js_code.find('*/', i + 2)
-            if end_c == -1: break
-            i = end_c + 1
+for idx, s in enumerate(scripts):
+    stack = []
+    lines = s.split('\n')
+    in_block_comment = False
+    in_string = None
+    escaped = False
+    for line_num, line in enumerate(lines, 1):
+        i = 0
+        while i < len(line):
+            ch = line[i]
+            if in_block_comment:
+                if line[i:i+2] == '*/':
+                    in_block_comment = False
+                    i += 2
+                    continue
+                i += 1
+                continue
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif ch == '\\':
+                    escaped = True
+                elif ch == in_string:
+                    in_string = None
+                i += 1
+                continue
+            if line[i:i+2] == '/*':
+                in_block_comment = True
+                i += 2
+                continue
+            if line[i:i+2] == '//':
+                break
+            if ch in ('"', "'", '`'):
+                in_string = ch
+                i += 1
+                continue
+            if ch in '([{':
+                stack.append((ch, line_num))
+            elif ch in ')]}':
+                if not stack:
+                    print(f"Unmatched closing {ch} at line {line_num}")
+                else:
+                    open_ch, open_line = stack.pop()
+                    match = {'(': ')', '[': ']', '{': '}'}[open_ch]
+                    if match != ch:
+                        print(f"Mismatched {open_ch} (line {open_line}) with {ch} (line {line_num})")
             i += 1
-            continue
-        elif ch in ('"', "'", '`'):
-            in_string = ch
-        elif ch in pairs:
-            stack.append((ch, i))
-        elif ch in pairs.values():
-            if stack and pairs[stack[-1][0]] == ch:
-                stack.pop()
-            else:
-                l = js_code[:i].count('\n') + 1
-                print(f'Mismatched closing {ch} at line {l}')
-    i += 1
-
-print('Remaining unclosed items in stack:', len(stack))
-for ch, idx in stack:
-    l = js_code[:idx].count('\n') + 1
-    print(f'{ch} at line {l}')
+    if stack:
+        print(f"Unclosed brackets in script {idx}: count={len(stack)}")
+        for open_ch, open_line in stack[-5:]:
+            print(f"  Unclosed {open_ch} opened at line {open_line}")
+    else:
+        print(f"Script {idx}: All brackets perfectly balanced!")

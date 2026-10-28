@@ -439,12 +439,26 @@
                 <span style="font-size:0.75rem; font-weight:700; color:var(--accent-cyan); display:flex; align-items:center; gap:4px;">
                   <i class="fa-solid fa-film"></i> Video Backdrop Active
                 </span>
-                <span id="videoBgDurationBadge" class="badge" style="background:rgba(6, 182, 212, 0.2); color:#38bdf8; font-family:monospace;">0.0s</span>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span id="videoBgAudioBadge" class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:0.68rem; display:none;">
+                    <i class="fa-solid fa-volume-high"></i> Audio
+                  </span>
+                  <span id="videoBgDurationBadge" class="badge" style="background:rgba(6, 182, 212, 0.2); color:#38bdf8; font-family:monospace;">0.0s</span>
+                </div>
               </div>
               <div style="display:flex; flex-direction:column; gap:0.4rem;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:0.74rem; cursor:pointer;">
-                  <input type="checkbox" id="checkMuteVideoBg" checked> Mute Video Audio (Play only music)
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.74rem; cursor:pointer;" title="Uncheck to enable video background sound in preview and exported MP4">
+                  <input type="checkbox" id="checkMuteVideoBg" checked>
+                  <span id="labelMuteVideoBg">Mute Video Audio (Play only music)</span>
                 </label>
+                
+                <!-- Video Audio Volume Slider (Visible when unmuted) -->
+                <div id="videoBgVolumeRow" style="display:none; align-items:center; gap:6px; background:rgba(0,0,0,0.3); padding:4px 8px; border-radius:var(--radius-xs); border:1px solid rgba(6, 182, 212, 0.2);">
+                  <span style="font-size:0.72rem; color:var(--text-muted); min-width:62px;">Video Vol:</span>
+                  <input type="range" id="sliderVideoBgVolume" class="range-slider" min="0" max="200" value="100" style="flex:1;">
+                  <span id="videoBgVolumeVal" class="val-indicator" style="font-size:0.72rem; min-width:36px; text-align:right;">100%</span>
+                </div>
+
                 <div style="display:flex; gap:0.4rem; align-items:center;">
                   <button id="btnSyncVideoDuration" class="btn btn-secondary btn-sm" style="flex:1; font-size:0.72rem; padding:0.25rem 0.4rem;" title="Match video export length to backdrop video duration">
                     <i class="fa-solid fa-arrows-rotate"></i> Match Video Length
@@ -1340,7 +1354,7 @@
               <span>Multi-Track Audio Master Mix</span>
             </div>
             <p style="font-size:0.73rem; color:var(--text-muted); line-height:1.4; margin-bottom:0.5rem;">
-              Background Music, Voiceover, and Timer SFX are mixed together in video export. You can customize each volume independently, mute any track, or mute all.
+              Background Music, Voiceover, Video Backdrop Sound, and Timer SFX are mixed together in video export. You can customize each volume independently, mute any track, or mute all.
             </p>
             <div style="display:flex; gap:0.5rem;">
               <button id="btnAudioPreviewToggle" class="btn btn-secondary" style="flex:1; justify-content:center;">

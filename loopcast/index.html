@@ -640,30 +640,61 @@
     .standby-bars span:nth-child(5) { background: #6366f1; }
     .standby-bars span:nth-child(6) { background: #ec4899; }
 
-    /* Logo Blocker */
+    /* Logo Blocker & Cover */
     .logo-patch {
-      position: absolute; z-index: 9; display: none; box-sizing: border-box; user-select: none;
-      border-radius: 4px; overflow: hidden;
+      position: absolute; z-index: 12; display: none; box-sizing: border-box; user-select: none;
+      border-radius: 4px; overflow: hidden; cursor: move; pointer-events: auto;
+      transition: outline 0.15s ease;
     }
     .logo-patch.active { display: flex; align-items: center; justify-content: center; }
     .logo-patch.mode-blur {
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      background: rgba(15, 23, 42, 0.3); border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(15, 23, 42, 0.45); border: 1.5px solid rgba(255, 255, 255, 0.25);
     }
-    .logo-patch.mode-solid { background: #000000; }
-    .logo-patch.editing { outline: 2px dashed #4f46e5; cursor: move !important; pointer-events: auto !important; z-index: 25; }
+    .logo-patch.mode-solid { background: #000000; border: 1px solid rgba(255, 255, 255, 0.15); }
+    .logo-patch.mode-image { background: transparent; border: none; }
+    .logo-patch.editing, .logo-patch:hover {
+      outline: 2px dashed #4f46e5;
+    }
+    .logo-patch.dragging {
+      outline: 2px solid #38bdf8 !important;
+      cursor: grabbing !important;
+      z-index: 26;
+    }
     .patch-label {
-      position: absolute; top: -18px; left: 0; background: var(--primary); color: white;
+      position: absolute; top: -19px; left: 0; background: var(--primary); color: white;
       font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 3px; display: none;
+      white-space: nowrap; pointer-events: none; z-index: 20;
     }
-    .logo-patch.editing .patch-label { display: block; }
+    .logo-patch.editing .patch-label, .logo-patch:hover .patch-label { display: block; }
+    .patch-resize-handle {
+      position: absolute; right: 0; bottom: 0; width: 14px; height: 14px;
+      cursor: nwse-resize; pointer-events: auto; z-index: 20;
+      background: linear-gradient(135deg, transparent 50%, #4f46e5 50%);
+      border-bottom-right-radius: inherit;
+    }
+    .patch-resize-handle:hover {
+      background: linear-gradient(135deg, transparent 50%, #38bdf8 50%);
+    }
 
     /* Overlays - calibrated with mobile safe-zone margins to prevent edge clipping */
-    .overlay-watermark { position: absolute; z-index: 10; pointer-events: none; display: none; max-width: 280px; }
+    .overlay-watermark {
+      position: absolute; z-index: 14; display: none; box-sizing: border-box; user-select: none;
+      cursor: grab; pointer-events: auto; padding: 4px; border-radius: 4px;
+      transition: outline 0.15s ease;
+    }
+    .overlay-watermark:hover {
+      outline: 1.5px dashed rgba(255, 255, 255, 0.5);
+    }
+    .overlay-watermark.dragging {
+      cursor: grabbing !important;
+      outline: 2px dashed #38bdf8 !important;
+      z-index: 27;
+    }
     .overlay-watermark.active { display: flex; align-items: center; justify-content: center; }
-    .overlay-watermark img { max-width: 100%; height: auto; object-fit: contain; }
+    .overlay-watermark img { max-width: 100%; height: auto; object-fit: contain; pointer-events: none; }
     .overlay-watermark-text {
-      font-weight: 800; letter-spacing: -0.01em; white-space: nowrap;
+      font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; pointer-events: none;
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.85);
     }
 
@@ -1988,21 +2019,63 @@
             </div>
           </div>
 
-          <!-- Bridge Server & Quality Settings -->
-          <div class="deck-card">
+          <!-- Streaming Engine & Quality Settings -->
+          <div class="deck-card" id="card-bridge-settings">
             <div class="card-header">
-              <span class="card-title"><i data-lucide="cpu"></i> RTMP Bridge & Quality</span>
-              <span id="badge-bridge-status" class="value-badge" style="cursor:pointer;" title="Click to test ping">Test Ping</span>
+              <span class="card-title"><i data-lucide="cpu"></i> Broadcast Engine & Quality</span>
+              <span id="badge-bridge-status" class="value-badge" style="cursor:pointer;" title="Click to test connection">Detecting...</span>
             </div>
-            <div class="form-group">
-              <label class="form-label"><span>WebSocket Bridge URL</span></label>
-              <div style="display:flex; gap:6px;">
-                <input type="text" id="input-bridge-ws-url" class="form-control" value="ws://localhost:3000">
-                <button id="btn-ping-bridge" class="btn btn-secondary" style="font-size:11px; padding:0 10px;">Ping</button>
+
+            <!-- Server Engine Status Banner (Auto-detected on cPanel / Hostinger) -->
+            <div id="banner-php-engine" style="display:none; margin-bottom:10px; padding:8px 10px; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:var(--radius-sm); font-size:11px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#10b981; font-weight:600;"><i data-lucide="check-circle" style="width:13px; height:13px; vertical-align:middle;"></i> Hostinger & cPanel Engine Active</span>
+                <span id="badge-php-ffmpeg" style="font-size:9.5px; background:rgba(16,185,129,0.2); color:#10b981; padding:1px 6px; border-radius:4px;">FFmpeg Ready</span>
               </div>
-              <p style="font-size:10px; color:var(--text-muted); margin-top:2px;">
-                Runs locally via <code>Start-RTMP-Bridge.bat</code> on your PC or VPS.
-              </p>
+              <p style="margin:4px 0 0; color:var(--text-muted); font-size:10px;">Streams directly via HTTPS & .htaccess — zero OBS or external bridge required!</p>
+            </div>
+
+            <!-- Streaming Mode Switcher -->
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label"><span>Engine Mode</span></label>
+              <div class="segmented-control" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; background:transparent; padding:0;">
+                <button type="button" id="btn-engine-auto" class="seg-btn active" style="padding:6px 4px; font-size:11px;">
+                  <i data-lucide="sparkles" style="width:12px; height:12px; vertical-align:middle;"></i> Auto (cPanel/Hostinger)
+                </button>
+                <button type="button" id="btn-engine-ws" class="seg-btn" style="padding:6px 4px; font-size:11px;">
+                  <i data-lucide="radio" style="width:12px; height:12px; vertical-align:middle;"></i> WebSocket Bridge
+                </button>
+              </div>
+            </div>
+
+            <!-- WebSocket Configuration Container (shown when WS mode is selected or fallback) -->
+            <div id="container-ws-config" style="display:none;">
+              <div class="form-group">
+                <label class="form-label"><span>WebSocket Bridge URL</span></label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="input-bridge-ws-url" class="form-control" value="ws://localhost:3000" placeholder="wss://your-domain.com">
+                  <button id="btn-ping-bridge" class="btn btn-secondary" style="font-size:11px; padding:0 10px;">Ping</button>
+                </div>
+
+                <!-- HTTPS Mode Alert Notice -->
+                <div id="bridge-https-notice" style="display:none; align-items:center; justify-content:space-between; gap:6px; margin-top:6px; padding:6px 10px; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-sm); font-size:10.5px;">
+                  <span style="color:#818cf8;"><i data-lucide="shield-check" style="width:12px; height:12px; vertical-align:middle;"></i> <strong>HTTPS Active:</strong> Secure <code>wss://</code> bridge required</span>
+                  <button type="button" id="btn-bridge-help-pill" class="btn btn-secondary" style="font-size:9.5px; padding:1px 6px;">Setup Help</button>
+                </div>
+
+                <!-- Quick Presets -->
+                <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+                  <button type="button" id="btn-preset-server-wss" class="btn btn-secondary" style="font-size:10px; padding:2px 8px;" title="Use current server WSS endpoint">
+                    <i data-lucide="server" style="width:11px; height:11px;"></i> Auto Server (WSS)
+                  </button>
+                  <button type="button" id="btn-preset-local-ws" class="btn btn-secondary" style="font-size:10px; padding:2px 8px;" title="Use local PC bridge (ws://localhost:3000)">
+                    <i data-lucide="laptop" style="width:11px; height:11px;"></i> Localhost (3000)
+                  </button>
+                  <button type="button" id="btn-open-bridge-help" class="btn btn-secondary" style="font-size:10px; padding:2px 8px;" title="Open Server & HTTPS setup guide">
+                    <i data-lucide="help-circle" style="width:11px; height:11px;"></i> Setup Guide
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Quality Preset (720p, 1080p, 2K QHD, 4K UHD) -->
@@ -2303,11 +2376,37 @@
               <button class="segmented-btn active" id="btn-watermark-mode-text">Text</button>
               <button class="segmented-btn" id="btn-watermark-mode-img">Image</button>
             </div>
-            <input type="text" id="input-watermark-text" class="form-control" value="EASYLOOP CAST">
-            <input type="file" id="input-watermark-file" accept="image/*" class="form-control" style="font-size: 11px; display: none;">
-            <div class="form-group">
+            <div id="watermark-text-ctrls">
+              <input type="text" id="input-watermark-text" class="form-control" value="EASYLOOP CAST">
+              <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label"><span>Font Size</span><span id="wm-font-size-badge" class="value-badge">16px</span></label>
+                <input type="range" id="slider-wm-font-size" class="range-input" min="10" max="64" value="16">
+              </div>
+            </div>
+            <div id="watermark-img-ctrls" style="display: none;">
+              <input type="file" id="input-watermark-file" accept="image/*" class="form-control" style="font-size: 11px;">
+              <div class="form-group" style="margin-top: 6px;">
+                <label class="form-label"><span>Image Size</span><span id="wm-img-size-badge" class="value-badge">120px</span></label>
+                <input type="range" id="slider-wm-img-size" class="range-input" min="30" max="400" value="120">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 6px;">
               <label class="form-label"><span>Opacity</span><span id="wm-opacity-badge" class="value-badge">85%</span></label>
               <input type="range" id="slider-wm-opacity" class="range-input" min="10" max="100" value="85">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+              <div class="form-group">
+                <label class="form-label"><span>X Pos (%)</span><span id="wm-x-badge" class="value-badge">80%</span></label>
+                <input type="range" id="slider-wm-x" class="range-input" min="0" max="95" value="80">
+              </div>
+              <div class="form-group">
+                <label class="form-label"><span>Y Pos (%)</span><span id="wm-y-badge" class="value-badge">3%</span></label>
+                <input type="range" id="slider-wm-y" class="range-input" min="0" max="95" value="3">
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+              <i data-lucide="move" style="width: 12px; height: 12px; flex-shrink: 0;"></i>
+              <span>Click & drag watermark directly on video stage anytime!</span>
             </div>
           </div>
 
@@ -2337,19 +2436,62 @@
               <label class="switch"><input type="checkbox" id="toggle-patch-1"><span class="switch-slider"></span></label>
             </div>
             <div id="patch-1-controls" style="display: flex; flex-direction: column; gap: 8px; opacity: 0.5; pointer-events: none;">
-              <div class="segmented-control">
-                <button class="segmented-btn active" id="btn-p1-mode-blur">Blur Effect</button>
-                <button class="segmented-btn" id="btn-p1-mode-solid">Solid Color</button>
+              <!-- 3 Cover Modes: Blur, Solid, Image -->
+              <div class="segmented-control" style="grid-template-columns: 1fr 1fr 1fr;">
+                <button class="segmented-btn active" id="btn-p1-mode-blur">Blur</button>
+                <button class="segmented-btn" id="btn-p1-mode-solid">Solid Black</button>
+                <button class="segmented-btn" id="btn-p1-mode-image"><i data-lucide="image" style="width: 12px; height: 12px; vertical-align: middle;"></i> Image Cover</button>
               </div>
+
+              <!-- Cover Image Picker (visible when mode === 'image') -->
+              <div id="p1-image-picker-container" style="display: none; flex-direction: column; gap: 4px;">
+                <label class="form-label"><span>Upload Cover Image (Logo / Sticker)</span></label>
+                <input type="file" id="input-patch-file" accept="image/*" class="form-control" style="font-size: 11px;">
+              </div>
+
+              <!-- Shape Presets (Rect, Square, Round / Circle) -->
+              <div class="form-group" style="margin-top: 4px;">
+                <label class="form-label"><span>Shape Preset</span></label>
+                <div class="segmented-control" style="grid-template-columns: 1fr 1fr 1fr;">
+                  <button class="segmented-btn active" id="btn-p1-shape-rect">Rect</button>
+                  <button class="segmented-btn" id="btn-p1-shape-square">Square</button>
+                  <button class="segmented-btn" id="btn-p1-shape-round">Round / Circle</button>
+                </div>
+              </div>
+
+              <!-- Corner Radius Slider -->
+              <div class="form-group">
+                <label class="form-label"><span>Corner Radius (Roundness)</span><span id="p1-radius-badge" class="value-badge">4%</span></label>
+                <input type="range" id="slider-p1-radius" class="range-input" min="0" max="50" value="4">
+              </div>
+
+              <!-- Size Customization (Width & Height) -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <div class="form-group">
-                  <label class="form-label"><span>X Pos (%)</span></label>
+                  <label class="form-label"><span>Width (%)</span><span id="p1-w-badge" class="value-badge">16%</span></label>
+                  <input type="range" id="slider-p1-w" class="range-input" min="2" max="95" value="16">
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><span>Height (%)</span><span id="p1-h-badge" class="value-badge">10%</span></label>
+                  <input type="range" id="slider-p1-h" class="range-input" min="2" max="95" value="10">
+                </div>
+              </div>
+
+              <!-- Position Sliders (X & Y) -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="form-group">
+                  <label class="form-label"><span>X Pos (%)</span><span id="p1-x-badge" class="value-badge">80%</span></label>
                   <input type="range" id="slider-p1-x" class="range-input" min="0" max="95" value="80">
                 </div>
                 <div class="form-group">
-                  <label class="form-label"><span>Y Pos (%)</span></label>
+                  <label class="form-label"><span>Y Pos (%)</span><span id="p1-y-badge" class="value-badge">4%</span></label>
                   <input type="range" id="slider-p1-y" class="range-input" min="0" max="95" value="4">
                 </div>
+              </div>
+
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="move" style="width: 12px; height: 12px; flex-shrink: 0;"></i>
+                <span>Drag patch to move • Drag bottom-right corner to resize!</span>
               </div>
             </div>
           </div>
@@ -2419,8 +2561,10 @@
           </div>
 
           <!-- Logo Masking Patch -->
-          <div id="logo-patch-1" class="logo-patch mode-blur" style="top: 4%; left: 80%; width: 16%; height: 10%;">
-            <span class="patch-label">MASK 1</span>
+          <div id="logo-patch-1" class="logo-patch mode-blur" style="top: 4%; left: 80%; width: 16%; height: 10%; border-radius: 4px;">
+            <span class="patch-label">LOGO COVER</span>
+            <img id="patch-rendered-img" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; pointer-events: none;" alt="Cover">
+            <div class="patch-resize-handle" id="patch-1-resize-handle" title="Drag to Resize"></div>
           </div>
 
           <!-- Overlays -->
@@ -2429,9 +2573,9 @@
             <span id="live-badge-label">LIVE BROADCAST</span>
           </div>
 
-          <div id="overlay-watermark" class="overlay-watermark active" style="top: 20px; right: 26px;">
-            <span id="watermark-rendered-text" class="overlay-watermark-text" style="color: #ffffff; font-size: 15px;">EASYLOOP CAST</span>
-            <img id="watermark-rendered-img" style="display: none;" alt="Watermark">
+          <div id="overlay-watermark" class="overlay-watermark active" style="top: 3%; left: 80%;">
+            <span id="watermark-rendered-text" class="overlay-watermark-text" style="color: #ffffff; font-size: 16px;">EASYLOOP CAST</span>
+            <img id="watermark-rendered-img" style="display: none; max-width: 120px; max-height: 120px; border-radius: 4px;" alt="Watermark">
           </div>
 
           <div id="overlay-clock" class="overlay-clock" style="bottom: 46px; right: 26px;">
@@ -2810,6 +2954,112 @@
       <div class="modal-footer">
         <button class="btn btn-primary modal-close">Got It</button>
       </div>
+  <!-- Modal: RTMP Bridge Server & HTTPS Setup Guide -->
+  <div id="modal-bridge-help" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:28px; height:28px; border-radius:var(--radius-md); background:linear-gradient(135deg, #6366f1, #38bdf8); display:flex; align-items:center; justify-content:center; color:#fff;">
+            <i data-lucide="server" style="width:16px; height:16px;"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin:0; font-size:15px;" id="bridge-modal-title">RTMP Bridge Server Setup</h3>
+            <p style="margin:2px 0 0 0; font-size:11px; color:var(--text-muted);" id="bridge-modal-subtitle">Connect live stream on HTTPS or Shared Hosting</p>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-icon modal-close"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="modal-body" style="gap: 12px; padding: 14px 18px; max-height: 80vh; overflow-y: auto;">
+        <!-- Context Warning Alert -->
+        <div id="bridge-modal-alert" style="padding: 10px 12px; border-radius: 8px; font-size: 11.5px; line-height: 1.4; display: flex; gap: 8px; align-items: flex-start; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5;">
+          <i data-lucide="shield-alert" style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;"></i>
+          <span id="bridge-modal-alert-text">
+            <strong>HTTPS Security Note:</strong> When accessing EasyLoop Cast over HTTPS (<code>https://...</code>), modern browsers require a secure <code>wss://</code> bridge connection. Choose one of the 4 ready-to-use solutions below:
+          </span>
+        </div>
+
+        <!-- Option 1: Hostinger & cPanel Auto-Engine (.htaccess + api.php) -->
+        <div class="deck-card" style="margin: 0; padding: 10px 12px; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 700; color: #10b981;"><i data-lucide="sparkles" style="width:13px; height:13px; vertical-align:middle;"></i> 1. Hostinger & cPanel Auto-Engine</span>
+            <span class="value-badge" style="background: rgba(16,185,129,0.2); color: #10b981;">Recommended • 100% Automated</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+            Stream directly through <code>.htaccess</code> and <code>api.php</code> using your server's native FFmpeg over HTTPS. Zero OBS and zero WebSocket restrictions required!
+          </p>
+          <button type="button" id="btn-modal-use-php" class="btn btn-primary" style="width: 100%; font-size: 11px; padding: 6px; background:#10b981; border-color:#10b981;">
+            <i data-lucide="check-circle" style="width: 13px; height: 13px;"></i> Switch to Hostinger & cPanel Auto Engine
+          </button>
+        </div>
+
+        <!-- Option 2: Current Server WSS -->
+        <div class="deck-card" style="margin: 0; padding: 10px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);"><i data-lucide="server" style="width:13px; height:13px; vertical-align:middle; color:var(--primary);"></i> 2. Same-Server Bridge (Auto WSS)</span>
+            <span class="value-badge" style="background: rgba(99,102,241,0.15); color: #818cf8;">Recommended for VPS</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+            If you are running <code>node server.js</code> or <code>python bridge.py</code> on your VPS or cloud server behind Nginx, Caddy, or Cloudflare with SSL:
+          </p>
+          <button type="button" id="btn-modal-use-server-wss" class="btn btn-secondary" style="width: 100%; font-size: 11px; padding: 6px;">
+            <i data-lucide="check-circle" style="width: 13px; height: 13px;"></i> Set Bridge to <span id="label-modal-server-wss">wss://your-domain.com</span>
+          </button>
+        </div>
+
+        <!-- Option 3: Hostinger & cPanel Zero-Backend Mode (OBS Studio) -->
+        <div class="deck-card" style="margin: 0; padding: 10px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);"><i data-lucide="globe" style="width:13px; height:13px; vertical-align:middle; color:#06b6d4;"></i> 3. Zero-Backend Mode (OBS Studio)</span>
+            <span class="value-badge">External OBS</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+            Stream via <strong>OBS Studio / vMix</strong> by adding this clean browser frame source:
+          </p>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" id="btn-modal-copy-obs" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 6px;">
+              <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copy OBS Clean Frame URL
+            </button>
+            <button type="button" id="btn-modal-open-clean" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 6px;">
+              <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> Test Clean Frame
+            </button>
+          </div>
+        </div>
+
+        <!-- Option 3: Local Studio Mode (HTTP) -->
+        <div class="deck-card" style="margin: 0; padding: 10px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);"><i data-lucide="laptop" style="width:13px; height:13px; vertical-align:middle; color:#f59e0b;"></i> 3. Local Studio Mode (via HTTP)</span>
+            <span class="value-badge">Local PC</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+            Want to use <code>ws://localhost:3000</code> with <code>Start-RTMP-Bridge.bat</code> on your PC? Access the studio using standard <strong>HTTP</strong> instead of HTTPS (browsers allow localhost WebSocket over HTTP):
+          </p>
+          <button type="button" id="btn-modal-switch-http" class="btn btn-secondary" style="width: 100%; font-size: 11px; padding: 6px;">
+            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> Switch to HTTP Mode (http://...)
+          </button>
+        </div>
+
+        <!-- Option 4: Deploy Free Cloud Bridge -->
+        <div class="deck-card" style="margin: 0; padding: 10px 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-main);"><i data-lucide="cloud" style="width:13px; height:13px; vertical-align:middle; color:#06b6d4;"></i> 4. Deploy Free Cloud WSS Bridge</span>
+            <span class="value-badge">Render / Railway</span>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.4; margin-bottom: 6px;">
+            Deploy the included <code>render.yaml</code> or <code>Dockerfile</code> on Render.com for a free 24/7 <code>wss://</code> bridge with automatic SSL!
+          </p>
+          <div style="display: flex; gap: 6px;">
+            <a href="https://render.com/deploy" target="_blank" class="btn btn-secondary" style="flex: 1; font-size: 11px; padding: 6px; text-decoration: none; justify-content: center;">
+              <i data-lucide="cloud" style="width: 12px; height: 12px;"></i> Deploy to Render (Free)
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 10px 18px;">
+        <button class="btn btn-secondary modal-close" style="width: 100%;">Close</button>
+      </div>
     </div>
   </div>
 
@@ -2871,13 +3121,33 @@
       },
       overlays: {
         liveBadge: { enabled: true, text: 'LIVE BROADCAST' },
-        watermark: { enabled: true, mode: 'text', text: 'EASYLOOP CAST', imageData: null, opacity: 85 },
+        watermark: {
+          enabled: true,
+          mode: 'text',
+          text: 'EASYLOOP CAST',
+          imageData: null,
+          opacity: 85,
+          fontSize: 16,
+          imageSize: 120,
+          x: 80,
+          y: 3
+        },
         ticker: { enabled: true, position: 'bottom', prefix: 'LIVE UPDATE', text: 'Welcome to EasyLoop Cast • Continuous Pre-Recorded Live Broadcast • Enjoy the stream!', autoTitle: true, speed: 25 },
         clock: { enabled: false }
       },
       masking: {
         editingMode: false,
-        patch1: { enabled: false, mode: 'blur', x: 80, y: 4, w: 16, h: 10 }
+        patch1: {
+          enabled: false,
+          mode: 'blur',
+          x: 80,
+          y: 4,
+          w: 16,
+          h: 10,
+          borderRadius: 4,
+          isSquare: false,
+          imageData: null
+        }
       },
       rtmp: {
         youtubeEnabled: true,
@@ -2897,7 +3167,8 @@
         tiktokKey: '',
         customUrl: '',
         customKey: '',
-        bridgeWsUrl: 'ws://localhost:3000',
+        engine: 'auto', // 'auto' (cPanel & Hostinger PHP Auto-Engine when available, else WebSocket), 'php', 'websocket'
+        bridgeWsUrl: '', // Auto-resolved based on protocol (wss:// on https, ws:// on http)
         quality: '1080p30', // '720p30', '1080p30', '1080p60', '2k30', '2k60', '4k30', '4k60'
         bitrate: 6000 // default 6000 kbps (1080p Full HD)
       }
@@ -3057,6 +3328,34 @@
             req.onerror = () => resolve(null);
           });
         } catch(e) { return null; }
+      },
+
+      async savePatchImage(dataUrl) {
+        try {
+          const db = await this.open();
+          if (!db) return false;
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            store.put(dataUrl, '__app_patch_image__');
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          });
+        } catch(e) { return false; }
+      },
+
+      async getPatchImage() {
+        try {
+          const db = await this.open();
+          if (!db) return null;
+          return new Promise((resolve) => {
+            const tx = db.transaction(this.storeName, 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.get('__app_patch_image__');
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          });
+        } catch(e) { return null; }
       }
     };
 
@@ -3079,8 +3378,6 @@
       watchdogTimer: null,
       clockTimer: null,
       idleTimer: null,
-      isDraggingPatch: false,
-      dragStart: { mouseX: 0, mouseY: 0, patchX: 0, patchY: 0 },
 
       // Direct RTMP Live Streaming & Popout Engine
       isRtmpLive: false,
@@ -3093,6 +3390,14 @@
       bgmAudioSourceNode: null,
       popoutChannel: null,
       popoutWindow: null,
+
+      // Native Hostinger & cPanel PHP Streaming Engine
+      phpEngineAvailable: false,
+      phpApiEndpoint: null,
+      phpServerInfo: null,
+      phpStreamAbortController: null,
+      phpStreamController: null,
+      phpCurrentStreamId: null,
 
       async init() {
         // Auto-detect clean frame mode for OBS Studio / vMix / Hostinger cloud ingestion
@@ -3107,6 +3412,9 @@
         this.playerB = document.getElementById('html5-video-player-b');
         this.bgmPlayer = document.getElementById('bgm-audio-player');
         
+        // Auto-detect Hostinger / cPanel PHP Streaming Engine
+        await this.detectServerEngine();
+        
         // Restore local files from IndexedDB so queued local tracks are immediately playable
         await this.restoreLocalFilesFromDB();
 
@@ -3120,13 +3428,23 @@
           }
         } catch(e){}
 
+        // Restore persistent logo cover image from IndexedDB if stored
+        try {
+          const savedPatch = await StreamFlowIDB.getPatchImage();
+          if (savedPatch && this.state.masking && this.state.masking.patch1) {
+            this.state.masking.patch1.imageData = savedPatch;
+            const img = document.getElementById('patch-rendered-img');
+            if (img) img.src = savedPatch;
+          }
+        } catch(e){}
+
         this.initStage();
         this.initEventListeners();
         this.applyFrameFit();
         this.renderAll();
         this.startClock();
         this.initToolbarIdleTracker();
-        this.initPatchDragHandlers();
+        this.initVisualDragHandlers();
         this.initDragDropZones();
         this.initPopoutChannel();
 
@@ -3144,7 +3462,7 @@
           const records = await StreamFlowIDB.getAllFiles();
           if (records && records.length > 0) {
             records.forEach(({ key, file }) => {
-              if (file && key && key !== '__app_watermark_image__') {
+              if (file && key && key !== '__app_watermark_image__' && key !== '__app_patch_image__') {
                 this.localFileStore.set(key, file);
                 const blobUrl = URL.createObjectURL(file);
                 this.localUrlMap.set(key, blobUrl);
@@ -3202,11 +3520,17 @@
           // Transient live broadcast state should never be persisted to localStorage
           toSave.playback.isLive = false;
           toSave.playback.isPlaying = false;
-          // Offload heavy base64 watermark image to IndexedDB to keep state strictly under 5MB localStorage limit
+          // Offload heavy base64 watermark & logo patch images to IndexedDB to keep state strictly under 5MB localStorage limit
           if (toSave.overlays && toSave.overlays.watermark && toSave.overlays.watermark.imageData) {
             if (toSave.overlays.watermark.imageData.length > 2000) {
               StreamFlowIDB.saveWatermarkImage(toSave.overlays.watermark.imageData);
               toSave.overlays.watermark.imageData = '__idb_stored__';
+            }
+          }
+          if (toSave.masking && toSave.masking.patch1 && toSave.masking.patch1.imageData) {
+            if (toSave.masking.patch1.imageData.length > 2000) {
+              StreamFlowIDB.savePatchImage(toSave.masking.patch1.imageData);
+              toSave.masking.patch1.imageData = '__idb_stored__';
             }
           }
           localStorage.setItem('streamflow_studio_v4', JSON.stringify(toSave));
@@ -3215,6 +3539,7 @@
           try {
             const minState = JSON.parse(JSON.stringify(this.state));
             if (minState.overlays?.watermark) minState.overlays.watermark.imageData = null;
+            if (minState.masking?.patch1) minState.masking.patch1.imageData = null;
             localStorage.setItem('streamflow_studio_v4', JSON.stringify(minState));
           } catch(e2){}
         }
@@ -3403,6 +3728,7 @@
        * Playback Dispatcher with YouTube Shield & A/B Zero-Loading Transitions
        */
       async loadVideoByIndex(index) {
+        this.initMasterAudioPipeline();
         const playlist = this.getActivePlaylist();
         if (!playlist || playlist.videos.length === 0) return;
         if (index < 0) index = 0;
@@ -3674,7 +4000,13 @@
             }).catch(e => {
               console.log('Incoming deck autoplay handled:', e);
               incomingVid.muted = true;
-              incomingVid.play().then(() => commitTransition()).catch(err => {
+              incomingVid.play().then(() => {
+                commitTransition();
+                if (!this.state.audio.isMuted) {
+                  incomingVid.muted = false;
+                  this.syncVolumeMixer();
+                }
+              }).catch(err => {
                 console.error(err);
                 commitTransition();
               });
@@ -3903,6 +4235,7 @@
 
       togglePlayPause() {
         if (!this.state.playback.isLive) { this.startBroadcast(); return; }
+        this.initMasterAudioPipeline();
         const item = this.getActivePlaylist()?.videos[this.state.playback.currentIndex];
         if (!item) return;
 
@@ -4032,9 +4365,9 @@
       },
 
       syncVolumeMixer() {
-        const isMuted = this.state.audio.isMuted;
-        const vidVol = isMuted ? 0 : this.state.audio.videoVolume;
-        const bgmVol = isMuted ? 0 : this.state.audio.bgmVolume;
+        const isMuted = !!this.state.audio.isMuted;
+        const vidVol = isMuted ? 0 : (this.state.audio.videoVolume !== undefined ? this.state.audio.videoVolume : 100);
+        const bgmVol = isMuted ? 0 : (this.state.audio.bgmVolume !== undefined ? this.state.audio.bgmVolume : 50);
 
         if (this.ytPlayer && typeof this.ytPlayer.setVolume === 'function') {
           if (isMuted) this.ytPlayer.mute();
@@ -4049,6 +4382,22 @@
         if (this.bgmPlayer) {
           this.bgmPlayer.volume = bgmVol / 100;
           this.bgmPlayer.muted = isMuted;
+        }
+
+        // Keep Web Audio Bus Gain nodes in perfect sync
+        if (this.masterAudioBus) {
+          if (this.masterAudioBus.videoGain) {
+            this.masterAudioBus.videoGain.gain.value = vidVol / 100;
+          }
+          if (this.masterAudioBus.bgmGain) {
+            this.masterAudioBus.bgmGain.gain.value = bgmVol / 100;
+          }
+          if (this.masterAudioBus.monitorGain) {
+            this.masterAudioBus.monitorGain.gain.value = isMuted ? 0 : 1.0;
+          }
+          if (this.masterAudioBus.masterGain) {
+            this.masterAudioBus.masterGain.gain.value = isMuted ? 0 : 1.0;
+          }
         }
       },
 
@@ -4232,16 +4581,25 @@
         if (wm) {
           wm.classList.toggle('active', !!o.watermark.enabled);
           wm.style.opacity = ((o.watermark.opacity !== undefined ? o.watermark.opacity : 85) / 100);
+          wm.style.left = `${o.watermark.x !== undefined ? o.watermark.x : 80}%`;
+          wm.style.top = `${o.watermark.y !== undefined ? o.watermark.y : 3}%`;
+          wm.style.right = 'auto';
+          wm.style.bottom = 'auto';
         }
         const wmTxt = document.getElementById('watermark-rendered-text');
         const wmImg = document.getElementById('watermark-rendered-img');
         if (wmTxt && wmImg) {
           if (o.watermark.mode === 'image' && o.watermark.imageData) {
             wmImg.src = o.watermark.imageData;
+            const imgSize = o.watermark.imageSize !== undefined ? o.watermark.imageSize : 120;
+            wmImg.style.maxWidth = `${imgSize}px`;
+            wmImg.style.maxHeight = `${imgSize}px`;
             wmImg.style.display = 'block';
             wmTxt.style.display = 'none';
           } else {
             wmTxt.textContent = o.watermark.text || 'EASYLOOP CAST';
+            const fSize = o.watermark.fontSize !== undefined ? o.watermark.fontSize : 16;
+            wmTxt.style.fontSize = `${fSize}px`;
             wmTxt.style.display = 'block';
             wmImg.style.display = 'none';
           }
@@ -4265,8 +4623,21 @@
           const patch = this.state.masking.patch1;
           p1.classList.toggle('active', !!patch.enabled);
           p1.className = `logo-patch mode-${patch.mode || 'blur'} ${patch.enabled ? 'active' : ''} ${this.state.masking.editingMode ? 'editing' : ''}`;
-          p1.style.left = `${patch.x}%`;
-          p1.style.top = `${patch.y}%`;
+          p1.style.left = `${patch.x !== undefined ? patch.x : 80}%`;
+          p1.style.top = `${patch.y !== undefined ? patch.y : 4}%`;
+          p1.style.width = `${patch.w !== undefined ? patch.w : 16}%`;
+          p1.style.height = `${patch.h !== undefined ? patch.h : 10}%`;
+          p1.style.borderRadius = `${patch.borderRadius !== undefined ? patch.borderRadius : 4}%`;
+
+          const pImg = document.getElementById('patch-rendered-img');
+          if (pImg) {
+            if (patch.mode === 'image' && patch.imageData) {
+              pImg.src = patch.imageData;
+              pImg.style.display = 'block';
+            } else {
+              pImg.style.display = 'none';
+            }
+          }
         }
       },
 
@@ -4320,34 +4691,160 @@
         window.addEventListener('mousemove', reset);
       },
 
-      initPatchDragHandlers() {
-        const p1 = document.getElementById('logo-patch-1');
+      initVisualDragHandlers() {
         const frame = document.getElementById('broadcast-stage');
-        if (!p1 || !frame) return;
+        const p1 = document.getElementById('logo-patch-1');
+        const p1Resize = document.getElementById('patch-1-resize-handle');
+        const wm = document.getElementById('overlay-watermark');
+        if (!frame) return;
 
-        p1.addEventListener('mousedown', (e) => {
-          if (!this.state.masking.editingMode) return;
-          this.isDraggingPatch = true;
-          this.dragStart = { mouseX: e.clientX, mouseY: e.clientY, patchX: this.state.masking.patch1.x, patchY: this.state.masking.patch1.y };
-          e.preventDefault();
-        });
+        let activeDrag = null; // null | 'patch' | 'patch-resize' | 'watermark'
+        let dragStart = { mouseX: 0, mouseY: 0, itemX: 0, itemY: 0, itemW: 0, itemH: 0 };
 
-        window.addEventListener('mousemove', (e) => {
-          if (!this.isDraggingPatch) return;
+        // 1. Watermark Visual Drag
+        if (wm) {
+          const onWmDown = (e) => {
+            if (!this.state.overlays.watermark.enabled) return;
+            activeDrag = 'watermark';
+            wm.classList.add('dragging');
+            const pt = e.touches ? e.touches[0] : e;
+            dragStart = {
+              mouseX: pt.clientX,
+              mouseY: pt.clientY,
+              itemX: this.state.overlays.watermark.x !== undefined ? this.state.overlays.watermark.x : 80,
+              itemY: this.state.overlays.watermark.y !== undefined ? this.state.overlays.watermark.y : 3
+            };
+            e.preventDefault();
+          };
+          wm.addEventListener('mousedown', onWmDown);
+          wm.addEventListener('touchstart', onWmDown, { passive: false });
+        }
+
+        // 2. Logo Patch Resize Handle Drag
+        if (p1Resize) {
+          const onResizeDown = (e) => {
+            activeDrag = 'patch-resize';
+            const pt = e.touches ? e.touches[0] : e;
+            dragStart = {
+              mouseX: pt.clientX,
+              mouseY: pt.clientY,
+              itemW: this.state.masking.patch1.w !== undefined ? this.state.masking.patch1.w : 16,
+              itemH: this.state.masking.patch1.h !== undefined ? this.state.masking.patch1.h : 10
+            };
+            e.stopPropagation();
+            e.preventDefault();
+          };
+          p1Resize.addEventListener('mousedown', onResizeDown);
+          p1Resize.addEventListener('touchstart', onResizeDown, { passive: false });
+        }
+
+        // 3. Logo Patch Visual Move Drag
+        if (p1) {
+          const onPatchDown = (e) => {
+            if (activeDrag === 'patch-resize') return;
+            if (!this.state.masking.patch1.enabled) return;
+            activeDrag = 'patch';
+            p1.classList.add('dragging');
+            const pt = e.touches ? e.touches[0] : e;
+            dragStart = {
+              mouseX: pt.clientX,
+              mouseY: pt.clientY,
+              itemX: this.state.masking.patch1.x !== undefined ? this.state.masking.patch1.x : 80,
+              itemY: this.state.masking.patch1.y !== undefined ? this.state.masking.patch1.y : 4
+            };
+            e.preventDefault();
+          };
+          p1.addEventListener('mousedown', onPatchDown);
+          p1.addEventListener('touchstart', onPatchDown, { passive: false });
+        }
+
+        // Unified Pointer Move & Drag Handler
+        const onMove = (e) => {
+          if (!activeDrag) return;
           const rect = frame.getBoundingClientRect();
-          const dx = ((e.clientX - this.dragStart.mouseX) / rect.width) * 100;
-          const dy = ((e.clientY - this.dragStart.mouseY) / rect.height) * 100;
+          if (rect.width === 0 || rect.height === 0) return;
+          const pt = e.touches ? e.touches[0] : e;
+          const dx = ((pt.clientX - dragStart.mouseX) / rect.width) * 100;
+          const dy = ((pt.clientY - dragStart.mouseY) / rect.height) * 100;
 
-          const patch = this.state.masking.patch1;
-          patch.x = Math.max(0, Math.min(100 - patch.w, Math.round(this.dragStart.patchX + dx)));
-          patch.y = Math.max(0, Math.min(100 - patch.h, Math.round(this.dragStart.patchY + dy)));
-          p1.style.left = `${patch.x}%`;
-          p1.style.top = `${patch.y}%`;
-        });
+          if (activeDrag === 'watermark') {
+            const wmState = this.state.overlays.watermark;
+            wmState.x = Math.max(0, Math.min(95, Math.round(dragStart.itemX + dx)));
+            wmState.y = Math.max(0, Math.min(95, Math.round(dragStart.itemY + dy)));
+            wm.style.left = `${wmState.x}%`;
+            wm.style.top = `${wmState.y}%`;
+            wm.style.right = 'auto';
+            wm.style.bottom = 'auto';
 
-        window.addEventListener('mouseup', () => {
-          if (this.isDraggingPatch) { this.isDraggingPatch = false; this.saveState(); }
-        });
+            const sliderX = document.getElementById('slider-wm-x');
+            const sliderY = document.getElementById('slider-wm-y');
+            const badgeX = document.getElementById('wm-x-badge');
+            const badgeY = document.getElementById('wm-y-badge');
+            if (sliderX) sliderX.value = wmState.x;
+            if (sliderY) sliderY.value = wmState.y;
+            if (badgeX) badgeX.textContent = `${wmState.x}%`;
+            if (badgeY) badgeY.textContent = `${wmState.y}%`;
+
+          } else if (activeDrag === 'patch') {
+            const patch = this.state.masking.patch1;
+            const w = patch.w || 16;
+            const h = patch.h || 10;
+            patch.x = Math.max(0, Math.min(100 - w, Math.round(dragStart.itemX + dx)));
+            patch.y = Math.max(0, Math.min(100 - h, Math.round(dragStart.itemY + dy)));
+            p1.style.left = `${patch.x}%`;
+            p1.style.top = `${patch.y}%`;
+
+            const sliderX = document.getElementById('slider-p1-x');
+            const sliderY = document.getElementById('slider-p1-y');
+            const badgeX = document.getElementById('p1-x-badge');
+            const badgeY = document.getElementById('p1-y-badge');
+            if (sliderX) sliderX.value = patch.x;
+            if (sliderY) sliderY.value = patch.y;
+            if (badgeX) badgeX.textContent = `${patch.x}%`;
+            if (badgeY) badgeY.textContent = `${patch.y}%`;
+
+          } else if (activeDrag === 'patch-resize') {
+            const patch = this.state.masking.patch1;
+            const maxX = 100 - (patch.x || 0);
+            const maxY = 100 - (patch.y || 0);
+            let newW = Math.max(2, Math.min(maxX, Math.round(dragStart.itemW + dx)));
+            let newH = Math.max(2, Math.min(maxY, Math.round(dragStart.itemH + dy)));
+
+            if (patch.isSquare) {
+              const minDim = Math.min(newW, newH);
+              newW = minDim;
+              newH = minDim;
+            }
+
+            patch.w = newW;
+            patch.h = newH;
+            p1.style.width = `${newW}%`;
+            p1.style.height = `${newH}%`;
+
+            const sliderW = document.getElementById('slider-p1-w');
+            const sliderH = document.getElementById('slider-p1-h');
+            const badgeW = document.getElementById('p1-w-badge');
+            const badgeH = document.getElementById('p1-h-badge');
+            if (sliderW) sliderW.value = newW;
+            if (sliderH) sliderH.value = newH;
+            if (badgeW) badgeW.textContent = `${newW}%`;
+            if (badgeH) badgeH.textContent = `${newH}%`;
+          }
+        };
+
+        const onUp = () => {
+          if (activeDrag) {
+            if (wm) wm.classList.remove('dragging');
+            if (p1) p1.classList.remove('dragging');
+            activeDrag = null;
+            this.saveState();
+          }
+        };
+
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove, { passive: true });
+        window.addEventListener('mouseup', onUp);
+        window.addEventListener('touchend', onUp);
       },
 
       renderAll() {
@@ -4521,21 +5018,43 @@
         const btnWmImg = document.getElementById('btn-watermark-mode-img');
         if (btnWmImg) btnWmImg.classList.toggle('active', isImg);
 
+        const txtCtrls = document.getElementById('watermark-text-ctrls');
+        if (txtCtrls) txtCtrls.style.display = isImg ? 'none' : 'block';
+        const imgCtrls = document.getElementById('watermark-img-ctrls');
+        if (imgCtrls) imgCtrls.style.display = isImg ? 'block' : 'none';
+
         const inputWmText = document.getElementById('input-watermark-text');
-        if (inputWmText) {
-          inputWmText.value = o.watermark.text || '';
-          inputWmText.style.display = isImg ? 'none' : 'block';
-        }
-        const inputWmFile = document.getElementById('input-watermark-file');
-        if (inputWmFile) {
-          inputWmFile.style.display = isImg ? 'block' : 'none';
-        }
+        if (inputWmText) inputWmText.value = o.watermark.text || '';
+
+        const sliderWmFont = document.getElementById('slider-wm-font-size');
+        const badgeWmFont = document.getElementById('wm-font-size-badge');
+        const fontVal = o.watermark.fontSize !== undefined ? o.watermark.fontSize : 16;
+        if (sliderWmFont) sliderWmFont.value = fontVal;
+        if (badgeWmFont) badgeWmFont.textContent = `${fontVal}px`;
+
+        const sliderWmImg = document.getElementById('slider-wm-img-size');
+        const badgeWmImg = document.getElementById('wm-img-size-badge');
+        const imgVal = o.watermark.imageSize !== undefined ? o.watermark.imageSize : 120;
+        if (sliderWmImg) sliderWmImg.value = imgVal;
+        if (badgeWmImg) badgeWmImg.textContent = `${imgVal}px`;
 
         const sliderWmOp = document.getElementById('slider-wm-opacity');
         const badgeWmOp = document.getElementById('wm-opacity-badge');
         const opVal = o.watermark.opacity !== undefined ? o.watermark.opacity : 85;
         if (sliderWmOp) sliderWmOp.value = opVal;
         if (badgeWmOp) badgeWmOp.textContent = `${opVal}%`;
+
+        const sliderWmX = document.getElementById('slider-wm-x');
+        const badgeWmX = document.getElementById('wm-x-badge');
+        const xVal = o.watermark.x !== undefined ? o.watermark.x : 80;
+        if (sliderWmX) sliderWmX.value = xVal;
+        if (badgeWmX) badgeWmX.textContent = `${xVal}%`;
+
+        const sliderWmY = document.getElementById('slider-wm-y');
+        const badgeWmY = document.getElementById('wm-y-badge');
+        const yVal = o.watermark.y !== undefined ? o.watermark.y : 3;
+        if (sliderWmY) sliderWmY.value = yVal;
+        if (badgeWmY) badgeWmY.textContent = `${yVal}%`;
 
         // Ticker
         const toggleTk = document.getElementById('toggle-ticker');
@@ -4708,17 +5227,62 @@
           ctrls.style.pointerEvents = m.patch1.enabled ? 'auto' : 'none';
         }
 
+        const mode = m.patch1.mode || 'blur';
         const btnBlur = document.getElementById('btn-p1-mode-blur');
-        if (btnBlur) btnBlur.classList.toggle('active', m.patch1.mode !== 'solid');
-
+        if (btnBlur) btnBlur.classList.toggle('active', mode === 'blur');
         const btnSolid = document.getElementById('btn-p1-mode-solid');
-        if (btnSolid) btnSolid.classList.toggle('active', m.patch1.mode === 'solid');
+        if (btnSolid) btnSolid.classList.toggle('active', mode === 'solid');
+        const btnImg = document.getElementById('btn-p1-mode-image');
+        if (btnImg) btnImg.classList.toggle('active', mode === 'image');
 
+        const imgContainer = document.getElementById('p1-image-picker-container');
+        if (imgContainer) imgContainer.style.display = mode === 'image' ? 'flex' : 'none';
+
+        // Shape preset buttons
+        const isSquare = !!m.patch1.isSquare;
+        const radius = m.patch1.borderRadius !== undefined ? m.patch1.borderRadius : 4;
+        const isRound = radius >= 45;
+
+        const btnRect = document.getElementById('btn-p1-shape-rect');
+        if (btnRect) btnRect.classList.toggle('active', !isSquare && !isRound);
+        const btnSq = document.getElementById('btn-p1-shape-square');
+        if (btnSq) btnSq.classList.toggle('active', isSquare && !isRound);
+        const btnRn = document.getElementById('btn-p1-shape-round');
+        if (btnRn) btnRn.classList.toggle('active', isRound);
+
+        // Radius slider
+        const sliderRadius = document.getElementById('slider-p1-radius');
+        const badgeRadius = document.getElementById('p1-radius-badge');
+        if (sliderRadius) sliderRadius.value = radius;
+        if (badgeRadius) badgeRadius.textContent = `${radius}%`;
+
+        // Width & Height sliders
+        const sliderW = document.getElementById('slider-p1-w');
+        const badgeW = document.getElementById('p1-w-badge');
+        const wVal = m.patch1.w !== undefined ? m.patch1.w : 16;
+        if (sliderW) sliderW.value = wVal;
+        if (badgeW) badgeW.textContent = `${wVal}%`;
+
+        const sliderH = document.getElementById('slider-p1-h');
+        const badgeH = document.getElementById('p1-h-badge');
+        const hVal = m.patch1.h !== undefined ? m.patch1.h : 10;
+        if (sliderH) sliderH.value = hVal;
+        if (badgeH) badgeH.textContent = `${hVal}%`;
+
+        // Position sliders
         const sliderX = document.getElementById('slider-p1-x');
-        if (sliderX) sliderX.value = m.patch1.x;
+        const badgeX = document.getElementById('p1-x-badge');
+        const xVal = m.patch1.x !== undefined ? m.patch1.x : 80;
+        if (sliderX) sliderX.value = xVal;
+        if (badgeX) badgeX.textContent = `${xVal}%`;
 
         const sliderY = document.getElementById('slider-p1-y');
-        if (sliderY) sliderY.value = m.patch1.y;
+        const badgeY = document.getElementById('p1-y-badge');
+        const yVal = m.patch1.y !== undefined ? m.patch1.y : 4;
+        if (sliderY) sliderY.value = yVal;
+        if (badgeY) badgeY.textContent = `${yVal}%`;
+
+        this.applyOverlays();
       },
 
       renderPlaybackSettingsUI() {
@@ -5116,8 +5680,10 @@
           this.state.overlays.watermark.mode = 'text';
           document.getElementById('btn-watermark-mode-text').classList.add('active');
           document.getElementById('btn-watermark-mode-img').classList.remove('active');
-          document.getElementById('input-watermark-text').style.display = 'block';
-          document.getElementById('input-watermark-file').style.display = 'none';
+          const txtCtrls = document.getElementById('watermark-text-ctrls');
+          if (txtCtrls) txtCtrls.style.display = 'block';
+          const imgCtrls = document.getElementById('watermark-img-ctrls');
+          if (imgCtrls) imgCtrls.style.display = 'none';
           document.getElementById('watermark-rendered-text').style.display = 'block';
           document.getElementById('watermark-rendered-img').style.display = 'none';
           this.saveState();
@@ -5126,10 +5692,13 @@
           this.state.overlays.watermark.mode = 'image';
           document.getElementById('btn-watermark-mode-img').classList.add('active');
           document.getElementById('btn-watermark-mode-text').classList.remove('active');
-          document.getElementById('input-watermark-text').style.display = 'none';
-          document.getElementById('input-watermark-file').style.display = 'block';
+          const txtCtrls = document.getElementById('watermark-text-ctrls');
+          if (txtCtrls) txtCtrls.style.display = 'none';
+          const imgCtrls = document.getElementById('watermark-img-ctrls');
+          if (imgCtrls) imgCtrls.style.display = 'block';
           document.getElementById('watermark-rendered-text').style.display = 'none';
-          document.getElementById('watermark-rendered-img').style.display = 'block';
+          const wmImg = document.getElementById('watermark-rendered-img');
+          if (wmImg) wmImg.style.display = this.state.overlays.watermark.imageData ? 'block' : 'none';
           this.saveState();
         });
         document.getElementById('input-watermark-text').addEventListener('input', (e) => {
@@ -5143,15 +5712,45 @@
           const reader = new FileReader();
           reader.onload = (event) => {
             this.state.overlays.watermark.imageData = event.target.result;
-            document.getElementById('watermark-rendered-img').src = event.target.result;
+            const imgEl = document.getElementById('watermark-rendered-img');
+            imgEl.src = event.target.result;
+            imgEl.style.display = 'block';
             this.saveState();
           };
           reader.readAsDataURL(file);
+        });
+        document.getElementById('slider-wm-font-size').addEventListener('input', (e) => {
+          this.state.overlays.watermark.fontSize = parseInt(e.target.value, 10);
+          document.getElementById('wm-font-size-badge').textContent = `${e.target.value}px`;
+          document.getElementById('watermark-rendered-text').style.fontSize = `${e.target.value}px`;
+          this.saveState();
+        });
+        document.getElementById('slider-wm-img-size').addEventListener('input', (e) => {
+          this.state.overlays.watermark.imageSize = parseInt(e.target.value, 10);
+          document.getElementById('wm-img-size-badge').textContent = `${e.target.value}px`;
+          const imgEl = document.getElementById('watermark-rendered-img');
+          if (imgEl) {
+            imgEl.style.maxWidth = `${e.target.value}px`;
+            imgEl.style.maxHeight = `${e.target.value}px`;
+          }
+          this.saveState();
         });
         document.getElementById('slider-wm-opacity').addEventListener('input', (e) => {
           this.state.overlays.watermark.opacity = parseInt(e.target.value, 10);
           document.getElementById('wm-opacity-badge').textContent = `${e.target.value}%`;
           document.getElementById('overlay-watermark').style.opacity = (e.target.value / 100);
+          this.saveState();
+        });
+        document.getElementById('slider-wm-x').addEventListener('input', (e) => {
+          this.state.overlays.watermark.x = parseFloat(e.target.value);
+          document.getElementById('wm-x-badge').textContent = `${e.target.value}%`;
+          document.getElementById('overlay-watermark').style.left = `${e.target.value}%`;
+          this.saveState();
+        });
+        document.getElementById('slider-wm-y').addEventListener('input', (e) => {
+          this.state.overlays.watermark.y = parseFloat(e.target.value);
+          document.getElementById('wm-y-badge').textContent = `${e.target.value}%`;
+          document.getElementById('overlay-watermark').style.top = `${e.target.value}%`;
           this.saveState();
         });
         document.getElementById('toggle-ticker').addEventListener('change', (e) => {
@@ -5188,23 +5787,136 @@
           this.state.masking.patch1.mode = 'blur';
           document.getElementById('btn-p1-mode-blur').classList.add('active');
           document.getElementById('btn-p1-mode-solid').classList.remove('active');
-          document.getElementById('logo-patch-1').className = 'logo-patch mode-blur active';
+          document.getElementById('btn-p1-mode-image').classList.remove('active');
+          document.getElementById('p1-image-picker-container').style.display = 'none';
+          document.getElementById('logo-patch-1').className = `logo-patch mode-blur ${this.state.masking.patch1.enabled ? 'active' : ''} ${this.state.masking.editingMode ? 'editing' : ''}`;
+          document.getElementById('patch-rendered-img').style.display = 'none';
           this.saveState();
         });
         document.getElementById('btn-p1-mode-solid').addEventListener('click', () => {
           this.state.masking.patch1.mode = 'solid';
           document.getElementById('btn-p1-mode-solid').classList.add('active');
           document.getElementById('btn-p1-mode-blur').classList.remove('active');
-          document.getElementById('logo-patch-1').className = 'logo-patch mode-solid active';
+          document.getElementById('btn-p1-mode-image').classList.remove('active');
+          document.getElementById('p1-image-picker-container').style.display = 'none';
+          document.getElementById('logo-patch-1').className = `logo-patch mode-solid ${this.state.masking.patch1.enabled ? 'active' : ''} ${this.state.masking.editingMode ? 'editing' : ''}`;
+          document.getElementById('patch-rendered-img').style.display = 'none';
+          this.saveState();
+        });
+        document.getElementById('btn-p1-mode-image').addEventListener('click', () => {
+          this.state.masking.patch1.mode = 'image';
+          document.getElementById('btn-p1-mode-image').classList.add('active');
+          document.getElementById('btn-p1-mode-blur').classList.remove('active');
+          document.getElementById('btn-p1-mode-solid').classList.remove('active');
+          document.getElementById('p1-image-picker-container').style.display = 'flex';
+          document.getElementById('logo-patch-1').className = `logo-patch mode-image ${this.state.masking.patch1.enabled ? 'active' : ''} ${this.state.masking.editingMode ? 'editing' : ''}`;
+          const imgEl = document.getElementById('patch-rendered-img');
+          if (imgEl && this.state.masking.patch1.imageData) {
+            imgEl.style.display = 'block';
+          }
+          this.saveState();
+        });
+        document.getElementById('input-patch-file').addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            this.state.masking.patch1.imageData = event.target.result;
+            const imgEl = document.getElementById('patch-rendered-img');
+            if (imgEl) {
+              imgEl.src = event.target.result;
+              imgEl.style.display = 'block';
+            }
+            if (window.StreamFlowIDB) {
+              window.StreamFlowIDB.savePatchImage(event.target.result).catch(console.warn);
+            }
+            this.saveState();
+            this.showToast('Cover image loaded!', 'success');
+          };
+          reader.readAsDataURL(file);
+        });
+
+        // Shape presets
+        document.getElementById('btn-p1-shape-rect').addEventListener('click', () => {
+          this.state.masking.patch1.isSquare = false;
+          this.state.masking.patch1.borderRadius = 4;
+          document.getElementById('btn-p1-shape-rect').classList.add('active');
+          document.getElementById('btn-p1-shape-square').classList.remove('active');
+          document.getElementById('btn-p1-shape-round').classList.remove('active');
+          document.getElementById('slider-p1-radius').value = 4;
+          document.getElementById('p1-radius-badge').textContent = '4%';
+          document.getElementById('logo-patch-1').style.borderRadius = '4%';
+          this.saveState();
+        });
+        document.getElementById('btn-p1-shape-square').addEventListener('click', () => {
+          this.state.masking.patch1.isSquare = true;
+          const size = Math.max(this.state.masking.patch1.w || 16, this.state.masking.patch1.h || 10);
+          this.state.masking.patch1.w = size;
+          this.state.masking.patch1.h = size;
+          document.getElementById('btn-p1-shape-square').classList.add('active');
+          document.getElementById('btn-p1-shape-rect').classList.remove('active');
+          document.getElementById('btn-p1-shape-round').classList.remove('active');
+          document.getElementById('slider-p1-w').value = size;
+          document.getElementById('p1-w-badge').textContent = `${size}%`;
+          document.getElementById('slider-p1-h').value = size;
+          document.getElementById('p1-h-badge').textContent = `${size}%`;
+          document.getElementById('logo-patch-1').style.width = `${size}%`;
+          document.getElementById('logo-patch-1').style.height = `${size}%`;
+          this.saveState();
+        });
+        document.getElementById('btn-p1-shape-round').addEventListener('click', () => {
+          this.state.masking.patch1.borderRadius = 50;
+          document.getElementById('btn-p1-shape-round').classList.add('active');
+          document.getElementById('btn-p1-shape-rect').classList.remove('active');
+          document.getElementById('slider-p1-radius').value = 50;
+          document.getElementById('p1-radius-badge').textContent = '50%';
+          document.getElementById('logo-patch-1').style.borderRadius = '50%';
+          this.saveState();
+        });
+
+        // Radius, Width, Height, X, Y sliders
+        document.getElementById('slider-p1-radius').addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          this.state.masking.patch1.borderRadius = val;
+          document.getElementById('p1-radius-badge').textContent = `${val}%`;
+          document.getElementById('logo-patch-1').style.borderRadius = `${val}%`;
+          this.saveState();
+        });
+        document.getElementById('slider-p1-w').addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          this.state.masking.patch1.w = val;
+          document.getElementById('p1-w-badge').textContent = `${val}%`;
+          document.getElementById('logo-patch-1').style.width = `${val}%`;
+          if (this.state.masking.patch1.isSquare) {
+            this.state.masking.patch1.h = val;
+            document.getElementById('slider-p1-h').value = val;
+            document.getElementById('p1-h-badge').textContent = `${val}%`;
+            document.getElementById('logo-patch-1').style.height = `${val}%`;
+          }
+          this.saveState();
+        });
+        document.getElementById('slider-p1-h').addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          this.state.masking.patch1.h = val;
+          document.getElementById('p1-h-badge').textContent = `${val}%`;
+          document.getElementById('logo-patch-1').style.height = `${val}%`;
+          if (this.state.masking.patch1.isSquare) {
+            this.state.masking.patch1.w = val;
+            document.getElementById('slider-p1-w').value = val;
+            document.getElementById('p1-w-badge').textContent = `${val}%`;
+            document.getElementById('logo-patch-1').style.width = `${val}%`;
+          }
           this.saveState();
         });
         document.getElementById('slider-p1-x').addEventListener('input', (e) => {
-          this.state.masking.patch1.x = parseInt(e.target.value, 10);
+          this.state.masking.patch1.x = parseFloat(e.target.value);
+          document.getElementById('p1-x-badge').textContent = `${e.target.value}%`;
           document.getElementById('logo-patch-1').style.left = `${e.target.value}%`;
           this.saveState();
         });
         document.getElementById('slider-p1-y').addEventListener('input', (e) => {
-          this.state.masking.patch1.y = parseInt(e.target.value, 10);
+          this.state.masking.patch1.y = parseFloat(e.target.value);
+          document.getElementById('p1-y-badge').textContent = `${e.target.value}%`;
           document.getElementById('logo-patch-1').style.top = `${e.target.value}%`;
           this.saveState();
         });
@@ -5221,6 +5933,16 @@
           this.saveState();
           this.renderQueueList();
           this.updatePlaybackUI();
+          this.updateHeaderStats();
+          const pl = this.getActivePlaylist();
+          if (pl && pl.videos && pl.videos.length > 0) {
+            this.loadVideoByIndex(0);
+          } else {
+            try { this.playerA.pause(); this.playerA.style.display = 'none'; } catch(e){}
+            try { this.playerB.pause(); this.playerB.style.display = 'none'; } catch(e){}
+            try { if (this.ytPlayer) this.ytPlayer.pauseVideo(); } catch(e){}
+            document.getElementById('off-air-standby').classList.remove('hidden');
+          }
         });
 
         document.getElementById('btn-create-playlist').addEventListener('click', () => {
@@ -5237,6 +5959,8 @@
             this.saveState();
             this.renderPlaylistSelector();
             this.renderQueueList();
+            this.updatePlaybackUI();
+            this.updateHeaderStats();
             document.getElementById('modal-playlist-name').classList.remove('active');
             this.showToast('Playlist created!', 'success');
           }
@@ -5265,6 +5989,12 @@
             this.saveState();
             this.renderPlaylistSelector();
             this.renderQueueList();
+            this.updatePlaybackUI();
+            this.updateHeaderStats();
+            const newPl = this.getActivePlaylist();
+            if (newPl && newPl.videos && newPl.videos.length > 0) {
+              this.loadVideoByIndex(0);
+            }
           }
         });
 
@@ -5312,6 +6042,7 @@
             const idx = parseInt(playBtn.getAttribute('data-idx'), 10);
             this.state.playback.isLive = true;
             document.getElementById('off-air-standby').classList.add('hidden');
+            this.initMasterAudioPipeline();
             this.loadVideoByIndex(idx);
           } else if (delBtn) {
             const idx = parseInt(delBtn.getAttribute('data-idx'), 10);
@@ -5658,6 +6389,28 @@
         });
         document.getElementById('btn-fb-api-connect').addEventListener('click', () => this.connectFacebookAPI());
 
+        // Engine Mode Switcher (Hostinger/cPanel Auto vs WebSocket Bridge)
+        const btnEngineAuto = document.getElementById('btn-engine-auto');
+        if (btnEngineAuto) {
+          btnEngineAuto.addEventListener('click', () => {
+            this.state.rtmp.engine = 'auto';
+            this.saveState();
+            this.updateEngineUI();
+            this.detectServerEngine();
+            this.showToast('Engine set to Auto (Hostinger & cPanel Mode)', 'info');
+          });
+        }
+
+        const btnEngineWs = document.getElementById('btn-engine-ws');
+        if (btnEngineWs) {
+          btnEngineWs.addEventListener('click', () => {
+            this.state.rtmp.engine = 'websocket';
+            this.saveState();
+            this.updateEngineUI();
+            this.showToast('Engine set to WebSocket Bridge Mode', 'info');
+          });
+        }
+
         // Bridge & Quality
         document.getElementById('input-bridge-ws-url').addEventListener('input', (e) => {
           this.state.rtmp.bridgeWsUrl = e.target.value.trim();
@@ -5665,6 +6418,101 @@
         });
         document.getElementById('btn-ping-bridge').addEventListener('click', () => this.pingBridgeServer());
         document.getElementById('badge-bridge-status').addEventListener('click', () => this.pingBridgeServer());
+
+        const btnPresetServer = document.getElementById('btn-preset-server-wss');
+        if (btnPresetServer) {
+          btnPresetServer.addEventListener('click', () => {
+            const serverWs = `wss://${window.location.host}`;
+            this.state.rtmp.bridgeWsUrl = serverWs;
+            document.getElementById('input-bridge-ws-url').value = serverWs;
+            this.saveState();
+            this.showToast(`Bridge URL set to current server: ${serverWs}`, 'info');
+          });
+        }
+
+        const btnPresetLocal = document.getElementById('btn-preset-local-ws');
+        if (btnPresetLocal) {
+          btnPresetLocal.addEventListener('click', () => {
+            this.state.rtmp.bridgeWsUrl = 'ws://localhost:3000';
+            document.getElementById('input-bridge-ws-url').value = 'ws://localhost:3000';
+            this.saveState();
+            if (window.location.protocol === 'https:') {
+              this.showToast('Note: ws://localhost:3000 requires running locally or via HTTP', 'warning');
+            } else {
+              this.showToast('Bridge URL set to ws://localhost:3000', 'info');
+            }
+          });
+        }
+
+        const btnOpenHelp = document.getElementById('btn-open-bridge-help');
+        if (btnOpenHelp) {
+          btnOpenHelp.addEventListener('click', () => {
+            this.showBridgeModal(window.location.protocol === 'https:' ? 'https_info' : 'general', this.getResolvedBridgeWsUrl());
+          });
+        }
+
+        const btnPillHelp = document.getElementById('btn-bridge-help-pill');
+        if (btnPillHelp) {
+          btnPillHelp.addEventListener('click', () => {
+            this.showBridgeModal('https_blocked', this.getResolvedBridgeWsUrl());
+          });
+        }
+
+        // Bridge Modal Action Buttons
+        const btnModalUsePhp = document.getElementById('btn-modal-use-php');
+        if (btnModalUsePhp) {
+          btnModalUsePhp.addEventListener('click', () => {
+            this.state.rtmp.engine = 'auto';
+            this.saveState();
+            this.updateEngineUI();
+            this.detectServerEngine();
+            const modal = document.getElementById('modal-bridge-help');
+            if (modal) modal.classList.remove('active');
+            this.showToast('Hostinger & cPanel Auto-Engine activated!', 'success');
+          });
+        }
+
+        const btnModalWss = document.getElementById('btn-modal-use-server-wss');
+        if (btnModalWss) {
+          btnModalWss.addEventListener('click', () => {
+            const serverWs = `wss://${window.location.host}`;
+            this.state.rtmp.bridgeWsUrl = serverWs;
+            document.getElementById('input-bridge-ws-url').value = serverWs;
+            this.saveState();
+            document.getElementById('modal-bridge-help').classList.remove('active');
+            this.showToast(`Bridge set to ${serverWs}`, 'success');
+          });
+        }
+
+        const btnModalCopyObs = document.getElementById('btn-modal-copy-obs');
+        if (btnModalCopyObs) {
+          btnModalCopyObs.addEventListener('click', () => {
+            const cleanUrl = window.location.origin + window.location.pathname + '?mode=clean';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(cleanUrl).then(() => {
+                this.showToast('✅ OBS Clean Source URL copied!', 'success');
+              });
+            } else {
+              prompt('Copy OBS Clean Frame URL:', cleanUrl);
+            }
+          });
+        }
+
+        const btnModalOpenClean = document.getElementById('btn-modal-open-clean');
+        if (btnModalOpenClean) {
+          btnModalOpenClean.addEventListener('click', () => {
+            const cleanUrl = window.location.origin + window.location.pathname + '?mode=clean';
+            window.open(cleanUrl, '_blank', 'width=1280,height=720');
+          });
+        }
+
+        const btnModalHttp = document.getElementById('btn-modal-switch-http');
+        if (btnModalHttp) {
+          btnModalHttp.addEventListener('click', () => {
+            const httpUrl = window.location.href.replace(/^https:/, 'http:');
+            window.location.href = httpUrl;
+          });
+        }
 
         document.querySelectorAll('[data-rtmp-quality]').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -5763,6 +6611,16 @@
           else if (e.code === 'KeyS') this.toggleSidebar();
           else if (e.code === 'Escape' && document.body.classList.contains('theater-mode')) this.toggleTheaterMode();
         });
+
+        // Global User-Gesture Audio Unlocker:
+        // Automatically unlocks Web Audio Context on the first user interaction (click or keypress)
+        const unlockAudio = () => {
+          if (this.masterAudioBus && this.masterAudioBus.ctx && this.masterAudioBus.ctx.state === 'suspended') {
+            this.masterAudioBus.ctx.resume().catch(() => {});
+          }
+        };
+        window.addEventListener('click', unlockAudio, { passive: true });
+        window.addEventListener('keydown', unlockAudio, { passive: true });
       },
 
       /* -------------------------------------------------------------
@@ -5797,12 +6655,23 @@
           if (!AudioContextClass) return null;
 
           const ctx = new AudioContextClass({ sampleRate: 48000 });
+          if (ctx.state === 'suspended') {
+            try { ctx.resume(); } catch(e){}
+          }
+
           const masterGain = ctx.createGain();
           masterGain.gain.value = 1.0;
 
-          // Dedicated broadcast stream destination
+          // Dedicated broadcast stream destination (for RTMP live streaming & capture)
           const dest = ctx.createMediaStreamDestination();
           masterGain.connect(dest);
+
+          // Dedicated local monitor gain & connection to physical audio hardware (speakers/headphones)
+          // Ensures user hears audio playing and broadcasting through computer speakers!
+          const monitorGain = ctx.createGain();
+          monitorGain.gain.value = this.state.audio.isMuted ? 0 : 1.0;
+          masterGain.connect(monitorGain);
+          monitorGain.connect(ctx.destination);
 
           // Continuous inaudible sub-bass heartbeat (20 Hz sine tone at 0.003 amplitude = -50 dBFS)
           // Guarantees dest.stream ALWAYS receives continuous 48,000 Hz audio samples without interruption!
@@ -5816,31 +6685,49 @@
           oscGain.connect(dest);
           try { osc.start(); } catch(e){}
 
-          // Wire playerA, playerB, and bgmPlayer to master broadcast bus
+          // Sub-gain nodes for independent video and BGM volume mixing
+          const videoGain = ctx.createGain();
+          const isMuted = !!this.state.audio.isMuted;
+          videoGain.gain.value = isMuted ? 0 : ((this.state.audio.videoVolume !== undefined ? this.state.audio.videoVolume : 100) / 100);
+          videoGain.connect(masterGain);
+
+          const bgmGain = ctx.createGain();
+          bgmGain.gain.value = isMuted ? 0 : ((this.state.audio.bgmVolume !== undefined ? this.state.audio.bgmVolume : 50) / 100);
+          bgmGain.connect(masterGain);
+
+          // Wire playerA, playerB to videoGain
           if (this.playerA) {
             try {
               const srcA = ctx.createMediaElementSource(this.playerA);
-              srcA.connect(masterGain);
+              srcA.connect(videoGain);
             } catch(e){}
           }
           if (this.playerB) {
             try {
               const srcB = ctx.createMediaElementSource(this.playerB);
-              srcB.connect(masterGain);
+              srcB.connect(videoGain);
             } catch(e){}
           }
+          // Wire bgmPlayer to bgmGain
           if (this.bgmPlayer) {
             try {
               const srcBgm = ctx.createMediaElementSource(this.bgmPlayer);
-              srcBgm.connect(masterGain);
+              srcBgm.connect(bgmGain);
             } catch(e){}
           }
 
           this.masterAudioBus = {
             ctx: ctx,
             masterGain: masterGain,
+            monitorGain: monitorGain,
+            videoGain: videoGain,
+            bgmGain: bgmGain,
             dest: dest
           };
+
+          // Re-sync initial volume mixer state
+          this.syncVolumeMixer();
+
           return this.masterAudioBus;
         } catch(e) {
           console.warn('[Audio Pipeline] Error:', e);
@@ -6092,27 +6979,33 @@
           if (o && o.watermark && o.watermark.enabled) {
             ctx.save();
             ctx.globalAlpha = (o.watermark.opacity || 80) / 100;
-            const pad = 36;
-            const pos = o.watermark.position || 'top-right';
-            let wx = cw - pad, wy = pad;
-            if (pos.includes('left')) wx = pad;
-            if (pos.includes('bottom')) wy = ch - pad - safeBottom;
+            const stageEl = document.getElementById('broadcast-stage');
+            const stageW = (stageEl && stageEl.clientWidth > 0) ? stageEl.clientWidth : 800;
+            const scale = cw / stageW;
+            const wx = ((o.watermark.x !== undefined ? o.watermark.x : 80) / 100) * cw;
+            const wy = ((o.watermark.y !== undefined ? o.watermark.y : 3) / 100) * ch;
 
             const wmImg = document.getElementById('watermark-rendered-img');
             if (o.watermark.mode === 'image' && wmImg && wmImg.src && wmImg.naturalWidth > 0) {
-              const imgH = (o.watermark.size || 24) * 2.5;
-              const imgW = imgH * (wmImg.naturalWidth / wmImg.naturalHeight);
-              const drawX = pos.includes('left') ? wx : wx - imgW;
-              const drawY = pos.includes('bottom') ? wy - imgH : wy;
-              ctx.drawImage(wmImg, drawX, drawY, imgW, imgH);
+              const baseImgSize = o.watermark.imageSize !== undefined ? o.watermark.imageSize : 120;
+              const targetSize = baseImgSize * scale;
+              const aspect = wmImg.naturalWidth / wmImg.naturalHeight;
+              let drawW = targetSize;
+              let drawH = targetSize / aspect;
+              if (aspect < 1) {
+                drawH = targetSize;
+                drawW = targetSize * aspect;
+              }
+              ctx.drawImage(wmImg, wx, wy, drawW, drawH);
             } else {
               const wmText = o.watermark.text || 'EASYLOOP CAST';
-              ctx.font = `bold ${Math.round((o.watermark.size || 24) * 1.4)}px sans-serif`;
+              const fSize = Math.round((o.watermark.fontSize !== undefined ? o.watermark.fontSize : 16) * scale);
+              ctx.font = `bold ${fSize}px sans-serif`;
               ctx.fillStyle = o.watermark.color || '#ffffff';
-              ctx.textAlign = pos.includes('left') ? 'left' : 'right';
-              ctx.textBaseline = pos.includes('bottom') ? 'bottom' : 'top';
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'top';
               ctx.shadowColor = 'rgba(0,0,0,0.85)';
-              ctx.shadowBlur = 6;
+              ctx.shadowBlur = Math.max(3, Math.round(4 * scale));
               ctx.fillText(wmText, wx, wy);
             }
             ctx.restore();
@@ -6196,27 +7089,39 @@
 
           // 4. Logo Cover / Masking Patch
           const msk = this.state.masking;
-          if (msk && msk.enabled && msk.patch1) {
+          if (msk && msk.patch1 && msk.patch1.enabled) {
             ctx.save();
-            const px = (msk.patch1.x / 100) * cw;
-            const py = (msk.patch1.y / 100) * ch;
-            const pw = (msk.patch1.w / 100) * cw;
-            const ph = (msk.patch1.h / 100) * ch;
-            const br = msk.patch1.borderRadius || 6;
+            const px = ((msk.patch1.x !== undefined ? msk.patch1.x : 80) / 100) * cw;
+            const py = ((msk.patch1.y !== undefined ? msk.patch1.y : 4) / 100) * ch;
+            const pw = ((msk.patch1.w !== undefined ? msk.patch1.w : 16) / 100) * cw;
+            const ph = ((msk.patch1.h !== undefined ? msk.patch1.h : 10) / 100) * ch;
+            const radPct = msk.patch1.borderRadius !== undefined ? msk.patch1.borderRadius : 4;
+            const minDim = Math.min(pw, ph);
+            const radiusPx = Math.max(0, Math.round((minDim * radPct) / 100));
+
             ctx.beginPath();
-            ctx.roundRect(px, py, pw, ph, br);
-            if (msk.patch1.type === 'blur') {
-              ctx.fillStyle = 'rgba(20, 20, 20, 0.88)';
+            ctx.roundRect(px, py, pw, ph, radiusPx);
+            ctx.clip();
+
+            const pMode = msk.patch1.mode || 'blur';
+            if (pMode === 'solid') {
+              ctx.fillStyle = '#000000';
+              ctx.fillRect(px, py, pw, ph);
+            } else if (pMode === 'image') {
+              const pImg = document.getElementById('patch-rendered-img');
+              if (pImg && pImg.src && pImg.naturalWidth > 0) {
+                ctx.drawImage(pImg, px, py, pw, ph);
+              } else {
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(px, py, pw, ph);
+              }
             } else {
-              ctx.fillStyle = msk.patch1.color || '#000000';
-            }
-            ctx.fill();
-            if (msk.patch1.text) {
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 15px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(msk.patch1.text, px + (pw / 2), py + (ph / 2));
+              // 'blur' mode: Frosted dark glass blocker shield
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+              ctx.fillRect(px, py, pw, ph);
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+              ctx.lineWidth = 2;
+              ctx.strokeRect(px, py, pw, ph);
             }
             ctx.restore();
           }
@@ -6403,10 +7308,14 @@
         if (pl && pl.videos && pl.videos.length > 0) {
           if (!this.state.playback.isLive) {
             this.startBroadcast();
-          } else if (!this.state.playback.isPlaying) {
-            const currentVideoEl = (this.activePlayer === 'a') ? this.playerA : this.playerB;
-            if (currentVideoEl && currentVideoEl.paused) {
-              currentVideoEl.play().catch(e => console.log('Resume play handled:', e));
+          } else {
+            const currItem = pl.videos[this.state.playback.currentIndex];
+            const activeVid = (this.activePlayer === 'a') ? this.playerA : this.playerB;
+            const expectedSrc = currItem ? this.resolveTrackUrl(currItem) : null;
+            if (currItem && activeVid && expectedSrc && activeVid.src !== expectedSrc) {
+              this.loadVideoByIndex(this.state.playback.currentIndex);
+            } else if (activeVid && activeVid.paused) {
+              activeVid.play().catch(e => console.log('Resume play handled:', e));
             }
             this.state.playback.isPlaying = true;
             this.updatePlaybackUI();
@@ -6426,6 +7335,21 @@
             try { await bus.ctx.resume(); } catch(e){}
           }
 
+          // Hostinger & cPanel Auto-Engine Detection & Routing
+          const isLocal = (typeof window !== 'undefined' && window.location && 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'));
+
+          const engineMode = (this.state && this.state.rtmp && this.state.rtmp.engine) ? this.state.rtmp.engine : 'auto';
+          if (!isLocal && engineMode === 'auto' && !this.phpEngineAvailable) {
+            await this.detectServerEngine();
+          }
+          const shouldUsePhp = !isLocal && ((engineMode === 'php') || (engineMode === 'auto' && this.phpEngineAvailable));
+
+          if (shouldUsePhp) {
+            await this.startPhpRtmpBroadcast(targets, targetWidth, targetHeight, actualFps, bitrateKbps, currentRatio);
+            return;
+          }
+
           // Direct Master Frame Compositor:
           // Generates 100% accurate native aspect ratio (9:16 Shorts/Reels or 16:9 Landscape) at full resolution!
           // ZERO screen share dialog! ZERO full window capture! ZERO black bars on mobile!
@@ -6433,8 +7357,32 @@
           const mixedStream = this.createDirectMasterStream(targetWidth, targetHeight, actualFps);
 
           // 4. Connect to WebSocket RTMP Bridge
-          const wsUrl = this.state.rtmp.bridgeWsUrl || 'ws://localhost:3000';
-          const ws = new WebSocket(wsUrl);
+          let wsUrl = this.getResolvedBridgeWsUrl();
+
+          // Auto-upgrade if on HTTPS and URL starts with ws://
+          if (window.location.protocol === 'https:' && wsUrl.startsWith('ws://')) {
+            if (wsUrl.includes('localhost') || wsUrl.includes('127.0.0.1')) {
+              wsUrl = `wss://${window.location.host}/ws`;
+              this.showToast(`Auto-switched to secure server bridge: ${wsUrl}`, 'info');
+            } else {
+              wsUrl = 'wss://' + wsUrl.slice(5);
+              this.showToast(`Auto-upgraded bridge to secure WSS: ${wsUrl}`, 'info');
+            }
+            const bridgeInput = document.getElementById('input-bridge-ws-url');
+            if (bridgeInput) bridgeInput.value = wsUrl;
+          }
+
+          console.log(`[RTMP] Connecting to Bridge: ${wsUrl}`);
+          let ws;
+          try {
+            ws = new WebSocket(wsUrl);
+          } catch(err) {
+            console.error('[RTMP] WebSocket creation failed:', err);
+            this.isRtmpConnecting = false;
+            this.showBridgeModal('https_blocked', wsUrl);
+            this.stopRtmpBroadcast(true);
+            return;
+          }
           this.rtmpWs = ws;
 
           ws.onopen = () => {
@@ -6464,13 +7412,22 @@
             } catch(e){}
           };
 
-          ws.onerror = (err) => {
+          ws.onerror = async (err) => {
             console.error('[RTMP] WebSocket Error:', err);
             this.isRtmpConnecting = false;
             if (window.location.protocol === 'https:' && wsUrl.startsWith('ws://')) {
-              this.showToast('HTTPS Security: Cannot connect to ws:// over HTTPS. Use the "Hostinger & cPanel Cloud Mode" below or configure a wss:// bridge!', 'error');
+              await this.detectServerEngine();
+              if (this.phpEngineAvailable) {
+                this.showToast('Auto-detected Hostinger/cPanel server! Starting live broadcast via PHP...', 'info');
+                this.updateEngineUI();
+                await this.startPhpRtmpBroadcast(targets, targetWidth, targetHeight, actualFps, bitrateKbps, currentRatio);
+                return;
+              }
+              this.showToast('HTTPS Security: Cannot connect to ws:// over HTTPS.', 'error');
+              this.showBridgeModal('https_blocked', wsUrl);
             } else {
-              this.showToast('Could not connect to Bridge Server. Please verify Start-RTMP-Bridge.bat is running on your PC or VPS!', 'error');
+              this.showToast(`Could not connect to Bridge at ${wsUrl}.`, 'error');
+              this.showBridgeModal('offline', wsUrl);
             }
             this.stopRtmpBroadcast(true);
           };
@@ -6545,6 +7502,123 @@
         }
       },
 
+      async startPhpRtmpBroadcast(targets, targetWidth, targetHeight, actualFps, bitrateKbps, currentRatio) {
+        console.log(`[PHP Engine] Initiating Hostinger/cPanel Live Stream for ${currentRatio} (${targetWidth}x${targetHeight} @ ${actualFps}fps, ${bitrateKbps}kbps)...`);
+
+        // Generate direct master composited stream (master canvas + WebAudio bus)
+        const mixedStream = this.createDirectMasterStream(targetWidth, targetHeight, actualFps);
+
+        // Generate unique stream ID for server-side process tracking
+        const streamId = 'stream_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+        this.phpCurrentStreamId = streamId;
+
+        // Choose supported hardware-accelerated codec
+        let mimeType = 'video/webm;codecs=vp8,opus';
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=h264,opus')) {
+          mimeType = 'video/webm;codecs=h264,opus';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+          mimeType = 'video/webm;codecs=vp8,opus';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+          mimeType = 'video/webm;codecs=vp9,opus';
+        }
+
+        const self = this;
+        let isStreamActive = true;
+        const uploadStream = new ReadableStream({
+          start(controller) {
+            self.phpStreamController = controller;
+          },
+          cancel() {
+            isStreamActive = false;
+            self.phpStreamController = null;
+          }
+        });
+
+        this.phpStreamAbortController = new AbortController();
+
+        // Determine base API endpoint
+        let endpoint = this.phpApiEndpoint || 'api.php';
+        if (!endpoint.includes('.php') && !endpoint.endsWith('/stream')) {
+          endpoint = endpoint.replace(/\/+$/, '') + '/stream';
+        } else if (endpoint.includes('.php')) {
+          endpoint = endpoint + '?action=stream';
+        }
+
+        const queryGlue = endpoint.includes('?') ? '&' : '?';
+        const streamUrl = `${endpoint}${queryGlue}id=${encodeURIComponent(streamId)}&width=${targetWidth}&height=${targetHeight}&fps=${actualFps}&bitrate=${bitrateKbps}&targets=${encodeURIComponent(JSON.stringify(targets))}`;
+
+        // Send streaming POST request with ReadableStream body and duplex: 'half'
+        fetch(streamUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Stream-ID': streamId,
+            'X-Stream-Targets': JSON.stringify(targets),
+            'X-Stream-Width': String(targetWidth),
+            'X-Stream-Height': String(targetHeight),
+            'X-Stream-Fps': String(actualFps),
+            'X-Stream-Bitrate': String(bitrateKbps)
+          },
+          body: uploadStream,
+          duplex: 'half',
+          signal: this.phpStreamAbortController.signal
+        }).then(async (res) => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Server HTTP ${res.status}`);
+          }
+          const resData = await res.json().catch(() => ({}));
+          console.log('[PHP Engine] Stream ended successfully:', resData);
+          if (self.isRtmpLive) {
+            self.stopRtmpBroadcast();
+            self.showToast('Live broadcast ended.', 'info');
+          }
+        }).catch((err) => {
+          if (err.name !== 'AbortError') {
+            console.error('[PHP Engine] Live broadcast error:', err);
+            self.showToast(`Broadcast Error: ${err.message}`, 'error');
+            self.stopRtmpBroadcast(true);
+          }
+        });
+
+        try {
+          this.rtmpMediaRecorder = new MediaRecorder(mixedStream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: bitrateKbps * 1000
+          });
+
+          this.rtmpMediaRecorder.ondataavailable = async (e) => {
+            if (e.data && e.data.size > 0 && self.phpStreamController && isStreamActive) {
+              try {
+                const arrayBuffer = await e.data.arrayBuffer();
+                self.phpStreamController.enqueue(new Uint8Array(arrayBuffer));
+                self.updateRtmpTelemetryUI(e.data.size);
+              } catch(err) {
+                console.warn('[PHP Engine] Chunk enqueue error:', err);
+              }
+            }
+          };
+
+          this.rtmpMediaRecorder.start(200); // 200ms chunk intervals for silky-smooth, continuous RTMP ingestion
+          this.isRtmpLive = true;
+          this.isRtmpConnecting = false;
+          this.rtmpStartTime = Date.now();
+          this.rtmpBytesSent = 0;
+
+          const count = targets.length;
+          const statusText = count > 1 ? `🔴 LIVE (${count} MULTI-STREAM)` : `🔴 LIVE (${targets[0]?.name || 'ON AIR'})`;
+          this.updateRtmpStatus('live', statusText);
+          this.startRtmpTimer();
+          const names = targets.map(t => t.name).join(', ');
+          this.showToast(`🔴 Hostinger/cPanel Broadcast Active! Streaming to: ${names}`, 'success');
+
+        } catch (err) {
+          console.error('[PHP Engine] MediaRecorder init failed:', err);
+          this.showToast(`MediaRecorder error: ${err.message}`, 'error');
+          this.stopRtmpBroadcast();
+        }
+      },
+
       stopRtmpBroadcast(skipToast = false) {
         this.isRtmpConnecting = false;
         this.isRtmpLive = false;
@@ -6591,6 +7665,30 @@
             this.rtmpWs.close();
           }
           this.rtmpWs = null;
+        }
+
+        // Clean up PHP engine stream if active
+        if (this.phpStreamController) {
+          try { this.phpStreamController.close(); } catch(e){}
+          this.phpStreamController = null;
+        }
+
+        if (this.phpStreamAbortController) {
+          try { this.phpStreamAbortController.abort(); } catch(e){}
+          this.phpStreamAbortController = null;
+        }
+
+        if (this.phpCurrentStreamId) {
+          const stopId = this.phpCurrentStreamId;
+          this.phpCurrentStreamId = null;
+          let stopUrl = this.phpApiEndpoint || 'api.php';
+          if (!stopUrl.includes('.php') && !stopUrl.endsWith('/stop')) {
+            stopUrl = stopUrl.replace(/\/+$/, '') + '/stop';
+          } else if (stopUrl.includes('.php')) {
+            stopUrl = stopUrl + '?action=stop';
+          }
+          const glue = stopUrl.includes('?') ? '&' : '?';
+          fetch(`${stopUrl}${glue}id=${encodeURIComponent(stopId)}`).catch(() => {});
         }
 
         this.updateRtmpStatus('offline', 'Offline');
@@ -6703,11 +7801,188 @@
         document.getElementById('rtmp-telemetry-bitrate').textContent = `${kbps} kbps`;
       },
 
-      pingBridgeServer() {
-        const url = this.state.rtmp.bridgeWsUrl || 'ws://localhost:3000';
+      getResolvedBridgeWsUrl() {
+        const isHttps = (typeof window !== 'undefined' && window.location && window.location.protocol === 'https:');
+        const isLocal = (typeof window !== 'undefined' && window.location && 
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:'));
+        let configured = (this.state.rtmp && this.state.rtmp.bridgeWsUrl) ? this.state.rtmp.bridgeWsUrl.trim() : '';
+
+        // If running locally, ALWAYS use local WebSocket bridge on port 3000
+        if (isLocal) {
+          if (!configured || configured.startsWith('wss://') || (!configured.includes('localhost') && !configured.includes('127.0.0.1'))) {
+            return 'ws://localhost:3000/ws';
+          }
+          return configured.includes('/ws') ? configured : `${configured.replace(/\/+$/, '')}/ws`;
+        }
+
+        if (isHttps) {
+          if (!configured || configured === 'ws://localhost:3000' || configured.startsWith('ws://')) {
+            return `wss://${window.location.host}/ws`;
+          }
+          return configured;
+        }
+
+        return configured || 'ws://localhost:3000/ws';
+      },
+
+      showBridgeModal(type, wsUrl) {
+        const modal = document.getElementById('modal-bridge-help');
+        if (!modal) return;
+
+        const title = document.getElementById('bridge-modal-title');
+        const alertEl = document.getElementById('bridge-modal-alert');
+        const alertText = document.getElementById('bridge-modal-alert-text');
+        const labelServer = document.getElementById('label-modal-server-wss');
+
+        if (labelServer) {
+          labelServer.textContent = `wss://${window.location.host}`;
+        }
+
+        if (type === 'https_blocked') {
+          if (title) title.textContent = '🔒 HTTPS Mixed Content Blocked';
+          if (alertEl) {
+            alertEl.style.display = 'flex';
+            alertEl.style.background = 'rgba(239, 68, 68, 0.08)';
+            alertEl.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+            alertEl.style.color = '#fca5a5';
+          }
+          if (alertText) {
+            alertText.innerHTML = `<strong>Security Notice:</strong> Browsers do not permit connecting to insecure <code>ws://</code> endpoints from an HTTPS page (<code>${window.location.origin}</code>). Choose one of the instant solutions below:`;
+          }
+        } else if (type === 'offline') {
+          if (title) title.textContent = '📡 Bridge Server Offline';
+          if (alertEl) {
+            alertEl.style.display = 'flex';
+            alertEl.style.background = 'rgba(245, 158, 11, 0.08)';
+            alertEl.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+            alertEl.style.color = '#fcd34d';
+          }
+          if (alertText) {
+            alertText.innerHTML = `<strong>Could Not Connect:</strong> Bridge at <code>${wsUrl || 'ws://...'}</code> is unreachable. If you're on Hostinger/cPanel, use Option 2 (OBS Mode). If on a VPS, verify <code>node server.js</code> is running.`;
+          }
+        } else {
+          if (title) title.textContent = '📡 RTMP Bridge Server Setup';
+          if (alertEl) {
+            alertEl.style.display = (window.location.protocol === 'https:') ? 'flex' : 'none';
+            alertEl.style.background = 'rgba(99, 102, 241, 0.08)';
+            alertEl.style.borderColor = 'rgba(99, 102, 241, 0.25)';
+            alertEl.style.color = '#a5b4fc';
+          }
+          if (alertText) {
+            alertText.innerHTML = `<strong>Server Configuration:</strong> Choose the streaming setup that matches where EasyLoop Cast is hosted:`;
+          }
+        }
+
+        modal.classList.add('active');
+        if (window.lucide) lucide.createIcons();
+      },
+
+      async detectServerEngine() {
         const badge = document.getElementById('badge-bridge-status');
-        badge.textContent = 'Pinging...';
+        const banner = document.getElementById('banner-php-engine');
+        const badgeFfmpeg = document.getElementById('badge-php-ffmpeg');
+
+        // Test relative endpoints: /api/status first (.htaccess rewrite), then api.php?action=status
+        const testEndpoints = [
+          'api/status',
+          'api.php?action=status',
+          './api/status',
+          './api.php?action=status'
+        ];
+
+        let found = false;
+        let serverData = null;
+        let activeEndpoint = null;
+
+        for (const ep of testEndpoints) {
+          try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 2000);
+            const res = await fetch(ep, { signal: controller.signal, cache: 'no-store' });
+            clearTimeout(timeout);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.status === 'ok') {
+                found = true;
+                serverData = data;
+                activeEndpoint = ep.replace(/\/status$/, '').replace(/\?action=status$/, '');
+                break;
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (found && serverData) {
+          this.phpEngineAvailable = true;
+          this.phpServerInfo = serverData;
+          this.phpApiEndpoint = activeEndpoint || 'api.php';
+          console.log('[EasyLoop Engine] Hostinger & cPanel PHP Streaming Engine detected!', serverData);
+
+          if (banner) banner.style.display = 'block';
+          if (badgeFfmpeg) {
+            badgeFfmpeg.textContent = serverData.ffmpeg ? `FFmpeg ${serverData.ffmpegVersion || 'Ready'}` : 'FFmpeg Check Required';
+            badgeFfmpeg.style.color = serverData.ffmpeg ? '#10b981' : '#f59e0b';
+          }
+          if (badge) {
+            badge.textContent = '🟢 cPanel Ready';
+            badge.style.color = '#10b981';
+            badge.title = 'cPanel & Hostinger Native Streaming Engine Active (Click to re-ping)';
+          }
+
+          this.updateEngineUI();
+        } else {
+          this.phpEngineAvailable = false;
+          if (banner) banner.style.display = 'none';
+          if (badge && !badge.textContent.includes('Online')) {
+            badge.textContent = 'Test Ping';
+            badge.style.color = 'var(--text-muted)';
+          }
+          this.updateEngineUI();
+        }
+      },
+
+      updateEngineUI() {
+        const mode = (this.state && this.state.rtmp && this.state.rtmp.engine) ? this.state.rtmp.engine : 'auto';
+        const btnAuto = document.getElementById('btn-engine-auto');
+        const btnWs = document.getElementById('btn-engine-ws');
+        const wsContainer = document.getElementById('container-ws-config');
+
+        if (btnAuto) btnAuto.classList.toggle('active', mode === 'auto' || mode === 'php');
+        if (btnWs) btnWs.classList.toggle('active', mode === 'websocket');
+
+        if (wsContainer) {
+          wsContainer.style.display = (mode === 'websocket' || !this.phpEngineAvailable) ? 'block' : 'none';
+        }
+      },
+
+      async pingBridgeServer() {
+        const badge = document.getElementById('badge-bridge-status');
+        const mode = (this.state && this.state.rtmp && this.state.rtmp.engine) ? this.state.rtmp.engine : 'auto';
+
+        if (mode === 'auto' || mode === 'php') {
+          badge.textContent = 'Probing PHP Engine...';
+          badge.style.color = 'var(--text-main)';
+          await this.detectServerEngine();
+          if (this.phpEngineAvailable) {
+            badge.textContent = '🟢 cPanel Ready';
+            badge.style.color = '#10b981';
+            this.showToast('Hostinger & cPanel Live Engine is Online & Ready!', 'success');
+            return;
+          }
+          this.showToast('PHP Engine not detected. Checking WebSocket bridge...', 'info');
+        }
+
+        const url = this.getResolvedBridgeWsUrl();
+        badge.textContent = 'Pinging WS...';
         badge.style.color = 'var(--text-main)';
+
+        if (window.location.protocol === 'https:' && url.startsWith('ws://')) {
+          badge.textContent = '⚠️ Insecure ws:// on HTTPS';
+          badge.style.color = '#ef4444';
+          this.showToast('HTTPS Security: Cannot connect to insecure ws:// over HTTPS', 'error');
+          this.showBridgeModal('https_blocked', url);
+          return;
+        }
 
         try {
           const ws = new WebSocket(url);
@@ -6715,25 +7990,33 @@
             badge.textContent = '🔴 Offline';
             badge.style.color = '#ef4444';
             try { ws.close(); } catch(e){}
-          }, 2000);
+          }, 2500);
 
           ws.onopen = () => {
             clearTimeout(timer);
             badge.textContent = '🟢 Online (Ready)';
             badge.style.color = '#10b981';
             ws.close();
-            this.showToast('RTMP Bridge Server is Online & Ready!', 'success');
+            this.showToast(`Bridge Server (${url}) is Online & Ready!`, 'success');
           };
 
           ws.onerror = () => {
             clearTimeout(timer);
             badge.textContent = '🔴 Offline';
             badge.style.color = '#ef4444';
-            this.showToast('Bridge server offline. Launch Start-RTMP-Bridge.bat to start it.', 'error');
+            if (window.location.protocol === 'https:' && url.startsWith('ws://')) {
+              this.showToast('HTTPS Security: Cannot connect to ws:// over HTTPS.', 'error');
+              this.showBridgeModal('https_blocked', url);
+            } else {
+              this.showToast(`Bridge server offline at ${url}.`, 'error');
+            }
           };
         } catch(e) {
           badge.textContent = '🔴 Offline';
           badge.style.color = '#ef4444';
+          if (window.location.protocol === 'https:' && url.startsWith('ws://')) {
+            this.showBridgeModal('https_blocked', url);
+          }
         }
       },
 
@@ -6999,7 +8282,16 @@
         if (customKey) customKey.value = r.customKey || '';
 
         const bridgeUrl = document.getElementById('input-bridge-ws-url');
-        if (bridgeUrl) bridgeUrl.value = r.bridgeWsUrl || 'ws://localhost:3000';
+        if (bridgeUrl) {
+          const resolved = this.getResolvedBridgeWsUrl();
+          bridgeUrl.value = resolved;
+          this.state.rtmp.bridgeWsUrl = resolved;
+        }
+
+        const httpsNotice = document.getElementById('bridge-https-notice');
+        if (httpsNotice) {
+          httpsNotice.style.display = (window.location.protocol === 'https:') ? 'flex' : 'none';
+        }
 
         document.getElementById('toggle-rtmp-yt').checked = !!r.youtubeEnabled;
         document.getElementById('toggle-rtmp-fb').checked = !!r.facebookEnabled;

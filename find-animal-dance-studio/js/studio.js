@@ -62,6 +62,10 @@ class AnimalDanceStudio {
       isLoaded: false,
       duration: 0,
       volume: 0,
+      videoMuted: true, // User toggle: when unselected/false, video audio plays and exports!
+      videoVolume: 1.0, // Default 100% volume
+      audioBuffer: null, // Extracted AudioBuffer for sample-accurate mixing in export
+      hasAudio: false, // Whether the video file contains an audio track
       zoom: 1.0,
       panX: 0,
       panY: 0,
@@ -512,10 +516,17 @@ class AnimalDanceStudio {
     this.bg.type = 'video';
     this.bg.presetId = 'custom_video';
     this.bg.name = name;
+    this.bg.audioBuffer = null;
+    this.bg.hasAudio = false;
+
+    // Read current user mute selection from UI
+    const chkMute = document.getElementById('checkMuteVideoBg');
+    this.bg.videoMuted = chkMute ? chkMute.checked : true;
+    if (this.bg.videoVolume === undefined) this.bg.videoVolume = 1.0;
 
     const video = document.createElement('video');
-    video.muted = true;
-    video.volume = 0;
+    video.muted = this.bg.videoMuted;
+    video.volume = this.bg.videoMuted ? 0 : this.bg.videoVolume;
     video.loop = true;
     video.playsInline = true;
     video.crossOrigin = 'anonymous';
@@ -525,6 +536,7 @@ class AnimalDanceStudio {
     if (typeof fileOrBlobOrUrl === 'string') {
       videoUrl = fileOrBlobOrUrl;
       this.bg.src = videoUrl;
+      this.bg.blob = null;
     } else {
       videoUrl = URL.createObjectURL(fileOrBlobOrUrl);
       this.bg.src = videoUrl;
@@ -576,8 +588,60 @@ class AnimalDanceStudio {
       } catch (e) {}
     }
 
+    // Extract video audio track into an AudioBuffer for 100% sample-accurate mixing in export & preview
+    try {
+      this.extractAudioFromVideo(fileOrBlobOrUrl).then((audioBuf) => {
+        if (audioBuf && audioBuf.numberOfChannels > 0 && audioBuf.length > 0) {
+          this.bg.audioBuffer = audioBuf;
+          this.bg.hasAudio = true;
+          if (window.audioEngine) {
+            window.audioEngine.setVideoAudioBuffer(audioBuf);
+            window.audioEngine.setVideoAudioMuted(this.bg.videoMuted);
+            window.audioEngine.setVideoAudioVolume(this.bg.videoVolume);
+          }
+          this.updateVideoBgUI();
+        } else {
+          this.bg.hasAudio = false;
+          this.updateVideoBgUI();
+        }
+      }).catch(() => {
+        this.bg.hasAudio = false;
+        this.updateVideoBgUI();
+      });
+    } catch (e) {
+      console.warn('Video audio extraction notice:', e);
+    }
+
     this.updateVideoBgUI();
     this.debouncedSaveState();
+  }
+
+  async extractAudioFromVideo(fileOrBlobOrUrl) {
+    try {
+      let arrayBuffer = null;
+      if (fileOrBlobOrUrl instanceof Blob) {
+        arrayBuffer = await fileOrBlobOrUrl.arrayBuffer();
+      } else if (typeof fileOrBlobOrUrl === 'string') {
+        const resp = await fetch(fileOrBlobOrUrl);
+        arrayBuffer = await resp.arrayBuffer();
+      }
+      if (!arrayBuffer || arrayBuffer.byteLength < 500) return null;
+
+      if (window.audioEngine) window.audioEngine.ensureContext();
+      const audioCtx = window.audioEngine?.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const copy = arrayBuffer.slice(0);
+      return await new Promise((resolve) => {
+        audioCtx.decodeAudioData(copy, (decoded) => {
+          resolve(decoded);
+        }, (err) => {
+          // If video file has no audio stream, resolve with null safely
+          resolve(null);
+        });
+      });
+    } catch (err) {
+      console.warn('extractAudioFromVideo notice:', err);
+      return null;
+    }
   }
 
   seekVideoToTime(video, time) {
@@ -649,15 +713,41 @@ class AnimalDanceStudio {
     const card = document.getElementById('videoBgControlsCard');
     const badge = document.getElementById('videoBgDurationBadge');
     const chkMute = document.getElementById('checkMuteVideoBg');
+    const labelMute = document.getElementById('labelMuteVideoBg');
     const typeBadge = document.getElementById('bgTypeBadge');
+    const audioBadge = document.getElementById('videoBgAudioBadge');
+    const volRow = document.getElementById('videoBgVolumeRow');
+    const slVol = document.getElementById('sliderVideoBgVolume');
+    const valVol = document.getElementById('videoBgVolumeVal');
 
     if (this.bg.isVideo && this.bg.video) {
       if (card) card.style.display = 'block';
       const dur = (this.bg.duration > 0 && isFinite(this.bg.duration)) ? this.bg.duration : ((this.bg.video && isFinite(this.bg.video.duration)) ? this.bg.video.duration : 10);
       if (badge) badge.textContent = `${dur.toFixed(1)}s`;
-      if (chkMute) chkMute.checked = !!this.bg.video.muted;
+      
+      const isMuted = (this.bg.videoMuted !== undefined) ? !!this.bg.videoMuted : (chkMute ? chkMute.checked : true);
+      this.bg.videoMuted = isMuted;
+      if (chkMute) chkMute.checked = isMuted;
+
+      if (labelMute) {
+        labelMute.textContent = isMuted ? 'Mute Video Audio (Play only music)' : '🔊 Video Audio Included in Export & Preview';
+        labelMute.style.color = isMuted ? '' : '#34d399';
+      }
+
+      if (audioBadge) {
+        audioBadge.style.display = this.bg.hasAudio ? 'inline-flex' : 'none';
+      }
+
+      const volPct = Math.round((this.bg.videoVolume !== undefined ? this.bg.videoVolume : 1.0) * 100);
+      if (slVol) slVol.value = volPct;
+      if (valVol) valVol.textContent = `${volPct}%`;
+
+      if (volRow) {
+        volRow.style.display = (!isMuted && this.bg.hasAudio) ? 'flex' : 'none';
+      }
+
       if (typeBadge) {
-        typeBadge.textContent = '🎬 Video Active';
+        typeBadge.textContent = this.bg.hasAudio ? '🎬 Video + 🔊 Audio Active' : '🎬 Video Active';
         typeBadge.style.color = '#38bdf8';
         typeBadge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
       }
@@ -3953,12 +4043,41 @@ class AnimalDanceStudio {
       this.debouncedSaveState();
     });
 
-    // Video Backdrop Mute & Duration Sync Controls
+    // Video Backdrop Mute & Volume & Duration Sync Controls
     document.getElementById('checkMuteVideoBg')?.addEventListener('change', (e) => {
+      const isMuted = e.target.checked;
+      this.bg.videoMuted = isMuted;
       if (this.bg.video) {
-        this.bg.video.muted = e.target.checked;
-        this.bg.video.volume = e.target.checked ? 0 : 1;
+        this.bg.video.muted = isMuted;
+        this.bg.video.volume = isMuted ? 0 : (this.bg.videoVolume ?? 1.0);
       }
+      if (window.audioEngine) {
+        window.audioEngine.setVideoAudioMuted(isMuted);
+      }
+      const labelMute = document.getElementById('labelMuteVideoBg');
+      if (labelMute) {
+        labelMute.textContent = isMuted ? 'Mute Video Audio (Play only music)' : '🔊 Video Audio Included in Export & Preview';
+        labelMute.style.color = isMuted ? '' : '#34d399';
+      }
+      const volRow = document.getElementById('videoBgVolumeRow');
+      if (volRow) {
+        volRow.style.display = (!isMuted && this.bg.hasAudio) ? 'flex' : 'none';
+      }
+      this.debouncedSaveState();
+    });
+
+    document.getElementById('sliderVideoBgVolume')?.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value) || 100;
+      this.bg.videoVolume = val / 100;
+      const vText = document.getElementById('videoBgVolumeVal');
+      if (vText) vText.textContent = `${val}%`;
+      if (this.bg.video && !this.bg.videoMuted) {
+        this.bg.video.volume = Math.min(1.0, this.bg.videoVolume);
+      }
+      if (window.audioEngine) {
+        window.audioEngine.setVideoAudioVolume(this.bg.videoVolume);
+      }
+      this.debouncedSaveState();
     });
 
     document.getElementById('btnSyncVideoDuration')?.addEventListener('click', () => {
@@ -6563,6 +6682,13 @@ class AnimalDanceStudio {
         try {
           const vidDur = (this.bg.duration > 0 && isFinite(this.bg.duration)) ? this.bg.duration : 10;
           this.bg.video.currentTime = (this.currentTime % vidDur);
+          // If audioEngine has the audioBuffer and is unmuted, keep DOM video muted to prevent echo
+          if (this.bg.audioBuffer && !this.bg.videoMuted) {
+            this.bg.video.muted = true;
+          } else {
+            this.bg.video.muted = !!this.bg.videoMuted;
+            this.bg.video.volume = this.bg.videoMuted ? 0 : (this.bg.videoVolume ?? 1.0);
+          }
           this.bg.video.play().catch(() => {});
         } catch (e) {}
       }
@@ -7744,7 +7870,30 @@ class AnimalDanceStudio {
           console.warn('AudioContext resume warning:', e);
         }
       }
-      if (window.audioEngine.ctx && window.audioEngine.ctx.state === 'running' && (window.audioEngine.hasActiveAudio() || (this.appendRevealEnding && this.reveal?.sfxEnabled !== false && this.reveal?.sfx !== 'none') || (this.timer.enabled && !this.timer.sfxMuted && this.timer.sfx !== 'none'))) {
+
+      // Ensure video backdrop audio buffer is ready if video is active and unmuted
+      if (this.bg.isVideo && !this.bg.videoMuted && !this.bg.audioBuffer && (this.bg.blob || this.bg.src)) {
+        try {
+          const extracted = await this.extractAudioFromVideo(this.bg.blob || this.bg.src);
+          if (extracted && extracted.numberOfChannels > 0) {
+            this.bg.audioBuffer = extracted;
+            this.bg.hasAudio = true;
+            window.audioEngine.setVideoAudioBuffer(extracted);
+            window.audioEngine.setVideoAudioMuted(false);
+            window.audioEngine.setVideoAudioVolume(this.bg.videoVolume ?? 1.0);
+          }
+        } catch (e) {
+          console.warn('Video audio pre-export extraction notice:', e);
+        }
+      }
+
+      const hasVideoAudio = this.bg.isVideo && !this.bg.videoMuted && (this.bg.audioBuffer || this.bg.hasAudio);
+      if (window.audioEngine.ctx && window.audioEngine.ctx.state === 'running' && (
+        window.audioEngine.hasActiveAudio() ||
+        hasVideoAudio ||
+        (this.appendRevealEnding && this.reveal?.sfxEnabled !== false && this.reveal?.sfx !== 'none') ||
+        (this.timer.enabled && !this.timer.sfxMuted && this.timer.sfx !== 'none')
+      )) {
         hasAudio = true;
       }
     }
@@ -8027,9 +8176,13 @@ class AnimalDanceStudio {
       fileExt = mimeType.includes('webm') ? 'webm' : 'mp4';
     }
 
+    const prevBgMuted = (this.bg.video && typeof this.bg.video.muted === 'boolean') ? this.bg.video.muted : true;
     const cleanupExportResources = () => {
       if (this.bg.isVideo && this.bg.video) {
-        try { this.bg.video.pause(); } catch (e) {}
+        try {
+          this.bg.video.pause();
+          this.bg.video.muted = prevBgMuted;
+        } catch (e) {}
       }
       if (staticBgBitmap && typeof staticBgBitmap.close === 'function') {
         try { staticBgBitmap.close(); } catch (e) {}
@@ -8138,6 +8291,11 @@ class AnimalDanceStudio {
 
     // START REAL-TIME WALL CLOCK RECORDING
     if (hasAudio) {
+      if (this.bg.isVideo && !this.bg.videoMuted && this.bg.audioBuffer && window.audioEngine) {
+        window.audioEngine.setVideoAudioBuffer(this.bg.audioBuffer);
+        window.audioEngine.setVideoAudioMuted(false);
+        window.audioEngine.setVideoAudioVolume(this.bg.videoVolume ?? 1.0);
+      }
       window.audioEngine.play(0, window.audioEngine.loop); // Respect audio loop / repeat setting
     }
     if (this.bg.isVideo && this.bg.video) {
@@ -8489,6 +8647,10 @@ class AnimalDanceStudio {
           sfx: this.reveal?.sfx,
           sfxVolume: this.reveal?.sfxVolume,
           startTime: this.videoDuration
+        }, {
+          muted: !!this.bg.videoMuted,
+          volume: this.bg.videoVolume ?? 1.0,
+          buffer: this.bg.audioBuffer
         });
       } else {
         audioBuf = window.audioEngine.currentBuffer || null;
@@ -9668,7 +9830,9 @@ class AnimalDanceStudio {
           panY: this.bg.panY ?? 0,
           brightness: this.bg.brightness ?? 100,
           contrast: this.bg.contrast ?? 100,
-          saturation: this.bg.saturation ?? 100
+          saturation: this.bg.saturation ?? 100,
+          videoMuted: !!this.bg.videoMuted,
+          videoVolume: this.bg.videoVolume ?? 1.0
         },
         title: {
           text: this.title.text,
@@ -9909,6 +10073,12 @@ class AnimalDanceStudio {
         this.bg.brightness = s.bg.brightness ?? 100;
         this.bg.contrast = s.bg.contrast ?? 100;
         this.bg.saturation = s.bg.saturation ?? 100;
+        if (s.bg.videoMuted !== undefined) this.bg.videoMuted = !!s.bg.videoMuted;
+        if (s.bg.videoVolume !== undefined) this.bg.videoVolume = s.bg.videoVolume;
+        if (window.audioEngine) {
+          window.audioEngine.setVideoAudioMuted(this.bg.videoMuted);
+          window.audioEngine.setVideoAudioVolume(this.bg.videoVolume ?? 1.0);
+        }
 
         if (s.bg.isVideo || s.bg.presetId === 'custom_video') {
           this.restoreCustomBackgroundFromStorage();
